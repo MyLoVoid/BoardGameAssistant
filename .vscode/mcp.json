@@ -1,0 +1,59 @@
+{
+	"servers": {
+		"github-server": {
+			"url": "https://api.githubcopilot.com/mcp",
+			"type": "http"
+		},
+		// "Azure MCP Server": {
+		// 	"command": "npx",
+		// 	"args": [
+		// 		"-y",
+		// 		"@azure/mcp@latest",
+		// 		"server",
+		// 		"start"
+		// 	]
+		// }
+		// "mcp-atlassian": {
+		// 	"command": "npx",
+		// 	"args": [
+		// 		"-y",
+		// 		"mcp-remote",
+		// 		"https://mcp.atlassian.com/v1/sse"
+		// 	],
+		// 	"envFile": "C:/Users/caramirezs/Documents/_PYTHON/Inchcape/smartbot-agent/.vscode/envs/mcp-atlassian.env",
+		// 	"type": "stdio"
+		// },
+		// "git": {
+		// 	"command": "uvx",
+		// 	"args": [
+		// 		"mcp-server-git"
+		// 	]
+		// },
+		"notionMCP": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-remote",
+				"https://mcp.notion.com/mcp"
+			]
+		},
+		// "playwright": {
+		// 	"command": "npx",
+		// 	"args": [
+		// 		"-y",
+		// 		"@executeautomation/playwright-mcp-server"
+		// 	]
+		// },
+		// "awesome-copilot": {
+		// 	"type": "stdio",
+		// 	"command": "docker",
+		// 	"args": [
+		// 		"run",
+		// 		"-i",
+		// 		"--rm",
+		// 		"ghcr.io/microsoft/mcp-dotnet-samples/awesome-copilot:latest"
+		// 	]
+		// }
+	},
+	"inputs": []
+}
