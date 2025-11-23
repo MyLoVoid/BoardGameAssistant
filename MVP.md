@@ -142,13 +142,15 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
 
 * **Backend fino propio (API + GenAI Adapter)**
 
-  * **Stack:** Python 3.11+ con FastAPI
+  * **Stack:** Python 3.13+ con FastAPI (soporta 3.14+)
+  * **Gestión de dependencias:** Poetry
   * **Dependencias principales:**
-    * FastAPI + Uvicorn (servidor ASGI)
-    * Pydantic (validación de datos)
-    * supabase-py (cliente Supabase)
-    * openai (SDK OpenAI para GPT y embeddings)
-    * LangChain (opcional, para RAG avanzado)
+    * FastAPI 0.115+ + Uvicorn (servidor ASGI)
+    * Pydantic v2 (validación de datos con máximo rendimiento)
+    * supabase-py 2.10+ (cliente Supabase)
+    * OpenAI 1.58+ / Google Gemini 0.8+ / Anthropic Claude 0.42+
+    * LangChain 0.3+ (framework para RAG y aplicaciones LLM)
+    * pgvector 0.3+ (extensión PostgreSQL para búsqueda vectorial)
   * Expuesto como API REST.
   * Faz de la app hacia:
 
@@ -478,21 +480,26 @@ Quieres analítica desde el inicio, así que se define:
 
 ### 🔄 En progreso
 
-#### **Backend API REST (Python + FastAPI)**
-* Pendiente de iniciar
-* Stack definido: FastAPI, Pydantic, supabase-py, openai, LangChain
+#### **Backend API REST (Python 3.13+ + FastAPI) - Setup Inicial (80%)**
+* ✅ Estructura del proyecto creada
+* ✅ Poetry configurado con todas las dependencias
+* ✅ Configuración de entorno (lee desde `.env` raíz)
+* ✅ Servidor FastAPI básico con health checks funcionando
+* ✅ VSCode configurado con Ruff y Pylance
+* ⏳ **Siguiente:** Autenticación JWT y cliente Supabase
 
 ### 📋 Pendiente
 
-1. **Backend API REST**
-   * Estructura del proyecto
-   * Configuración de entorno
-   * Endpoints de autenticación
-   * Endpoints de juegos y FAQs
-   * Pipeline RAG completo
-   * Integración con OpenAI/Gemini/Claude
-   * Sistema de feature flags
-   * Rate limiting y analítica
+1. **Backend API REST - Implementación**
+   * ⏳ Autenticación JWT y middleware
+   * ⏳ Cliente Supabase y queries
+   * ⏳ Endpoints de autenticación (GET /auth/me)
+   * ⏳ Endpoints de juegos y FAQs
+   * ⏳ Pipeline RAG completo
+   * ⏳ Integración con OpenAI/Gemini/Claude
+   * ⏳ Sistema de feature flags
+   * ⏳ Rate limiting y analítica
+   * ⏳ Endpoint POST /genai/query
 
 2. **App Móvil (React Native + Expo)**
    * Estructura del proyecto

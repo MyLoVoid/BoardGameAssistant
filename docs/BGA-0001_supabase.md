@@ -3,8 +3,8 @@
 ## Overview
 
 **Pull Request**: Not provided (local request)
-**Title**: Not provided
-**Author**: Not provided
+**Title**: Supabase schema & dev tooling bootstrap
+**Author**: Camilo Ramirez
 **Target Branch**: Not provided
 
 ## Summary

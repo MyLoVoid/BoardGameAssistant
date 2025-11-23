@@ -23,7 +23,7 @@ Review if in the Notion 'Board Game Assistant Intelligence' workspace there is a
 
 **Pull Request**:   
 **Title**:
-**Author**:
+**Author**: Camilo Ramirez
 **Target Branch**:
 
 - **Pull Request / Title / Author / Target Branch**: Extract from PR metadata.
