@@ -18,12 +18,12 @@ const GamesNavigator = () => (
     <Stack.Screen
       name="GameList"
       component={GameListScreen}
-      options={{ title: 'Juegos' }}
+      options={{ title: 'Board Game Companion' }}
     />
     <Stack.Screen
       name="GameDetail"
       component={GameDetailScreen}
-      options={({ route }) => ({ title: route.params.gameId })}
+      options={{ title: 'Detalle del juego' }}
     />
   </Stack.Navigator>
 );

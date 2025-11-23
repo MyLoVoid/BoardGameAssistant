@@ -27,7 +27,7 @@ interface UseGameDetailState {
  * @returns Game details, FAQs, access flags, loading state, error, and refetch function
  */
 export function useGameDetail(gameId: string, language: Language = 'es'): UseGameDetailState {
-  const { state: authState } = useAuth();
+  const { token } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
   const [faqs, setFaqs] = useState<GameFAQ[]>([]);
   const [hasFaqAccess, setHasFaqAccess] = useState(false);
@@ -37,7 +37,8 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
 
   const fetchGameDetail = useCallback(async () => {
     // Only fetch if user is signed in and has token
-    if (authState.status !== 'signedIn' || !authState.accessToken) {
+    if (!token) {
+      console.log('useGameDetail skipped: missing token');
       setGame(null);
       setFaqs([]);
       setIsLoading(false);
@@ -50,7 +51,9 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
 
     try {
       // Fetch game details
-      const gameResponse = await gamesApi.getGameDetail(authState.accessToken, gameId);
+      console.log('useGameDetail fetching detail', gameId);
+      const gameResponse = await gamesApi.getGameDetail(token, gameId);
+      console.log('useGameDetail detail loaded');
       setGame(gameResponse.game);
       setHasFaqAccess(gameResponse.has_faq_access);
       setHasChatAccess(gameResponse.has_chat_access);
@@ -58,11 +61,8 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
       // Fetch FAQs if user has access
       if (gameResponse.has_faq_access) {
         try {
-          const faqsResponse = await gamesApi.getGameFAQs(
-            authState.accessToken,
-            gameId,
-            language,
-          );
+          console.log('useGameDetail fetching FAQs');
+          const faqsResponse = await gamesApi.getGameFAQs(token, gameId, language);
           setFaqs(faqsResponse.faqs);
         } catch (faqError) {
           // FAQs not critical, log and continue
@@ -80,7 +80,7 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
     } finally {
       setIsLoading(false);
     }
-  }, [authState, gameId, language]);
+  }, [token, gameId, language]);
 
   // Fetch on mount and when dependencies change
   useEffect(() => {

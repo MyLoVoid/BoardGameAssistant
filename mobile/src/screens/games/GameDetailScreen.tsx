@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -11,13 +11,19 @@ import { colors, spacing } from '@/constants/theme';
 
 type Props = NativeStackScreenProps<GamesStackParamList, 'GameDetail'>;
 
-const GameDetailScreen = ({ route }: Props) => {
+const GameDetailScreen = ({ route, navigation }: Props) => {
   const { gameId } = route.params;
   const [language] = useState<Language>('es'); // TODO: Get from app settings/i18n
   const { game, faqs, hasFaqAccess, hasChatAccess, isLoading, error, refetch } = useGameDetail(
     gameId,
     language,
   );
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: game?.name_base ?? 'Detalle del juego',
+    });
+  }, [game?.name_base, navigation]);
 
   if (isLoading) {
     return (
@@ -45,14 +51,9 @@ const GameDetailScreen = ({ route }: Props) => {
 
   return (
     <ScreenContainer scroll>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{game.name_base}</Text>
-        {game.bgg_id !== null && <Text style={styles.subtitle}>BGG #{game.bgg_id}</Text>}
-      </View>
-
         {/* Game Info Card */}
         <View style={styles.card}>
+          <Text style={styles.label}>Información general</Text>
           {game.min_players !== null && game.max_players !== null && (
             <>
               <Text style={styles.label}>Jugadores</Text>
@@ -73,6 +74,13 @@ const GameDetailScreen = ({ route }: Props) => {
             <>
               <Text style={styles.label}>Rating</Text>
               <Text style={styles.value}>{game.rating.toFixed(2)}</Text>
+            </>
+          )}
+
+          {game.bgg_id !== null && (
+            <>
+              <Text style={styles.label}>BoardGameGeek ID</Text>
+              <Text style={styles.value}>#{game.bgg_id}</Text>
             </>
           )}
 
@@ -130,18 +138,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     marginTop: spacing.md,
-  },
-  header: {
-    marginBottom: spacing.md,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    marginTop: spacing.xs,
   },
   card: {
     marginTop: spacing.md,

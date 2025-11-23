@@ -33,7 +33,7 @@ const MainTabs = () => (
     })}
   >
     <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
-    <Tab.Screen name="Games" component={GamesNavigator} options={{ title: 'Juegos' }} />
+    <Tab.Screen name="Games" component={GamesNavigator} options={{ title: 'BGC' }} />
     <Tab.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
     <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
   </Tab.Navigator>

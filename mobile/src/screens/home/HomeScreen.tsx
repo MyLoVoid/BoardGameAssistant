@@ -9,12 +9,6 @@ import type { MainTabParamList } from '@/types/navigation';
 
 const sections = [
   {
-    key: 'bgc',
-    title: 'Board Game Companion',
-    description: 'FAQs, helper GenAI y reglas rápidas para cada juego.',
-    status: 'En curso',
-  },
-  {
     key: 'score',
     title: 'Score Helpers',
     description: 'Planificado para fases siguientes con trackers por juego.',
@@ -34,7 +28,18 @@ const HomeScreen = () => {
         </Text>
       </View>
 
-      <PrimaryButton label="Explorar juegos" onPress={() => navigation.navigate('Games')} />
+      <View style={[styles.card, styles.ctaCard]}>
+        <Text style={styles.cardTitle}>Board Game Companion</Text>
+        <Text style={styles.cardDescription}>
+          FAQs, reglas rápidas y chat de IA (próximamente) por juego.
+        </Text>
+        <Text style={styles.tag}>En curso</Text>
+        <PrimaryButton
+          label="Explorar juegos"
+          onPress={() => navigation.navigate('Games')}
+          style={styles.ctaButton}
+        />
+      </View>
 
       <Text style={styles.sectionTitle}>Secciones</Text>
       <FlatList
@@ -99,6 +104,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: 999,
     fontWeight: '600',
+  },
+  ctaCard: {
+    marginBottom: spacing.lg,
+  },
+  ctaButton: {
+    marginTop: spacing.md,
   },
 });
 

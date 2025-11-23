@@ -14,10 +14,35 @@ interface SignInResponse {
 
 interface UserProfileResponse {
   id: string;
-  email: string;
-  full_name?: string;
+  email?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
   role: AuthUser['role'];
 }
+
+const mapProfileToUser = (
+  profile: UserProfileResponse,
+  fallbackEmail?: string,
+): AuthUser => {
+  const resolvedEmail = profile.email ?? fallbackEmail;
+
+  if (!resolvedEmail) {
+    throw new Error('El perfil no contiene un correo asociado');
+  }
+
+  const displayName =
+    profile.display_name ||
+    profile.full_name ||
+    resolvedEmail.split('@')[0] ||
+    profile.id;
+
+  return {
+    id: profile.id,
+    email: resolvedEmail,
+    displayName,
+    role: profile.role,
+  };
+};
 
 /**
  * Sign in with email and password
@@ -43,12 +68,7 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
 
   return {
     token: data.session.access_token,
-    user: {
-      id: profile.id,
-      email: profile.email,
-      displayName: profile.full_name || profile.email.split('@')[0],
-      role: profile.role,
-    },
+    user: mapProfileToUser(profile, data.user?.email ?? email),
   };
 };
 
@@ -86,12 +106,7 @@ export const signUp = async (
 
   return {
     token: data.session.access_token,
-    user: {
-      id: profile.id,
-      email: profile.email,
-      displayName: profile.full_name || fullName || profile.email.split('@')[0],
-      role: profile.role,
-    },
+    user: mapProfileToUser(profile, data.user?.email ?? email),
   };
 };
 
@@ -145,11 +160,6 @@ export const validateSession = async (): Promise<SignInResponse | null> => {
 
   return {
     token: session.access_token,
-    user: {
-      id: profile.id,
-      email: profile.email,
-      displayName: profile.full_name || profile.email.split('@')[0],
-      role: profile.role,
-    },
+    user: mapProfileToUser(profile, session.user?.email ?? undefined),
   };
 };

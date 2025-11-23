@@ -4,11 +4,11 @@
  */
 
 const ENV = {
-  dev: {
-    supabaseUrl: 'http://127.0.0.1:54321',
-    supabaseAnonKey: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
-    backendUrl: 'http://127.0.0.1:8000',
-  },
+ dev: {
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321',
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+  backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL ?? 'http://127.0.0.1:8000',
+},
   prod: {
     // TODO: Replace with production credentials when deploying
     supabaseUrl: 'https://your-project.supabase.co',

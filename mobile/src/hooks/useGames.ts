@@ -23,14 +23,14 @@ interface UseGamesState {
  * @returns Games list, loading state, error, and refetch function
  */
 export function useGames(statusFilter?: GameStatus): UseGamesState {
-  const { state: authState } = useAuth();
+  const { token } = useAuth();
   const [games, setGames] = useState<GameListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchGames = useCallback(async () => {
     // Only fetch if user is signed in and has token
-    if (authState.status !== 'signedIn' || !authState.accessToken) {
+    if (!token) {
       setGames([]);
       setIsLoading(false);
       setError('No authentication token');
@@ -41,7 +41,9 @@ export function useGames(statusFilter?: GameStatus): UseGamesState {
     setError(null);
 
     try {
-      const response = await gamesApi.getGames(authState.accessToken, statusFilter);
+      console.log('useGames fetching with token?', Boolean(token));
+      const response = await gamesApi.getGames(token, statusFilter);
+      console.log('useGames received', response.games.length, 'games');
       setGames(response.games);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load games';
@@ -50,7 +52,7 @@ export function useGames(statusFilter?: GameStatus): UseGamesState {
     } finally {
       setIsLoading(false);
     }
-  }, [authState, statusFilter]);
+  }, [token, statusFilter]);
 
   // Fetch on mount and when dependencies change
   useEffect(() => {
