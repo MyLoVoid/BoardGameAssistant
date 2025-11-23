@@ -478,28 +478,51 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Script SQL para crear usuarios (`supabase/create_test_users.sql`)
    * ✅ Página HTML de prueba de login (`test_login.html`)
 
+#### **Backend API REST - Bootstrap + Autenticación (100%)**
+
+**BGA-0002_backend-bootstrap**
+
+1. **Estructura FastAPI lista para escalar**
+   * ✅ Proyecto `backend/` con routers, `run.py`, `app/config.py` y dependencias administradas por Poetry.
+   * ✅ `pyproject.toml` y `poetry.lock` fijan FastAPI 0.115+, Supabase client 2.10+, LangChain, IA SDKs y stack pgvector.
+   * ✅ Configuración compartida (`.env.example`, `.vscode/settings.json`, `.gitignore`) descrita en `docs/BGA-0002_backend-bootstrap.md`.
+   * ✅ Health checks (`/`, `/health`, `/health/ready`) y CORS dinámico listos para que la app Expo haga smoke tests.
+
+2. **Tooling consolidado**
+   * ✅ VS Code usa Ruff como formateador y pytest como runner; instrucciones centralizadas en `backend/README.md`.
+   * ✅ Settings lee variables desde la raíz (`../../.env`), habilitando `poetry run uvicorn app.main:app --reload`.
+
+**BGA-0003_authentication**
+
+1. **Autenticación Supabase**
+   * ✅ Router `/auth` con endpoints `GET /auth/me`, `/auth/me/role`, `/auth/validate` y ejemplo `/auth/admin-only`.
+   * ✅ `app/core/auth.py` decodifica JWT de Supabase, verifica `aud=authenticated`, obtiene perfiles vía `app/services/supabase.py` y expone `require_role`.
+   * ✅ Modelos Pydantic (`UserProfile`, `AuthenticatedUser`, `TokenPayload`, `ErrorResponse`, etc.) documentan los contratos de respuesta.
+
+2. **Cobertura automática**
+   * ✅ `tests/test_auth_endpoints.py` ejecuta pruebas de integración contra usuarios seed (`admin@bgai.test`, `basic@bgai.test`) usando `TestClient`.
+   * ✅ Flujos felices y de error (token faltante, expirado, rol insuficiente) probados antes de exponer la API al cliente móvil.
+
 ### 🔄 En progreso
 
-#### **Backend API REST (Python 3.13+ + FastAPI) - Setup Inicial (80%)**
-* ✅ Estructura del proyecto creada
-* ✅ Poetry configurado con todas las dependencias
-* ✅ Configuración de entorno (lee desde `.env` raíz)
-* ✅ Servidor FastAPI básico con health checks funcionando
-* ✅ VSCode configurado con Ruff y Pylance
-* ⏳ **Siguiente:** Autenticación JWT y cliente Supabase
+#### **Backend API REST - Juegos, FAQs y Feature Flags dinámicos (35%)**
+* ⏳ Servicio Supabase para `games`, `game_faqs` y `feature_flags` (lecturas filtradas por rol)
+* ⏳ Endpoints `GET /games`, `GET /games/{id}`, `GET /games/{id}/faqs?lang=`
+* ⏳ Cache / rate limits basados en metadata de feature flags
+
+#### **Backend API REST - RAG + GenAI Adapter (20%)**
+* ⏳ Búsqueda vectorial sobre `game_docs_vectors`
+* ⏳ Endpoint `POST /genai/query` con pipeline completo (chunks + llamada a LLM + logging)
+* ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`
 
 ### 📋 Pendiente
 
-1. **Backend API REST - Implementación**
-   * ⏳ Autenticación JWT y middleware
-   * ⏳ Cliente Supabase y queries
-   * ⏳ Endpoints de autenticación (GET /auth/me)
-   * ⏳ Endpoints de juegos y FAQs
-   * ⏳ Pipeline RAG completo
-   * ⏳ Integración con OpenAI/Gemini/Claude
-   * ⏳ Sistema de feature flags
-   * ⏳ Rate limiting y analítica
-   * ⏳ Endpoint POST /genai/query
+1. **Backend API REST - Implementación funcional restante**
+   * ⏳ Endpoints de juegos y FAQs (lectura condicionada por flags/roles)
+   * ⏳ Servicio de feature flags (evaluación de scopes + límites diarios)
+   * ⏳ Rate limiting y analítica (`usage_events`)
+   * ⏳ Pipeline RAG + integración OpenAI/Gemini/Claude (`POST /genai/query`)
+   * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
 
 2. **App Móvil (React Native + Expo)**
    * Estructura del proyecto
@@ -519,51 +542,39 @@ Quieres analítica desde el inicio, así que se define:
 
 ## 11. Próximos pasos inmediatos (checklist de trabajo)
 
-1. **Backend API REST - Setup inicial**
-   * Crear estructura del proyecto `backend/`
-   * Configurar entorno virtual Python
-   * Instalar dependencias (FastAPI, supabase-py, openai, etc.)
-   * Configurar variables de entorno
-   * Crear servidor básico con health check
-
-2. **Backend API REST - Autenticación**
-   * Middleware de validación JWT
-   * Endpoint `GET /auth/me` (información del usuario actual)
-   * Sistema de extracción de user_id y role del token
-
-3. **Backend API REST - Endpoints de juegos**
+1. **Backend API REST - Endpoints de juegos (BGC)**
    * `GET /games` - Lista filtrada por rol y feature flags
    * `GET /games/{id}` - Detalle del juego
    * `GET /games/{id}/faqs?lang=es` - FAQs filtradas por idioma
 
-4. **Backend API REST - Sistema de Feature Flags**
+2. **Backend API REST - Sistema de Feature Flags y límites**
    * Servicio para validar acceso a features
    * Función `check_feature_access(user, feature, scope)`
    * Implementar límites de uso (rate limiting por rol)
 
-5. **Backend API REST - Pipeline RAG**
+3. **Backend API REST - Pipeline RAG + GenAI Adapter**
    * Servicio de búsqueda vectorial en `game_docs_vectors`
    * Función `search_relevant_chunks(game_id, question, language)`
    * Integración con OpenAI para embeddings y respuestas
    * Endpoint `POST /genai/query` completo
 
-6. **Backend API REST - Analítica**
+4. **Backend API REST - Analítica**
    * Servicio para registrar eventos en `usage_events`
    * Integrar logging en todos los endpoints principales
    * Tracking de uso por usuario, juego y feature
 
-7. **Scripts de utilidad**
+5. **Scripts de utilidad**
    * Script para procesar PDFs y generar embeddings
    * Script para sincronizar juegos desde BGG
    * Script para poblar `game_docs_vectors` con documentación real
 
-8. **App Móvil - Setup inicial**
+6. **App Móvil - Setup inicial**
    * Crear proyecto React Native + Expo
    * Configurar navegación
    * Integrar Supabase client
    * Pantallas de login/registro
 
-9. **Integración y testing end-to-end**
+7. **Integración y testing end-to-end**
    * Conectar app móvil con backend
    * Probar flujo completo: login → ver juegos → consultar FAQ → chat IA
    * Validar feature flags y límites de uso
