@@ -6,7 +6,7 @@ FastAPI application with endpoints for Board Game Assistant Intelligent
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, health
+from app.api.routes import auth, games, health
 from app.config import settings
 
 # Create FastAPI application
@@ -30,6 +30,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, tags=["Health"])
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(games.router, tags=["Games"])
 
 
 @app.get("/")

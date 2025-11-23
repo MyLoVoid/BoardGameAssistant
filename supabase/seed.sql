@@ -104,6 +104,14 @@ BEGIN
 
   -- Global features for dev environment
   INSERT INTO public.feature_flags (scope_type, scope_id, feature_key, role, environment, enabled, metadata) VALUES
+    -- Game access (global access for all users to all active games)
+    ('global', NULL, 'game_access', 'basic', 'dev', true, '{"description": "Access to games catalog"}'),
+    ('global', NULL, 'game_access', 'basic', 'prod', true, '{"description": "Access to games catalog"}'),
+    ('global', NULL, 'game_access', 'premium', 'dev', true, '{"description": "Access to all games"}'),
+    ('global', NULL, 'game_access', 'premium', 'prod', true, '{"description": "Access to all games"}'),
+    ('global', NULL, 'game_access', 'tester', 'dev', true, '{"description": "Access to all games including beta"}'),
+    ('global', NULL, 'game_access', 'tester', 'prod', true, '{"description": "Access to all games including beta"}'),
+
     -- FAQ access (all roles in both environments)
     ('global', NULL, 'faq', NULL, 'dev', true, '{"description": "Access to game FAQs"}'),
     ('global', NULL, 'faq', NULL, 'prod', true, '{"description": "Access to game FAQs"}'),

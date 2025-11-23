@@ -98,3 +98,122 @@ class ReadinessCheckResponse(BaseModel):
     ready: bool = Field(..., description="Overall readiness status")
     checks: dict[str, str] = Field(..., description="Individual component checks")
     timestamp: str = Field(..., description="Response timestamp")
+
+
+# ============================================
+# Game Models
+# ============================================
+
+
+class Game(BaseModel):
+    """Game information from database"""
+
+    id: str = Field(..., description="Game UUID")
+    section_id: str = Field(..., description="Section UUID (BGC)")
+    name_base: str = Field(..., description="Base name of the game")
+    bgg_id: int | None = Field(None, description="BoardGameGeek ID")
+    min_players: int | None = Field(None, description="Minimum number of players")
+    max_players: int | None = Field(None, description="Maximum number of players")
+    playing_time: int | None = Field(None, description="Playing time in minutes")
+    rating: float | None = Field(None, description="BGG rating")
+    thumbnail_url: str | None = Field(None, description="Thumbnail image URL")
+    image_url: str | None = Field(None, description="Full image URL")
+    status: str = Field("active", description="Game status: active, beta, hidden")
+    last_synced_from_bgg_at: datetime | None = Field(None, description="Last BGG sync timestamp")
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameListItem(BaseModel):
+    """Simplified game information for list views"""
+
+    id: str = Field(..., description="Game UUID")
+    name_base: str = Field(..., description="Base name of the game")
+    thumbnail_url: str | None = Field(None, description="Thumbnail image URL")
+    min_players: int | None = Field(None, description="Minimum number of players")
+    max_players: int | None = Field(None, description="Maximum number of players")
+    playing_time: int | None = Field(None, description="Playing time in minutes")
+    rating: float | None = Field(None, description="BGG rating")
+    status: str = Field("active", description="Game status")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameFAQ(BaseModel):
+    """FAQ for a specific game"""
+
+    id: str = Field(..., description="FAQ UUID")
+    game_id: str = Field(..., description="Game UUID")
+    language: str = Field(..., description="Language code: es, en")
+    question: str = Field(..., description="FAQ question")
+    answer: str = Field(..., description="FAQ answer")
+    order: int = Field(0, description="Display order")
+    visible: bool = Field(True, description="Visibility flag")
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================
+# Feature Flag Models
+# ============================================
+
+
+class FeatureFlag(BaseModel):
+    """Feature flag configuration"""
+
+    id: str = Field(..., description="Feature flag UUID")
+    scope_type: str = Field(..., description="Scope type: global, section, game, user")
+    scope_id: str | None = Field(None, description="Scope ID (section/game/user UUID)")
+    feature_key: str = Field(..., description="Feature key: faq, chat, score_helper, etc.")
+    role: str | None = Field(None, description="Role: basic, premium, tester, admin, developer")
+    environment: str = Field("dev", description="Environment: dev, prod")
+    enabled: bool = Field(True, description="Feature enabled flag")
+    metadata: dict[str, Any] | None = Field(
+        None, description="Additional configuration (limits, etc.)"
+    )
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FeatureAccess(BaseModel):
+    """Feature access validation result"""
+
+    has_access: bool = Field(..., description="Whether user has access to the feature")
+    feature_key: str = Field(..., description="Feature key checked")
+    reason: str | None = Field(None, description="Reason for access denial")
+    metadata: dict[str, Any] | None = Field(None, description="Feature metadata (limits, etc.)")
+
+
+# ============================================
+# API Response Models for Games
+# ============================================
+
+
+class GamesListResponse(BaseModel):
+    """Response for GET /games"""
+
+    games: list[GameListItem] = Field(..., description="List of games")
+    total: int = Field(..., description="Total number of games")
+
+
+class GameDetailResponse(BaseModel):
+    """Response for GET /games/{id}"""
+
+    game: Game = Field(..., description="Game details")
+    has_faq_access: bool = Field(False, description="Whether user can access FAQs")
+    has_chat_access: bool = Field(False, description="Whether user can access chat")
+
+
+class GameFAQsResponse(BaseModel):
+    """Response for GET /games/{id}/faqs"""
+
+    faqs: list[GameFAQ] = Field(..., description="List of FAQs")
+    game_id: str = Field(..., description="Game UUID")
+    language: str = Field(..., description="Language of FAQs")
+    total: int = Field(..., description="Total number of FAQs")
