@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
-import type { AuthState, AuthUser } from '@/types/auth';
+import type { AuthState } from '@/types/auth';
 import * as authService from '@/services/auth';
 
 const STORAGE_KEY = 'bgai-auth-session';

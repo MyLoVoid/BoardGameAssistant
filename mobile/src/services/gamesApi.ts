@@ -62,12 +62,10 @@ export async function getGames(
     url.searchParams.append('status_filter', statusFilter);
   }
 
-  console.log('Fetching games', url.toString());
   const response = await fetch(url.toString(), {
     method: 'GET',
     headers: createHeaders(token),
   });
-  console.log('Games response status', response.status);
 
   return handleResponse<GamesListResponse>(response);
 }
@@ -85,12 +83,10 @@ export async function getGameDetail(
 ): Promise<GameDetailResponse> {
   const url = `${API_BASE_URL}/games/${gameId}`;
 
-  console.log('Fetching game detail', url);
   const response = await fetch(url, {
     method: 'GET',
     headers: createHeaders(token),
   });
-  console.log('Game detail response status', response.status);
 
   return handleResponse<GameDetailResponse>(response);
 }
@@ -111,12 +107,10 @@ export async function getGameFAQs(
   const url = new URL(`${API_BASE_URL}/games/${gameId}/faqs`);
   url.searchParams.append('lang', language);
 
-  console.log('Fetching game FAQs', url.toString());
   const response = await fetch(url, {
     method: 'GET',
     headers: createHeaders(token),
   });
-  console.log('Game FAQs response status', response.status);
 
   return handleResponse<GameFAQsResponse>(response);
 }

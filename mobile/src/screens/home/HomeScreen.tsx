@@ -6,42 +6,39 @@ import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryButton from '@/components/PrimaryButton';
 import { colors, spacing } from '@/constants/theme';
 import type { MainTabParamList } from '@/types/navigation';
-
-const sections = [
-  {
-    key: 'score',
-    title: 'Score Helpers',
-    description: 'Planificado para fases siguientes con trackers por juego.',
-    status: 'Planificado',
-  },
-];
+import { useLanguage } from '@/context/LanguageContext';
 
 const HomeScreen = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const { t } = useLanguage();
+  const sections = [
+    {
+      key: 'score',
+      title: t('home.score.title'),
+      description: t('home.score.description'),
+      status: t('home.score.status'),
+    },
+  ];
 
   return (
     <ScreenContainer scroll>
       <View style={styles.header}>
-        <Text style={styles.title}>Bienvenido a BGAI</Text>
-        <Text style={styles.subtitle}>
-          Consulta juegos disponibles, FAQs y prepara la integración con el backend ya operativo.
-        </Text>
+        <Text style={styles.title}>{t('home.title')}</Text>
+        <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
       </View>
 
       <View style={[styles.card, styles.ctaCard]}>
-        <Text style={styles.cardTitle}>Board Game Companion</Text>
-        <Text style={styles.cardDescription}>
-          FAQs, reglas rápidas y chat de IA (próximamente) por juego.
-        </Text>
-        <Text style={styles.tag}>En curso</Text>
+        <Text style={styles.cardTitle}>{t('home.cta.title')}</Text>
+        <Text style={styles.cardDescription}>{t('home.cta.description')}</Text>
+        <Text style={styles.tag}>{t('home.cta.status')}</Text>
         <PrimaryButton
-          label="Explorar juegos"
+          label={t('home.cta.button')}
           onPress={() => navigation.navigate('Games')}
           style={styles.ctaButton}
         />
       </View>
 
-      <Text style={styles.sectionTitle}>Secciones</Text>
+      <Text style={styles.sectionTitle}>{t('home.sectionTitle')}</Text>
       <FlatList
         data={sections}
         keyExtractor={(item) => item.key}

@@ -8,7 +8,7 @@ export interface MockGame {
   rating: number;
   section: string;
   status: 'active' | 'beta';
-  languages: Array<'es' | 'en'>;
+  languages: ('es' | 'en')[];
 }
 
 export const mockGames: MockGame[] = [

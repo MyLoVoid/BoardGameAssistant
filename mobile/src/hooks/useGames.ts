@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import * as gamesApi from '@/services/gamesApi';
 import type { GameListItem, GameStatus } from '@/types/games';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface UseGamesState {
   games: GameListItem[];
@@ -24,6 +25,7 @@ interface UseGamesState {
  */
 export function useGames(statusFilter?: GameStatus): UseGamesState {
   const { token } = useAuth();
+  const { t } = useLanguage();
   const [games, setGames] = useState<GameListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function useGames(statusFilter?: GameStatus): UseGamesState {
     if (!token) {
       setGames([]);
       setIsLoading(false);
-      setError('No authentication token');
+      setError(t('errors.noToken'));
       return;
     }
 
@@ -41,18 +43,17 @@ export function useGames(statusFilter?: GameStatus): UseGamesState {
     setError(null);
 
     try {
-      console.log('useGames fetching with token?', Boolean(token));
       const response = await gamesApi.getGames(token, statusFilter);
-      console.log('useGames received', response.games.length, 'games');
       setGames(response.games);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load games';
-      setError(errorMessage);
+      const errorMessage =
+        err instanceof Error ? err.message : t('errors.loadGames');
+      setError(errorMessage || t('errors.loadGames'));
       setGames([]);
     } finally {
       setIsLoading(false);
     }
-  }, [token, statusFilter]);
+  }, [statusFilter, t, token]);
 
   // Fetch on mount and when dependencies change
   useEffect(() => {

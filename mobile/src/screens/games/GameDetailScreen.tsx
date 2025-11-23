@@ -1,36 +1,36 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import ScreenContainer from '@/components/ScreenContainer';
 import EmptyState from '@/components/EmptyState';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import type { GamesStackParamList } from '@/types/navigation';
-import type { Language } from '@/types/games';
 import { colors, spacing } from '@/constants/theme';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Props = NativeStackScreenProps<GamesStackParamList, 'GameDetail'>;
 
 const GameDetailScreen = ({ route, navigation }: Props) => {
   const { gameId } = route.params;
-  const [language] = useState<Language>('es'); // TODO: Get from app settings/i18n
-  const { game, faqs, hasFaqAccess, hasChatAccess, isLoading, error, refetch } = useGameDetail(
-    gameId,
-    language,
-  );
+  const { t, language } = useLanguage();
+  const languageLabel =
+    language === 'es' ? t('common.language.es') : t('common.language.en');
+  const { game, faqs, hasFaqAccess, hasChatAccess, isLoading, error, refetch } =
+    useGameDetail(gameId);
 
   useEffect(() => {
     navigation.setOptions({
-      title: game?.name_base ?? 'Detalle del juego',
+      title: game?.name_base ?? t('tabs.games'),
     });
-  }, [game?.name_base, navigation]);
+  }, [game?.name_base, navigation, t]);
 
   if (isLoading) {
     return (
       <ScreenContainer>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando detalles...</Text>
+          <Text style={styles.loadingText}>{t('games.detail.loading')}</Text>
         </View>
       </ScreenContainer>
     );
@@ -40,9 +40,9 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
     return (
       <ScreenContainer>
         <EmptyState
-          title="Error al cargar el juego"
-          description={error || 'Juego no encontrado'}
-          actionText="Reintentar"
+          title={t('games.detail.errorTitle')}
+          description={error || t('games.detail.errorDescription')}
+          actionText={t('common.retry')}
           onAction={refetch}
         />
       </ScreenContainer>
@@ -53,10 +53,10 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
     <ScreenContainer scroll>
         {/* Game Info Card */}
         <View style={styles.card}>
-          <Text style={styles.label}>Información general</Text>
+          <Text style={styles.label}>{t('games.detail.generalInfo')}</Text>
           {game.min_players !== null && game.max_players !== null && (
             <>
-              <Text style={styles.label}>Jugadores</Text>
+              <Text style={styles.label}>{t('games.detail.players')}</Text>
               <Text style={styles.value}>
                 {game.min_players} - {game.max_players}
               </Text>
@@ -65,28 +65,35 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
 
           {game.playing_time !== null && (
             <>
-              <Text style={styles.label}>Duración</Text>
-              <Text style={styles.value}>{game.playing_time} minutos</Text>
+              <Text style={styles.label}>{t('games.detail.duration')}</Text>
+              <Text style={styles.value}>
+                {game.playing_time} {t('games.detail.durationUnit')}
+              </Text>
             </>
           )}
 
           {game.rating !== null && (
             <>
-              <Text style={styles.label}>Rating</Text>
+              <Text style={styles.label}>{t('games.detail.rating')}</Text>
               <Text style={styles.value}>{game.rating.toFixed(2)}</Text>
             </>
           )}
 
           {game.bgg_id !== null && (
             <>
-              <Text style={styles.label}>BoardGameGeek ID</Text>
+              <Text style={styles.label}>{t('games.detail.bggId')}</Text>
               <Text style={styles.value}>#{game.bgg_id}</Text>
             </>
           )}
 
-          <Text style={styles.label}>Estado</Text>
+          <Text style={styles.label}>{t('games.detail.statusLabel')}</Text>
           <Text style={styles.value}>
-            {game.status === 'active' ? 'Activo' : game.status === 'beta' ? 'Beta' : 'Oculto'}
+            {t(
+              `games.detail.status.${game.status}` as
+                | 'games.detail.status.active'
+                | 'games.detail.status.beta'
+                | 'games.detail.status.hidden',
+            )}
           </Text>
         </View>
 
@@ -94,7 +101,7 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
         {hasFaqAccess ? (
           <>
             <Text style={styles.sectionTitle}>
-              Preguntas Frecuentes ({language.toUpperCase()})
+              {t('games.detail.faqTitle', { language: languageLabel })}
             </Text>
             {faqs.length > 0 ? (
               faqs.map((faq) => (
@@ -105,15 +112,15 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
               ))
             ) : (
               <EmptyState
-                title="No hay FAQs disponibles"
-                description={`No se encontraron preguntas frecuentes en ${language.toUpperCase()}.`}
+                title={t('games.detail.faqEmptyTitle')}
+                description={t('games.detail.faqEmptyDescription', { language: languageLabel })}
               />
             )}
           </>
         ) : (
           <EmptyState
-            title="FAQs no disponibles"
-            description="Tu rol actual no tiene acceso a las preguntas frecuentes de este juego."
+            title={t('games.detail.faqRestrictedTitle')}
+            description={t('games.detail.faqRestrictedDescription')}
           />
         )}
 
@@ -121,7 +128,7 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
         {hasChatAccess && (
           <View style={styles.infoCard}>
             <Text style={styles.infoText}>
-              ✅ Tienes acceso al chat de IA para este juego (próximamente)
+              ✅ {t('games.detail.chatAccess')}
             </Text>
           </View>
         )}

@@ -8,11 +8,13 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { useAuth } from '@/hooks/useAuth';
 import type { AuthStackParamList } from '@/types/navigation';
 import { colors, spacing } from '@/constants/theme';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
 const SignUpScreen = ({ navigation }: Props) => {
   const { signUp } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -25,7 +27,7 @@ const SignUpScreen = ({ navigation }: Props) => {
       setLoading(true);
       await signUp(email, password, fullName);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : t('common.errorUnexpected'));
     } finally {
       setLoading(false);
     }
@@ -33,18 +35,18 @@ const SignUpScreen = ({ navigation }: Props) => {
 
   return (
     <ScreenContainer contentStyle={styles.content}>
-      <Text style={styles.title}>Crear cuenta</Text>
-      <Text style={styles.subtitle}>Regístrate para comenzar</Text>
+      <Text style={styles.title}>{t('auth.signUp.title')}</Text>
+      <Text style={styles.subtitle}>{t('auth.signUp.subtitle')}</Text>
 
       <TextField
-        label="Nombre completo"
+        label={t('auth.fullName')}
         autoCapitalize="words"
         value={fullName}
         onChangeText={setFullName}
       />
 
       <TextField
-        label="Correo"
+        label={t('auth.email')}
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -52,7 +54,7 @@ const SignUpScreen = ({ navigation }: Props) => {
       />
 
       <TextField
-        label="Contraseña"
+        label={t('auth.password')}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -61,13 +63,13 @@ const SignUpScreen = ({ navigation }: Props) => {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <PrimaryButton
-        label={loading ? 'Creando cuenta...' : 'Registrarse'}
+        label={loading ? t('auth.signUp.submitting') : t('auth.signUp.submit')}
         onPress={handleSubmit}
         disabled={loading}
       />
 
       <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-        <Text style={styles.link}>¿Ya tienes cuenta? Inicia sesión</Text>
+        <Text style={styles.link}>{t('auth.signUp.haveAccount')}</Text>
       </TouchableOpacity>
     </ScreenContainer>
   );

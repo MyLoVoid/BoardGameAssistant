@@ -21,6 +21,8 @@ const TextField = forwardRef<TextInput, Props>(({ label, error, style, ...rest }
   </View>
 ));
 
+TextField.displayName = 'TextField';
+
 const styles = StyleSheet.create({
   container: {
     width: '100%',

@@ -4,23 +4,31 @@ import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryButton from '@/components/PrimaryButton';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, spacing } from '@/constants/theme';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
 
 const ProfileScreen = () => {
   const { user, signOut, refreshProfile } = useAuth();
+  const { t } = useLanguage();
 
   return (
     <ScreenContainer>
       <View style={styles.card}>
-        <Text style={styles.title}>{user?.displayName ?? 'Invitado'}</Text>
-        <Text style={styles.label}>Correo</Text>
+        <Text style={styles.title}>{user?.displayName ?? t('profile.guest')}</Text>
+        <Text style={styles.label}>{t('profile.email')}</Text>
         <Text style={styles.value}>{user?.email}</Text>
 
-        <Text style={styles.label}>Rol</Text>
+        <Text style={styles.label}>{t('profile.role')}</Text>
         <Text style={styles.value}>{user?.role}</Text>
       </View>
 
-      <PrimaryButton label="Actualizar perfil" onPress={refreshProfile} />
-      <PrimaryButton label="Cerrar sesión" onPress={signOut} style={styles.signOut} />
+      <PrimaryButton label={t('profile.refresh')} onPress={refreshProfile} />
+      <PrimaryButton label={t('profile.signOut')} onPress={signOut} style={styles.signOut} />
+
+      <View style={styles.languageSection}>
+        <Text style={styles.sectionTitle}>{t('profile.languageTitle')}</Text>
+        <LanguageSelector />
+      </View>
     </ScreenContainer>
   );
 };
@@ -52,6 +60,15 @@ const styles = StyleSheet.create({
   },
   signOut: {
     marginTop: spacing.sm,
+  },
+  languageSection: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

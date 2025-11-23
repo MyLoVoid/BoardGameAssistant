@@ -3,16 +3,21 @@ import { StyleSheet, Text } from 'react-native';
 import ScreenContainer from '@/components/ScreenContainer';
 import EmptyState from '@/components/EmptyState';
 import { colors } from '@/constants/theme';
+import { useLanguage } from '@/context/LanguageContext';
 
-const ForgotPasswordScreen = () => (
-  <ScreenContainer>
-    <Text style={styles.title}>Recupera tu acceso</Text>
-    <EmptyState
-      title="Pendiente de Supabase Auth"
-      description="Habilitaremos el envío de magic links en cuanto configuremos supabase.auth.admin. Por ahora, solicita un reset manual al equipo."
-    />
-  </ScreenContainer>
-);
+const ForgotPasswordScreen = () => {
+  const { t } = useLanguage();
+
+  return (
+    <ScreenContainer>
+      <Text style={styles.title}>{t('auth.forgot.title')}</Text>
+      <EmptyState
+        title={t('auth.forgot.pendingTitle')}
+        description={t('auth.forgot.pendingDescription')}
+      />
+    </ScreenContainer>
+  );
+};
 
 const styles = StyleSheet.create({
   title: {

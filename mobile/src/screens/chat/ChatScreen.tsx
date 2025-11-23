@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import ScreenContainer from '@/components/ScreenContainer';
 import PrimaryButton from '@/components/PrimaryButton';
 import { colors, spacing } from '@/constants/theme';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Message {
   id: string;
@@ -11,17 +12,25 @@ interface Message {
   content: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    sender: 'assistant',
-    content: 'Hola 👋 ¿Sobre qué juego necesitas ayuda?',
-  },
-];
-
 const ChatScreen = () => {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { t } = useLanguage();
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      sender: 'assistant',
+      content: t('chat.initialMessage'),
+    },
+  ]);
   const [draft, setDraft] = useState('');
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].sender === 'assistant') {
+        return [{ ...prev[0], content: t('chat.initialMessage') }];
+      }
+      return prev;
+    });
+  }, [t]);
 
   const handleSend = () => {
     if (!draft.trim()) {
@@ -35,7 +44,7 @@ const ChatScreen = () => {
     const assistantMessage: Message = {
       id: `${Date.now()}-assistant`,
       sender: 'assistant',
-      content: 'Responderemos desde el backend RAG una vez habilitado.',
+      content: t('chat.pendingResponse'),
     };
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setDraft('');
@@ -61,13 +70,13 @@ const ChatScreen = () => {
       <View style={styles.composer}>
         <TextInput
           style={styles.input}
-          placeholder="Escribe tu pregunta..."
+          placeholder={t('chat.placeholder')}
           placeholderTextColor={colors.textMuted}
           value={draft}
           onChangeText={setDraft}
         />
         <View style={styles.sendButton}>
-          <PrimaryButton label="Enviar" onPress={handleSend} />
+          <PrimaryButton label={t('chat.send')} onPress={handleSend} />
         </View>
       </View>
     </ScreenContainer>

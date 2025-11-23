@@ -7,7 +7,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/hooks/useAuth';
 import * as gamesApi from '@/services/gamesApi';
-import type { Game, GameFAQ, Language } from '@/types/games';
+import type { Game, GameFAQ } from '@/types/games';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface UseGameDetailState {
   game: Game | null;
@@ -23,11 +24,11 @@ interface UseGameDetailState {
  * Hook to fetch game details and FAQs from backend
  *
  * @param gameId - Game UUID
- * @param language - Language for FAQs (es, en) - defaults to 'es'
  * @returns Game details, FAQs, access flags, loading state, error, and refetch function
  */
-export function useGameDetail(gameId: string, language: Language = 'es'): UseGameDetailState {
+export function useGameDetail(gameId: string): UseGameDetailState {
   const { token } = useAuth();
+  const { language, t } = useLanguage();
   const [game, setGame] = useState<Game | null>(null);
   const [faqs, setFaqs] = useState<GameFAQ[]>([]);
   const [hasFaqAccess, setHasFaqAccess] = useState(false);
@@ -38,11 +39,10 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
   const fetchGameDetail = useCallback(async () => {
     // Only fetch if user is signed in and has token
     if (!token) {
-      console.log('useGameDetail skipped: missing token');
       setGame(null);
       setFaqs([]);
       setIsLoading(false);
-      setError('No authentication token');
+      setError(t('errors.noToken'));
       return;
     }
 
@@ -51,9 +51,7 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
 
     try {
       // Fetch game details
-      console.log('useGameDetail fetching detail', gameId);
       const gameResponse = await gamesApi.getGameDetail(token, gameId);
-      console.log('useGameDetail detail loaded');
       setGame(gameResponse.game);
       setHasFaqAccess(gameResponse.has_faq_access);
       setHasChatAccess(gameResponse.has_chat_access);
@@ -61,11 +59,9 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
       // Fetch FAQs if user has access
       if (gameResponse.has_faq_access) {
         try {
-          console.log('useGameDetail fetching FAQs');
           const faqsResponse = await gamesApi.getGameFAQs(token, gameId, language);
           setFaqs(faqsResponse.faqs);
         } catch (faqError) {
-          // FAQs not critical, log and continue
           console.warn('Failed to load FAQs:', faqError);
           setFaqs([]);
         }
@@ -73,14 +69,15 @@ export function useGameDetail(gameId: string, language: Language = 'es'): UseGam
         setFaqs([]);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load game details';
-      setError(errorMessage);
+      const errorMessage =
+        err instanceof Error ? err.message : t('errors.loadGameDetail');
+      setError(errorMessage || t('errors.loadGameDetail'));
       setGame(null);
       setFaqs([]);
     } finally {
       setIsLoading(false);
     }
-  }, [token, gameId, language]);
+  }, [gameId, language, t, token]);
 
   // Fetch on mount and when dependencies change
   useEffect(() => {

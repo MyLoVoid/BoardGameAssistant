@@ -8,11 +8,13 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { useAuth } from '@/hooks/useAuth';
 import type { AuthStackParamList } from '@/types/navigation';
 import { colors, spacing } from '@/constants/theme';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignIn'>;
 
 const SignInScreen = ({ navigation }: Props) => {
   const { signIn } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ const SignInScreen = ({ navigation }: Props) => {
       setLoading(true);
       await signIn(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : t('common.errorUnexpected'));
     } finally {
       setLoading(false);
     }
@@ -32,11 +34,11 @@ const SignInScreen = ({ navigation }: Props) => {
 
   return (
     <ScreenContainer contentStyle={styles.content}>
-      <Text style={styles.title}>Board Game Assistant</Text>
-      <Text style={styles.subtitle}>Inicia sesión con tu cuenta de Supabase</Text>
+      <Text style={styles.title}>{t('auth.appTitle')}</Text>
+      <Text style={styles.subtitle}>{t('auth.signIn.subtitle')}</Text>
 
       <TextField
-        label="Correo"
+        label={t('auth.email')}
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -44,7 +46,7 @@ const SignInScreen = ({ navigation }: Props) => {
       />
 
       <TextField
-        label="Contraseña"
+        label={t('auth.password')}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -53,17 +55,17 @@ const SignInScreen = ({ navigation }: Props) => {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <PrimaryButton
-        label={loading ? 'Ingresando...' : 'Ingresar'}
+        label={loading ? t('auth.signingIn') : t('auth.signIn')}
         onPress={handleSubmit}
         disabled={loading}
       />
 
       <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-        <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+        <Text style={styles.link}>{t('auth.forgot')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-        <Text style={styles.linkSecondary}>Crear cuenta nueva</Text>
+        <Text style={styles.linkSecondary}>{t('auth.createAccount')}</Text>
       </TouchableOpacity>
     </ScreenContainer>
   );
