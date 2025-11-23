@@ -68,6 +68,12 @@
 
 5. **Sin modo offline en el MVP**, pero sin cerrarse puertas para añadirlo después (modelo de datos y llamadas pensado para ello).
 
+6. **Localización completa (ES/EN)**
+
+   * Selector de idioma persistente dentro de la app.
+   * Toda la UI soporta español e inglés y cambia dinámicamente.
+   * Las consultas a FAQs y chat usan el idioma elegido.
+
 ---
 
 ## 3. Usuarios, roles y diferencias iniciales
@@ -413,23 +419,31 @@ Quieres analítica desde el inicio, así que se define:
 
 ## 9. Multi-idioma (ES / EN)
 
-* Aplica en tres sitios:
+* **Estado actual**
 
-  1. **UI de la app** (manejado en el front).
-  2. **Contenido de FAQs y docs de RAG**:
+  * La UI ya es bilingüe gracias al `LanguageProvider`+`useLanguage` en el cliente móvil.
+  * El usuario puede cambiar entre ES/EN desde el perfil; la preferencia se persiste en SecureStore/AsyncStorage.
+  * Las pantallas Home, Auth, BGC, Chat y navegación actualizan textos en caliente al cambiar el selector.
 
-     * `language` en `game_faqs` y `game_docs_vectors`.
-  3. **Idioma de la sesión**:
+* **Cobertura funcional**
 
-     * `language` en `chat_sessions` y en la llamada a GenAI Adapter.
+  1. **UI de la app (front)**:
 
-* Estrategia simple para el MVP:
+     * Traducciones centralizadas (`translations.ts`).
+     * Componentes consumen `t(key)` para mantener consistencia.
+  2. **Contenido dinámico**:
 
-  * Si el usuario elige ES:
+     * FAQs (`game_faqs.language`) y chunks (`game_docs_vectors.language`) sirven el idioma solicitado.
+     * Hooks móviles reintentan la descarga cuando cambia el idioma.
+  3. **Idioma de sesión/chat**:
 
-    * se devuelven FAQs `language = 'es'` si existen;
-    * si no, fallback a EN.
-  * RAG usa el idioma de la sesión para buscar trozos y para el modelo.
+     * `chat_sessions.language` mantiene el valor elegido.
+     * El GenAI Adapter recibirá el idioma para buscar chunks y generar respuestas coherentes.
+
+* **Fallback actual**
+
+  * Si el usuario selecciona ES, se buscan primero FAQs `language = 'es'`; si no existen, se usa EN y se indica el idioma en la UI.
+  * RAG continuará el mismo patrón: búsqueda en el idioma preferido con fallback seguro a EN hasta que se indexen más documentos.
 
 ---
 
@@ -439,16 +453,17 @@ Quieres analítica desde el inicio, así que se define:
 
 | Componente | Estado | Progreso | Última actualización |
 |------------|--------|----------|---------------------|
-| Base de datos Supabase | ✅ Completado | 100% | BGA-0001 |
-| Backend - Bootstrap + Auth | ✅ Completado | 100% | BGA-0002, BGA-0003 |
-| Backend - Games Endpoints | ✅ Completado | 100% | BGA-0006 |
+| Base de datos Supabase | ✅ Completado | 100% | BGAI-0001 |
+| Backend - Bootstrap + Auth | ✅ Completado | 100% | BGAI-0002, BGAI-0003 |
+| Backend - Games Endpoints | ✅ Completado | 100% | BGAI-0006 |
 | Backend - RAG + GenAI | 🔄 En progreso | 20% | - |
-| App Móvil - Shell | ✅ Completado | 100% | BGA-0004 |
-| App Móvil - Auth Real | ✅ Completado | 100% | BGA-0005 |
-| App Móvil - Games UI | 📋 Pendiente | 0% | - |
+| App Móvil - Shell | ✅ Completado | 100% | BGAI-0004 |
+| App Móvil - Auth Real | ✅ Completado | 100% | BGAI-0005 |
+| App Móvil - Games UI | ✅ Completado | 100% | BGAI-0007 |
+| App Móvil - Localización (selector y FAQs) | ✅ Completado | 100% | BGAI-0008 |
 | Pipeline RAG | 📋 Pendiente | 0% | - |
 | Integración BGG | 📋 Pendiente | 0% | - |
-| **TOTAL MVP** | 🔄 En progreso | **~55%** | 2025-01-23 |
+| **TOTAL MVP** | 🔄 En progreso | **~60%** | 2025-11-23 |
 
 **Leyenda:**
 - ✅ Completado (100%)
@@ -500,19 +515,19 @@ Quieres analítica desde el inicio, así que se define:
 
 #### **Backend API REST - Bootstrap + Autenticación (100%)**
 
-**BGA-0002_backend-bootstrap**
+**BGAI-0002_backend-bootstrap**
 
 1. **Estructura FastAPI lista para escalar**
    * ✅ Proyecto `backend/` con routers, `run.py`, `app/config.py` y dependencias administradas por Poetry.
    * ✅ `pyproject.toml` y `poetry.lock` fijan FastAPI 0.115+, Supabase client 2.10+, LangChain, IA SDKs y stack pgvector.
-   * ✅ Configuración compartida (`.env.example`, `.vscode/settings.json`, `.gitignore`) descrita en `docs/BGA-0002_backend-bootstrap.md`.
+   * ✅ Configuración compartida (`.env.example`, `.vscode/settings.json`, `.gitignore`) descrita en `docs/BGAI-0002_backend-bootstrap.md`.
    * ✅ Health checks (`/`, `/health`, `/health/ready`) y CORS dinámico listos para que la app Expo haga smoke tests.
 
 2. **Tooling consolidado**
    * ✅ VS Code usa Ruff como formateador y pytest como runner; instrucciones centralizadas en `backend/README.md`.
    * ✅ Settings lee variables desde la raíz (`../../.env`), habilitando `poetry run uvicorn app.main:app --reload`.
 
-**BGA-0003_authentication**
+**BGAI-0003_authentication**
 
 1. **Autenticación Supabase**
    * ✅ Router `/auth` con endpoints `GET /auth/me`, `/auth/me/role`, `/auth/validate` y ejemplo `/auth/admin-only`.
@@ -523,10 +538,10 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ `tests/test_auth_endpoints.py` ejecuta pruebas de integración contra usuarios seed (`admin@bgai.test`, `basic@bgai.test`) usando `TestClient`.
    * ✅ Flujos felices y de error (token faltante, expirado, rol insuficiente) probados antes de exponer la API al cliente móvil.
 
-#### **App móvil - Shell Expo (BGA-0004) (100%)**
+#### **App móvil - Shell Expo (BGAI-0004) (100%)**
 
 1. **Proyecto Expo listo**
-   * ✅ Carpeta `mobile/` con Expo SDK 51, TypeScript, Jest y React Navigation configurados (ver `docs/BGA-0004_mobile-shell.md`).
+   * ✅ Carpeta `mobile/` con Expo SDK 51, TypeScript, Jest y React Navigation configurados (ver `docs/BGAI-0004_mobile-shell.md`).
    * ✅ Assets placeholder (`icon.png`, `splash.png`, `adaptive-icon.png`) y `mobile/app.json` con `scheme` + `extra.apiUrl`.
    * ✅ README específico (`mobile/README.md`) con comandos `npm run start|android|ios|test`.
 
@@ -536,7 +551,7 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Pantallas base con datos mock (`src/data/mockGames.ts`) para probar UI y flujo de roles.
    * ✅ Prueba smoke con Testing Library (`mobile/__tests__/App.test.tsx`).
 
-#### **App móvil - Integración Supabase Real (BGA-0005) (100%)**
+#### **App móvil - Integración Supabase Real (BGAI-0005) (100%)**
 
 1. **Cliente Supabase configurado**
    * ✅ Dependencia `@supabase/supabase-js@^2.39.0` agregada al proyecto
@@ -569,7 +584,7 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Logout → Limpieza de sesión → Vuelta a login
    * ✅ Token refresh automático cuando expira
 
-#### **Backend API REST - Endpoints de Juegos, FAQs y Feature Flags (BGA-0006) (100%)**
+#### **Backend API REST - Endpoints de Juegos, FAQs y Feature Flags (BGAI-0006) (100%)**
 
 1. **Sistema de Feature Flags completo**
    * ✅ Servicio `app/services/feature_flags.py` con validación jerárquica de acceso
@@ -618,9 +633,35 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Cobertura 100% de lógica de endpoints
 
 6. **Documentación técnica**
-   * ✅ `docs/BGA-0006_games-endpoints.md` - Documentación completa
+   * ✅ `docs/BGAI-0006_games-endpoints.md` - Documentación completa
    * ✅ Contratos de API, ejemplos de uso, arquitectura de feature flags
    * ✅ Instrucciones de testing, notas de migración, consideraciones de seguridad
+
+#### **App móvil - Integración UI de juegos (BGAI-0007) (100%)**
+
+1. **Consumo real de backend**
+   * ✅ Servicios `gamesApi.getGames/getGameDetail/getGameFAQs` apuntan al FastAPI real con headers de Supabase.
+   * ✅ Hooks `useGames` y `useGameDetail` manejan loading/error states, tokens y filtros por rol.
+2. **Pantallas finalizadas**
+   * ✅ `GameListScreen` usa datos reales, maneja pull-to-refresh y estados vacíos.
+   * ✅ `GameDetailScreen` muestra métricas BGG, estado de features y FAQs dinámicas con fallback ES/EN.
+3. **Acceso controlado**
+   * ✅ UI respeta `has_faq_access`/`has_chat_access` y muestra mensajes según feature flags.
+4. **Documentación**
+   * ✅ `docs/BGAI-0007_mobile-games-integration.md` describe hooks, rutas y escenarios cubiertos.
+
+#### **App móvil - Localización + selector de idioma (BGAI-0008) (100%)**
+
+1. **Infraestructura i18n**
+   * ✅ `LanguageProvider`, `useLanguage` y catálogo `translations.ts` cubren ES/EN.
+   * ✅ Preferencia persistida en AsyncStorage y leída al boot.
+2. **Cobertura de pantallas**
+   * ✅ Auth, Home, BGC, Chat, Profile y navegación consumen `t(key)`.
+   * ✅ `useGameDetail`/`useGames` relanzan fetch al cambiar el idioma.
+3. **Selector visible**
+   * ✅ Componente `LanguageSelector` disponible en el perfil; cambio inmediato en toda la app.
+4. **QA**
+   * ✅ `npm run lint` con ESLint de Expo y correcciones de estilo asociadas.
 
 ### 🔄 En progreso
 
@@ -646,13 +687,11 @@ Quieres analítica desde el inicio, así que se define:
    * ⏳ Integrar logging en todos los endpoints principales
 
 3. **App Móvil (React Native + Expo) - Integración Backend**
-   * ✅ ~~Integrar Supabase JS para login real~~ (Completado en BGA-0005)
-   * ✅ ~~Conectar `/auth/me` para refrescar perfil/roles~~ (Completado en BGA-0005)
-   * ⏳ Consumir endpoints reales `GET /games` y `GET /games/{id}`
-   * ⏳ Implementar pantalla de lista de juegos con datos reales
-   * ⏳ Implementar pantalla de detalle de juego con FAQs reales
-   * ⏳ Preparar hooks para `POST /genai/query` (chat IA)
-   * ⏳ Añadir localización (i18n) y assets definitivos
+   * ✅ ~~Integrar Supabase JS para login real~~ (BGAI-0005)
+   * ✅ ~~Conectar `/games` + `/games/{id}` y FAQs reales~~ (BGAI-0007)
+   * ✅ ~~Añadir selector de idioma y UI bilingüe~~ (BGAI-0008)
+   * ⏳ Preparar hooks/UI para `POST /genai/query` (chat IA)
+   * ⏳ Actualizar assets definitivos antes de publicar builds
 
 4. **Pipeline de procesamiento RAG**
    * ⏳ Script para procesar PDFs y extraer texto
@@ -664,60 +703,40 @@ Quieres analítica desde el inicio, así que se define:
 
 ## 11. Próximos pasos inmediatos (checklist de trabajo)
 
-### ✅ Completado Recientemente (BGA-0006)
+### ✅ Completado Recientemente
 
-1. **✅ Backend API REST - Endpoints de juegos (BGC)**
-   * ✅ `GET /games` - Lista filtrada por rol y feature flags
-   * ✅ `GET /games/{id}` - Detalle del juego
-   * ✅ `GET /games/{id}/faqs?lang=es` - FAQs filtradas por idioma
-
-2. **✅ Backend API REST - Sistema de Feature Flags**
-   * ✅ Servicio para validar acceso a features
-   * ✅ Función `check_feature_access(user, feature, scope)`
-   * ✅ Evaluación jerárquica por scopes (user → game → section → global)
-   * ⏳ Implementar rate limiting basado en metadata de feature flags (pendiente)
+1. **BGAI-0007 — App móvil conectada a los endpoints reales de juegos**
+   * Hooks, pantallas y servicios consumen `GET /games`, `GET /games/{id}` y FAQs con control de acceso.
+   * Estados de carga/errores, pull-to-refresh y fallback multi-idioma funcionando en Expo/Android.
+2. **BGAI-0008 — Localización completa con selector de idioma**
+   * `LanguageProvider` + `LanguageSelector` entregan UI bilingüe y FAQs según la preferencia persistida.
 
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
-3. **App Móvil - Integración con endpoints de juegos**
-   * ✅ ~~Sustituir `mockSignIn` por Supabase JS client~~ (Completado en BGA-0005)
-   * ✅ ~~Sincronizar perfil mediante `/auth/me`~~ (Completado en BGA-0005)
-   * ⏳ Crear servicio HTTP client para llamar al backend
-   * ⏳ Implementar `useGames()` hook para consumir `GET /games`
-   * ⏳ Actualizar `GamesScreen` para mostrar datos reales del backend
-   * ⏳ Implementar `useGameDetail()` hook para consumir `GET /games/{id}`
-   * ⏳ Actualizar `GameDetailScreen` para mostrar FAQs reales
-   * ⏳ Añadir manejo de estados de carga y errores
-
-4. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Servicio de búsqueda vectorial en `game_docs_vectors`
-   * ⏳ Función `search_relevant_chunks(game_id, question, language)`
-   * ⏳ Integración con OpenAI/Gemini/Claude para embeddings y respuestas
-   * ⏳ Endpoint `POST /genai/query` completo
-   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`
-
-5. **Backend API REST - Analítica y Utilidades**
-   * ⏳ Servicio para registrar eventos en `usage_events`
-   * ⏳ Integrar logging en todos los endpoints principales
-   * ⏳ Tracking de uso por usuario, juego y feature
+1. **Backend API REST - Pipeline RAG + GenAI Adapter**
+   * ⏳ Servicio de búsqueda vectorial sobre `game_docs_vectors`.
+   * ⏳ Endpoint `POST /genai/query` con chunks + llamada a LLM + logging.
+   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags.
+2. **App móvil - Integración del chat IA**
+   * ⏳ Hooks y servicios para `POST /genai/query`.
+   * ⏳ UI del chat conectada al backend (estado de envío, errores, historiales reales).
+3. **Backend API REST - Analítica y utilidades**
+   * ⏳ Servicio dedicado para `usage_events`.
+   * ⏳ Instrumentación de logging y métricas en endpoints críticos.
 
 ### 🔧 Prioridad Media
 
-6. **Scripts de utilidad**
-   * ⏳ Script para procesar PDFs y generar embeddings
-   * ⏳ Script para sincronizar juegos desde BGG
-   * ⏳ Script para poblar `game_docs_vectors` con documentación real de 5-10 juegos
-
-7. **App Móvil - Features adicionales**
-   * ⏳ Preparar hooks para `POST /genai/query` (chat IA)
-   * ⏳ Añadir localización (i18n) para ES/EN
-   * ⏳ Actualizar assets definitivos (iconos, splash screens)
+4. **Scripts de utilidad y pipeline RAG**
+   * ⏳ Procesar PDFs/manuales → texto → embeddings.
+   * ⏳ Poblar `game_docs_vectors` con documentación de 5–10 juegos.
+   * ⏳ Job/botón para sincronizar juegos desde BGG.
+5. **App móvil - mejoras adicionales**
+   * ⏳ Assets definitivos (iconos, splash, ilustraciones).
+   * ⏳ Ajustes visuales + soporte para modo oscuro antes de publicar en TestFlight/Play.
 
 ### 🧪 Prioridad Baja
 
-8. **Integración y testing end-to-end**
-   * ⏳ Conectar app móvil con backend local
-   * ⏳ Probar flujo completo: login → ver juegos → consultar FAQ → chat IA
-   * ⏳ Validar feature flags y límites de uso
-   * ⏳ Performance testing y optimización
+6. **Integración y testing end-to-end**
+   * ⏳ Smoke tests completos: login → lista → detalle → chat IA.
+   * ⏳ Validar límites por rol/feature flag y realizar performance testing básico.
 
