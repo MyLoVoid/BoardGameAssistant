@@ -1,4 +1,14 @@
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import ScreenContainer from '@/components/ScreenContainer';
@@ -13,6 +23,15 @@ type Props = NativeStackScreenProps<GamesStackParamList, 'GameList'>;
 const GameListScreen = ({ navigation }: Props) => {
   const { games, isLoading, error, refetch } = useGames();
   const { t } = useLanguage();
+  const [query, setQuery] = useState('');
+
+  const filteredGames = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) {
+      return games;
+    }
+    return games.filter((game) => game.name_base.toLowerCase().includes(normalized));
+  }, [games, query]);
 
   if (isLoading && games.length === 0) {
     return (
@@ -41,8 +60,20 @@ const GameListScreen = ({ navigation }: Props) => {
   return (
     <ScreenContainer>
       <FlatList
-        data={games}
+        data={filteredGames}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <View style={styles.searchWrapper}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t('games.list.searchPlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              autoCorrect={false}
+            />
+          </View>
+        }
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.primary} />
@@ -71,8 +102,16 @@ const GameListScreen = ({ navigation }: Props) => {
         )}
         ListEmptyComponent={
           <EmptyState
-            title={t('games.list.emptyTitle')}
-            description={t('games.list.emptyDescription')}
+            title={
+              query
+                ? t('games.list.searchEmptyTitle')
+                : t('games.list.emptyTitle')
+            }
+            description={
+              query
+                ? t('games.list.searchEmptyDescription')
+                : t('games.list.emptyDescription')
+            }
           />
         }
       />
@@ -89,6 +128,18 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     marginTop: spacing.md,
+  },
+  searchWrapper: {
+    marginBottom: spacing.md,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   card: {
     backgroundColor: colors.card,
