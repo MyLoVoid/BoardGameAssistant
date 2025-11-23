@@ -1,126 +1,119 @@
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import ScreenContainer from '@/components/ScreenContainer';
-import PrimaryButton from '@/components/PrimaryButton';
+import EmptyState from '@/components/EmptyState';
 import { colors, spacing } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 
-interface Message {
+interface SessionPreview {
   id: string;
-  sender: 'user' | 'assistant';
-  content: string;
+  game: string;
+  updatedAt: string;
 }
+
+const baseSessions: SessionPreview[] = [
+  {
+    id: 'session-1',
+    game: 'Gloomhaven',
+    updatedAt: '2025-11-23T15:30:00.000Z',
+  },
+  {
+    id: 'session-2',
+    game: 'Terraforming Mars',
+    updatedAt: '2025-11-22T19:45:00.000Z',
+  },
+];
+
+const formatTimestamp = (isoDate: string) => {
+  const date = new Date(isoDate);
+  return date.toLocaleString(undefined, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+};
 
 const ChatScreen = () => {
   const { t } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'assistant',
-      content: t('chat.initialMessage'),
-    },
-  ]);
-  const [draft, setDraft] = useState('');
-
-  useEffect(() => {
-    setMessages((prev) => {
-      if (prev.length === 1 && prev[0].sender === 'assistant') {
-        return [{ ...prev[0], content: t('chat.initialMessage') }];
-      }
-      return prev;
-    });
-  }, [t]);
-
-  const handleSend = () => {
-    if (!draft.trim()) {
-      return;
-    }
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      content: draft.trim(),
-    };
-    const assistantMessage: Message = {
-      id: `${Date.now()}-assistant`,
-      sender: 'assistant',
-      content: t('chat.pendingResponse'),
-    };
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
-    setDraft('');
-  };
+  const sessions = baseSessions.map((session) => ({
+    ...session,
+    preview: t('history.placeholder'),
+  }));
 
   return (
     <ScreenContainer>
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.bubble,
-              item.sender === 'user' ? styles.userBubble : styles.assistantBubble,
-            ]}
-          >
-            <Text style={styles.bubbleText}>{item.content}</Text>
-          </View>
-        )}
-      />
-      <View style={styles.composer}>
-        <TextInput
-          style={styles.input}
-          placeholder={t('chat.placeholder')}
-          placeholderTextColor={colors.textMuted}
-          value={draft}
-          onChangeText={setDraft}
-        />
-        <View style={styles.sendButton}>
-          <PrimaryButton label={t('chat.send')} onPress={handleSend} />
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('history.title')}</Text>
+        <Text style={styles.subtitle}>{t('history.subtitle')}</Text>
       </View>
+
+      {sessions.length === 0 ? (
+        <EmptyState
+          title={t('history.emptyTitle')}
+          description={t('history.emptyDescription')}
+        />
+      ) : (
+        <FlatList
+          data={sessions}
+          keyExtractor={(item) => item.id}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+          renderItem={({ item }) => (
+            <Pressable style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.game}>{item.game}</Text>
+                <Text style={styles.timestamp}>{formatTimestamp(item.updatedAt)}</Text>
+              </View>
+              <Text style={styles.preview}>{item.preview}</Text>
+              <Text style={styles.cta}>{t('history.open')}</Text>
+            </Pressable>
+          )}
+        />
+      )}
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  list: {
-    flexGrow: 1,
-    paddingBottom: spacing.md,
+  header: {
+    marginBottom: spacing.lg,
+    gap: spacing.xs,
   },
-  bubble: {
-    padding: spacing.md,
-    borderRadius: 16,
-    maxWidth: '80%',
-    marginBottom: spacing.sm,
-  },
-  userBubble: {
-    backgroundColor: colors.primary,
-    alignSelf: 'flex-end',
-  },
-  assistantBubble: {
-    backgroundColor: colors.card,
-    alignSelf: 'flex-start',
-  },
-  bubbleText: {
+  title: {
     color: colors.text,
+    fontSize: 24,
+    fontWeight: '700',
   },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.md,
+  subtitle: {
+    color: colors.textMuted,
   },
-  input: {
-    flex: 1,
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    color: colors.text,
-    backgroundColor: colors.surface,
   },
-  sendButton: {
-    marginLeft: spacing.sm,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  game: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  timestamp: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  preview: {
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  cta: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
 

@@ -31,7 +31,7 @@ mobile/
 │   ├── context/            # AuthContext, LanguageContext
 │   ├── hooks/              # useAuth, useGames, useGameDetail
 │   ├── services/           # Supabase client, auth service, gamesApi
-│   ├── navigation/         # Auth stack + tabs + games stack
+│   ├── navigation/         # Auth stack + tabs (Home/BGC/Historial/Perfil) + games stack
 │   ├── screens/            # Auth, Home, Games, Chat, Profile, etc.
 │   └── components/         # Button, EmptyState, LanguageSelector, etc.
 └── __tests__/              # Jest Expo smoke tests
@@ -53,6 +53,7 @@ mobile/
 - ✅ Login/sign-up reales con Supabase (BGAI-0005).
 - ✅ Consumo real de `GET /games`, `GET /games/{id}`, `GET /games/{id}/faqs` con feature flags (BGAI-0007).
 - ✅ Selector de idioma persistente (ES/EN) que refresca UI y FAQs en caliente (BGAI-0008).
+- ✅ Tab “Historial/History” planificado como hub de sesiones antes del chat IA (BGAI-0009).
 - 🔄 Próximo: conectar `POST /genai/query` para chat IA cuando el backend libere el endpoint.
 
 ### Notes

@@ -461,6 +461,7 @@ Quieres analítica desde el inicio, así que se define:
 | App Móvil - Auth Real | ✅ Completado | 100% | BGAI-0005 |
 | App Móvil - Games UI | ✅ Completado | 100% | BGAI-0007 |
 | App Móvil - Localización (selector y FAQs) | ✅ Completado | 100% | BGAI-0008 |
+| App Móvil - Historial (pre-chat IA) | ✅ Completado | 100% | BGAI-0009 |
 | Pipeline RAG | 📋 Pendiente | 0% | - |
 | Integración BGG | 📋 Pendiente | 0% | - |
 | **TOTAL MVP** | 🔄 En progreso | **~60%** | 2025-11-23 |
@@ -662,6 +663,17 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Componente `LanguageSelector` disponible en el perfil; cambio inmediato en toda la app.
 4. **QA**
    * ✅ `npm run lint` con ESLint de Expo y correcciones de estilo asociadas.
+
+#### **App móvil - Historial “Chat” (BGAI-0009) (100%)**
+
+1. **Renombrado del tab**
+   * ✅ El tab inferior pasó de “Chat” a “Historial/History” en ambos idiomas.
+   * ✅ `LanguageProvider` expone las nuevas claves `history.*`.
+2. **Pantalla preparatoria**
+   * ✅ `ChatScreen` ahora muestra un historial placeholder de sesiones por juego, en vez de un chat mock.
+   * ✅ El mensaje comunica que el chat IA llegará pronto y servirá como hub de conversaciones.
+3. **Documentación**
+   * ✅ `docs/BGAI-0009_mobile-chat-history.md` explica el motivo y el plan previo a implementar `POST /genai/query`.
 
 ### 🔄 En progreso
 

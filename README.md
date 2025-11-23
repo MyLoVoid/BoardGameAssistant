@@ -66,7 +66,8 @@ Env vars clave:
 │  ├─ BGAI-0005_mobile-supabase-integration.md
 │  ├─ BGAI-0006_games-endpoints.md
 │  ├─ BGAI-0007_mobile-games-integration.md
-│  └─ BGAI-0008_mobile-localization.md
+│  ├─ BGAI-0008_mobile-localization.md
+│  └─ BGAI-0009_mobile-chat-history.md
 ├─ mobile/                     # App Expo (ver README propio)
 │  └─ src/
 │     ├─ components/
@@ -86,6 +87,7 @@ Env vars clave:
 - ✅ Backend bootstrap + auth + juegos/FAQs con control de acceso (BGAI-0002/3/6).
 - ✅ Mobile shell + auth real + consumo de juegos reales (BGAI-0004/5/7).
 - ✅ Localización completa con selector de idioma persistente; FAQs y UI cambian en caliente (BGAI-0008).
+- ✅ Tab global renombrado a “Historial/History” y documentado como hub de sesiones previas (BGAI-0009).
 - 🔄 En progreso: pipeline RAG + GenAI Adapter, endpoints de chat IA.
 - 📋 Pendiente: ingestión masiva de documentos, script BGG, assets finales, pruebas end-to-end completas.
 
