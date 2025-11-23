@@ -7,14 +7,14 @@
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
 - `docs/` now tracks numbered architecture notes (e.g., `BGA-0001_supabase.md`) so agents can reference historical decisions without digging through PRs.
-- `app/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.
+- `mobile/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.
 - `backend/` contains the Python FastAPI service: `app/` (routers, adapters), `rag/` (chunkers, embeddings), `feature_flags/`, and `tests/`.
 - `supabase/` stores SQL migrations plus seed YAML so dev/prod schemas stay aligned.
 - Shared utilities belong in `scripts/` with cross-platform shims.
 
 ## Build, Test, and Development Commands
-- `cd app && npm install && npx expo start` boots the mobile client with live reload.
-- `cd app && npm run lint` enforces ESLint + Prettier; CI should fail on warnings.
+- `cd mobile && npm install && npx expo start` boots the mobile client with live reload.
+- `cd mobile && npm run lint` enforces ESLint + Prettier; CI should fail on warnings.
 - `cd backend && poetry install && poetry run uvicorn app.main:app --reload` starts the API facade/GenAI adapter.
 - `cd backend && poetry run pytest` executes unit and integration tests, including RAG pipeline fakes.
 - `supabase start` and `supabase db reset` spin up Postgres and reseed feature-flag fixtures before backend tests touching data.

@@ -503,6 +503,19 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ `tests/test_auth_endpoints.py` ejecuta pruebas de integración contra usuarios seed (`admin@bgai.test`, `basic@bgai.test`) usando `TestClient`.
    * ✅ Flujos felices y de error (token faltante, expirado, rol insuficiente) probados antes de exponer la API al cliente móvil.
 
+#### **App móvil - Shell Expo (ABG-0004) (100%)**
+
+1. **Proyecto Expo listo**
+   * ✅ Carpeta `mobile/` con Expo SDK 51, TypeScript, Jest y React Navigation configurados (ver `docs/BGA-0004_mobile-shell.md`).
+   * ✅ Assets placeholder (`icon.png`, `splash.png`, `adaptive-icon.png`) y `mobile/app.json` con `scheme` + `extra.apiUrl`.
+   * ✅ README específico (`mobile/README.md`) con comandos `npm run start|android|ios|test`.
+
+2. **Shell funcional**
+   * ✅ Contexto de autenticación con SecureStore + mock de Supabase (`mockSignIn/mockValidateToken`).
+   * ✅ Navegación completa: stack de auth, tabs principales (Home, Games, Chat, Profile) y stack de juegos.
+   * ✅ Pantallas base con datos mock (`src/data/mockGames.ts`) para probar UI y flujo de roles.
+   * ✅ Prueba smoke con Testing Library (`mobile/__tests__/App.test.tsx`).
+
 ### 🔄 En progreso
 
 #### **Backend API REST - Juegos, FAQs y Feature Flags dinámicos (35%)**
@@ -525,10 +538,10 @@ Quieres analítica desde el inicio, así que se define:
    * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
 
 2. **App Móvil (React Native + Expo)**
-   * Estructura del proyecto
-   * Navegación
-   * Pantallas de autenticación
-   * UI de juegos y chat
+   * Integrar Supabase JS para login real
+   * Conectar `/auth/me` para refrescar perfil/roles
+   * Consumir endpoints reales de juegos/FAQs/chat
+   * Añadir localización y assets definitivos
 
 3. **Pipeline de procesamiento RAG**
    * Scripts para procesar PDFs
@@ -568,11 +581,11 @@ Quieres analítica desde el inicio, así que se define:
    * Script para sincronizar juegos desde BGG
    * Script para poblar `game_docs_vectors` con documentación real
 
-6. **App Móvil - Setup inicial**
-   * Crear proyecto React Native + Expo
-   * Configurar navegación
-   * Integrar Supabase client
-   * Pantallas de login/registro
+6. **App Móvil - Integración backend**
+   * Sustituir `mockSignIn` por Supabase JS client
+   * Sincronizar perfil mediante `/auth/me`
+   * Consumir `GET /games` y `GET /games/{id}/faqs`
+   * Preparar hooks para `POST /genai/query`
 
 7. **Integración y testing end-to-end**
    * Conectar app móvil con backend
