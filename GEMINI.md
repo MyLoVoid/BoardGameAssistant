@@ -8,6 +8,9 @@ This is a **Code Project** currently in the detailed planning and design phase. 
 
 The application will provide per-game assistance, including rule clarifications via a GenAI-powered chat, FAQs, and general game information. The entire system is designed to be highly modular, with features, games, and user access controlled by a feature flag system.
 
+**Documentation**
+Use `/docs` for technical documentation
+
 ### Core Technologies:
 *   **Mobile App:** React Native with Expo
 *   **Primary Backend (BaaS):** Supabase (handling Authentication, Postgres Database)

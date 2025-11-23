@@ -1,5 +1,8 @@
 # Repository Guidelines
 
+**Documentation**
+Use `/docs` for technical documentation
+
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
 - `app/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.

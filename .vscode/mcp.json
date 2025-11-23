@@ -4,6 +4,14 @@
 			"url": "https://api.githubcopilot.com/mcp",
 			"type": "http"
 		},
+		"notionMCP": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-remote",
+				"https://mcp.notion.com/mcp"
+			]
+		},
 		// "Azure MCP Server": {
 		// 	"command": "npx",
 		// 	"args": [
@@ -29,14 +37,6 @@
 		// 		"mcp-server-git"
 		// 	]
 		// },
-		"notionMCP": {
-			"command": "npx",
-			"args": [
-				"-y",
-				"mcp-remote",
-				"https://mcp.notion.com/mcp"
-			]
-		},
 		// "playwright": {
 		// 	"command": "npx",
 		// 	"args": [

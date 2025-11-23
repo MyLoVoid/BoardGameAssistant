@@ -15,6 +15,9 @@ Board Game Assistant Intelligent (BGAI) - A modular mobile assistant for board g
 **Languages:** Spanish (ES) and English (EN) from MVP
 **Environments:** Separate dev and prod environments
 
+**Documentation**
+Use `/docs` for technical documentation
+
 ## Key Architectural Concepts
 
 ### Modularity Philosophy
