@@ -8,7 +8,10 @@
       "Bash(npx supabase:*)",
       "Bash(psql:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(cat:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
