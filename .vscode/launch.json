@@ -1,24 +1,45 @@
-// {
-//     "version": "0.2.0",
-//     "configurations": [
-//         {
-//             "name": "Python Debugger: Current File",
-//             "type": "debugpy",
-//             "request": "launch",
-//             "program": "${file}",
-//             "console": "integratedTerminal"
-//         }
-//     ]
-// }
 {
-    "name": "Python Debugger: Current File",
-    "type": "debugpy",
-    "request": "launch",
-    "program": "${file}",
-    "cwd": "${workspaceFolder}",
-    "env": {
-        "PYTHONPATH": "${workspaceFolder}"
-    },
-    "console": "integratedTerminal",
-    "configurations": []
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: pytest - Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}",
+                "-v",
+                "-s"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Python: pytest - All Backend Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "tests/",
+                "-v"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Python: FastAPI Server",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--reload"
+            ],
+            "cwd": "${workspaceFolder}/backend",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
 }
