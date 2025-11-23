@@ -13,8 +13,8 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'SignIn'>;
 
 const SignInScreen = ({ navigation }: Props) => {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('basic@bgai.test');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 

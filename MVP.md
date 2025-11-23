@@ -503,7 +503,7 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ `tests/test_auth_endpoints.py` ejecuta pruebas de integración contra usuarios seed (`admin@bgai.test`, `basic@bgai.test`) usando `TestClient`.
    * ✅ Flujos felices y de error (token faltante, expirado, rol insuficiente) probados antes de exponer la API al cliente móvil.
 
-#### **App móvil - Shell Expo (ABG-0004) (100%)**
+#### **App móvil - Shell Expo (BGA-0004) (100%)**
 
 1. **Proyecto Expo listo**
    * ✅ Carpeta `mobile/` con Expo SDK 51, TypeScript, Jest y React Navigation configurados (ver `docs/BGA-0004_mobile-shell.md`).
@@ -515,6 +515,39 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Navegación completa: stack de auth, tabs principales (Home, Games, Chat, Profile) y stack de juegos.
    * ✅ Pantallas base con datos mock (`src/data/mockGames.ts`) para probar UI y flujo de roles.
    * ✅ Prueba smoke con Testing Library (`mobile/__tests__/App.test.tsx`).
+
+#### **App móvil - Integración Supabase Real (BGA-0005) (100%)**
+
+1. **Cliente Supabase configurado**
+   * ✅ Dependencia `@supabase/supabase-js@^2.39.0` agregada al proyecto
+   * ✅ Configuración de entorno (`mobile/src/config/env.ts`) con URLs y keys para dev/prod
+   * ✅ Cliente Supabase singleton (`mobile/src/services/supabase.ts`) con persistencia AsyncStorage y auto-refresh
+
+2. **Servicio de autenticación real**
+   * ✅ Servicio completo (`mobile/src/services/auth.ts`) con métodos reales de Supabase:
+     * `signIn(email, password)` - Login con integración backend `/auth/me`
+     * `signUp(email, password, fullName)` - Registro con auto sign-in
+     * `validateSession()` - Validación y refresh automático de token
+     * `signOut()` - Cierre de sesión limpio
+     * `getUserProfile()` - Obtención de perfil completo con rol desde backend
+
+3. **Context de autenticación actualizado**
+   * ✅ `AuthContext` refactorizado para usar servicio real en lugar de mocks
+   * ✅ Método `signUp()` agregado al contexto
+   * ✅ Validación de sesión en bootstrap con refresh automático
+   * ✅ Persistencia de sesión via AsyncStorage integrada
+
+4. **Pantallas de autenticación funcionales**
+   * ✅ SignInScreen limpiado (sin credenciales de prueba hardcodeadas)
+   * ✅ SignUpScreen completamente implementado con formulario (nombre, email, password)
+   * ✅ Integración completa con Supabase local (http://127.0.0.1:54321)
+
+5. **Flujo end-to-end operativo**
+   * ✅ Registro → Creación en Supabase → Auto sign-in → Fetch de rol desde backend
+   * ✅ Login → Validación → Fetch de perfil con rol
+   * ✅ Persistencia → App cerrada/abierta → Usuario permanece autenticado
+   * ✅ Logout → Limpieza de sesión → Vuelta a login
+   * ✅ Token refresh automático cuando expira
 
 ### 🔄 En progreso
 
@@ -538,10 +571,10 @@ Quieres analítica desde el inicio, así que se define:
    * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
 
 2. **App Móvil (React Native + Expo)**
-   * Integrar Supabase JS para login real
-   * Conectar `/auth/me` para refrescar perfil/roles
-   * Consumir endpoints reales de juegos/FAQs/chat
-   * Añadir localización y assets definitivos
+   * ✅ ~~Integrar Supabase JS para login real~~ (Completado en BGA-0005)
+   * ✅ ~~Conectar `/auth/me` para refrescar perfil/roles~~ (Completado en BGA-0005)
+   * ⏳ Consumir endpoints reales de juegos/FAQs/chat
+   * ⏳ Añadir localización y assets definitivos
 
 3. **Pipeline de procesamiento RAG**
    * Scripts para procesar PDFs
@@ -582,10 +615,10 @@ Quieres analítica desde el inicio, así que se define:
    * Script para poblar `game_docs_vectors` con documentación real
 
 6. **App Móvil - Integración backend**
-   * Sustituir `mockSignIn` por Supabase JS client
-   * Sincronizar perfil mediante `/auth/me`
-   * Consumir `GET /games` y `GET /games/{id}/faqs`
-   * Preparar hooks para `POST /genai/query`
+   * ✅ ~~Sustituir `mockSignIn` por Supabase JS client~~ (Completado en BGA-0005)
+   * ✅ ~~Sincronizar perfil mediante `/auth/me`~~ (Completado en BGA-0005)
+   * ⏳ Consumir `GET /games` y `GET /games/{id}/faqs`
+   * ⏳ Preparar hooks para `POST /genai/query`
 
 7. **Integración y testing end-to-end**
    * Conectar app móvil con backend

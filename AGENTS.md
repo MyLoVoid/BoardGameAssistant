@@ -4,6 +4,64 @@
 - `docs/` stores all living design notes; add new research there instead of `MVP.md`.
 - `docs/BGA-0001_supabase.md` documents the canonical Supabase schema, seeds, and tooling—consult it before touching anything in `supabase/` or running migrations.
 
+## Specialized Agents
+
+### Documentation Agent
+
+**Purpose**: Generate technical documentation following the project's standardized format.
+
+**When to Use**:
+- User explicitly requests documentation (e.g., "documenta esto", "create documentation", "/documentation")
+- After completing a significant feature or milestone
+- When changes span multiple files/modules and need to be recorded
+
+**Invocation**:
+```
+Use Task tool with subagent_type='documentation-writer' and provide detailed context
+```
+
+**Agent Instructions**:
+The documentation agent should:
+1. Follow the template in `.github/instructions/documentation.instructions.md`
+2. Create files in `/docs` with naming format: `BGA-XXXX_<descriptive-name>.md`
+3. Include these mandatory sections:
+   - **Header**: US number and name
+   - **Overview**: PR/context metadata (if applicable)
+   - **Summary**: Scope, expected outcome, risk/impact (5-8 bullets max)
+   - **Modified Files**: Paths with module/component mapping and brief reason
+   - **Detailed Changes**: Organized by concern/module
+   - **Other sections**: As applicable (API changes, database migrations, testing notes, etc.)
+4. Keep language concise and factual
+5. Do not invent details - only document what can be inferred from code/context
+6. Use BGA-XXXX numbering (check existing docs for next available number)
+
+**Example Output**:
+```
+/docs/BGA-0004_mobile-supabase-auth.md
+```
+
+**Notes**:
+- Reference existing docs (`BGA-0001`, `BGA-0002`, etc.) for numbering continuity
+- If documenting a PR, include PR number, title, author, and target branch
+- For architecture decisions, include rationale and alternatives considered
+- Link to related docs or external resources when relevant
+
+**Usage Examples**:
+
+```plaintext
+User: "documenta la integración de Supabase que acabamos de hacer"
+Assistant: [Uses Task tool with detailed context about the Supabase integration]
+
+User: "create documentation for the new feature"
+Assistant: [Uses Task tool with context about modified files and changes]
+
+User: "/documentation"
+Assistant: [Uses Task tool to generate docs based on recent changes]
+```
+
+**Reference Example**:
+See `docs/BGA-0005_mobile-supabase-integration.md` for a complete example following this format.
+
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
 - `docs/` now tracks numbered architecture notes (e.g., `BGA-0001_supabase.md`) so agents can reference historical decisions without digging through PRs.

@@ -2,13 +2,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import * as SecureStore from 'expo-secure-store';
 
 import type { AuthState, AuthUser } from '@/types/auth';
-import { mockSignIn, mockValidateToken } from '@/services/api';
+import * as authService from '@/services/auth';
 
 const STORAGE_KEY = 'bgai-auth-session';
 
 interface AuthContextValue {
   state: AuthState;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -20,18 +21,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const bootstrapAsync = useCallback(async () => {
     try {
-      const cached = await SecureStore.getItemAsync(STORAGE_KEY);
-      if (!cached) {
+      // Validate session with Supabase (auto-refreshes if needed)
+      const session = await authService.validateSession();
+
+      if (!session) {
         setState({ status: 'signedOut' });
         return;
       }
 
-      const parsed = JSON.parse(cached) as { token: string; user: AuthUser };
-      const profile = await mockValidateToken(parsed.token);
-      setState({ status: 'signedIn', user: profile.user, accessToken: parsed.token });
+      setState({ status: 'signedIn', user: session.user, accessToken: session.token });
+      await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(session));
     } catch (error) {
       console.warn('Failed to hydrate session', error);
       setState({ status: 'signedOut' });
+      await SecureStore.deleteItemAsync(STORAGE_KEY);
     }
   }, []);
 
@@ -40,12 +43,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [bootstrapAsync]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const session = await mockSignIn(email, password);
+    const session = await authService.signIn(email, password);
+    setState({ status: 'signedIn', user: session.user, accessToken: session.token });
+    await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(session));
+  }, []);
+
+  const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
+    const session = await authService.signUp(email, password, fullName);
     setState({ status: 'signedIn', user: session.user, accessToken: session.token });
     await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(session));
   }, []);
 
   const signOut = useCallback(async () => {
+    await authService.signOut();
     setState({ status: 'signedOut' });
     await SecureStore.deleteItemAsync(STORAGE_KEY);
   }, []);
@@ -56,22 +66,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const profile = await mockValidateToken(state.accessToken);
-    setState((prev) => ({
-      ...prev,
-      status: 'signedIn',
-      user: profile.user,
-    }));
+    try {
+      const session = await authService.validateSession();
+      if (!session) {
+        await signOut();
+        return;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        status: 'signedIn',
+        user: session.user,
+        accessToken: session.token,
+      }));
+    } catch (error) {
+      console.warn('Failed to refresh profile', error);
+      await signOut();
+    }
   }, [signOut, state.accessToken]);
 
   const value = useMemo(
     () => ({
       state,
       signIn,
+      signUp,
       signOut,
       refreshProfile,
     }),
-    [refreshProfile, signIn, signOut, state],
+    [refreshProfile, signIn, signUp, signOut, state],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
