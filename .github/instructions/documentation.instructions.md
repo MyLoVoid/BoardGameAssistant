@@ -11,7 +11,7 @@ Review if in the Notion 'Board Game Assistant Intelligence' workspace there is a
 [{"title":"Board Game Assistant Inteligence","url":"https://www.notion.so/2b44600cdbc08060a12cfba70fbef4f5"}]
 
 **Output format:** Produce a single Markdown document in folder `/docs`, following the template below. Keep language **concise and factual**. Do **not** invent details you can’t infer from the PR.
-- name: BGA-XXXX_<name>.md (BGA-XXXX: US number - name:short descriptive title).
+- name: BGAI-XXXX_<name>.md (BGAI-XXXX: US number - name:short descriptive title).
 
 ---
 

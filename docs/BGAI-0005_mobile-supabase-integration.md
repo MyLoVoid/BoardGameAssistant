@@ -1,4 +1,4 @@
-# BGA-0005:: Mobile Supabase Integration
+# BGAI-0005:: Mobile Supabase Integration
 
 ## Overview
 
@@ -75,6 +75,6 @@
 
 ## Related Documentation
 
-- `BGA-0001_supabase.md` — Supabase schema and user profiles table
-- `BGA-0003_authentication.md` — Backend authentication endpoints
-- `BGA-0004_mobile-shell.md` — Mobile app navigation and auth context foundation
+- `BGAI-0001_supabase.md` — Supabase schema and user profiles table
+- `BGAI-0003_authentication.md` — Backend authentication endpoints
+- `BGAI-0004_mobile-shell.md` — Mobile app navigation and auth context foundation

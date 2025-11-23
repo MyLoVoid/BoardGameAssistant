@@ -2,7 +2,7 @@
 
 **Documentation**
 - `docs/` stores all living design notes; add new research there instead of `MVP.md`.
-- `docs/BGA-0001_supabase.md` documents the canonical Supabase schema, seeds, and tooling—consult it before touching anything in `supabase/` or running migrations.
+- `docs/BGAI-0001_supabase.md` documents the canonical Supabase schema, seeds, and tooling—consult it before touching anything in `supabase/` or running migrations.
 
 ## Specialized Agents
 
@@ -22,8 +22,8 @@ Use Task tool with subagent_type='documentation-writer' and provide detailed con
 
 **Agent Instructions**:
 The documentation agent should:
-1. Follow the template in `.github/instructions/documentation.instructions.md`
-2. Create files in `/docs` with naming format: `BGA-XXXX_<descriptive-name>.md`
+1. Instructions and template in `.github/instructions/documentation.instructions.md`
+2. Create files in `/docs` with naming format: `BGAI-XXXX_<descriptive-name>.md`
 3. Include these mandatory sections:
    - **Header**: US number and name
    - **Overview**: PR/context metadata (if applicable)
@@ -33,15 +33,15 @@ The documentation agent should:
    - **Other sections**: As applicable (API changes, database migrations, testing notes, etc.)
 4. Keep language concise and factual
 5. Do not invent details - only document what can be inferred from code/context
-6. Use BGA-XXXX numbering (check existing docs for next available number)
+6. Use BGAI-XXXX numbering (check existing docs for next available number)
 
 **Example Output**:
 ```
-/docs/BGA-0004_mobile-supabase-auth.md
+/docs/BGAI-0004_mobile-supabase-auth.md
 ```
 
 **Notes**:
-- Reference existing docs (`BGA-0001`, `BGA-0002`, etc.) for numbering continuity
+- Reference existing docs (`BGAI-0001`, `BGAI-0002`, etc.) for numbering continuity
 - If documenting a PR, include PR number, title, author, and target branch
 - For architecture decisions, include rationale and alternatives considered
 - Link to related docs or external resources when relevant
@@ -60,11 +60,11 @@ Assistant: [Uses Task tool to generate docs based on recent changes]
 ```
 
 **Reference Example**:
-See `docs/BGA-0005_mobile-supabase-integration.md` for a complete example following this format.
+See `docs/BGAI-0005_mobile-supabase-integration.md` for a complete example following this format.
 
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
-- `docs/` now tracks numbered architecture notes (e.g., `BGA-0001_supabase.md`) so agents can reference historical decisions without digging through PRs.
+- `docs/` now tracks numbered architecture notes (e.g., `BGAI-0001_supabase.md`) so agents can reference historical decisions without digging through PRs.
 - `mobile/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.
 - `backend/` contains the Python FastAPI service: `app/` (routers, adapters), `rag/` (chunkers, embeddings), `feature_flags/`, and `tests/`.
 - `supabase/` stores SQL migrations plus seed YAML so dev/prod schemas stay aligned.
@@ -76,7 +76,7 @@ See `docs/BGA-0005_mobile-supabase-integration.md` for a complete example follow
 - `cd backend && poetry install && poetry run uvicorn app.main:app --reload` starts the API facade/GenAI adapter.
 - `cd backend && poetry run pytest` executes unit and integration tests, including RAG pipeline fakes.
 - `supabase start` and `supabase db reset` spin up Postgres and reseed feature-flag fixtures before backend tests touching data.
-- Use `supabase db reset && supabase db seed` when applying updates from `docs/BGA-0001_supabase.md`, and run `supabase/create_test_users.sql` afterward if you need the role-scoped demo accounts described there.
+- Use `supabase db reset && supabase db seed` when applying updates from `docs/BGAI-0001_supabase.md`, and run `supabase/create_test_users.sql` afterward if you need the role-scoped demo accounts described there.
 
 ## Coding Style & Naming Conventions
 - React Native uses TypeScript, 2-space indents, PascalCase components, camelCase hooks/utilities, and feature-scoped file names (`BGCGameList.tsx`).
@@ -99,4 +99,4 @@ See `docs/BGA-0005_mobile-supabase-integration.md` for a complete example follow
 - Never embed secrets in Git; store keys in Supabase config and `.env.local` (gitignored).
 - Treat feature flags as code: require review plus matching migrations for every change.
 - Keep BGG sync jobs backend-only; the mobile client must consume cached data to avoid leaking API keys.
-- When editing `supabase/migrations`, `supabase/seed.sql`, `supabase/create_test_users.sql`, or `supabase/config.toml`, align with the guardrails in `docs/BGA-0001_supabase.md` so enums, RLS, and CLI ports remain consistent across environments.
+- When editing `supabase/migrations`, `supabase/seed.sql`, `supabase/create_test_users.sql`, or `supabase/config.toml`, align with the guardrails in `docs/BGAI-0001_supabase.md` so enums, RLS, and CLI ports remain consistent across environments.

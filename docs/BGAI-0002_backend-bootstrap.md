@@ -1,4 +1,4 @@
-# BGA-0002:: Backend Bootstrap
+# BGAI-0002:: Backend Bootstrap
 
 ## Overview
 
@@ -66,4 +66,4 @@ backend/
 - Add automated tests (pytest + httpx client) for health endpoints, config parsing, and future secured routes; integrate Ruff/Black/mypy into CI.
 
 ## END
-End of Technical Documentation for BGA-0002 - GitHub Copilot
+End of Technical Documentation for BGAI-0002 - GitHub Copilot

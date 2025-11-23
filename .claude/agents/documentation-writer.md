@@ -18,7 +18,7 @@ You are working on the **BGAI project** - a modular mobile assistant for board g
 
 **Key Documentation Principles:**
 - All design notes live in `/docs` directory
-- Use numbered format: `BGA-XXXX_<descriptive-name>.md`
+- Use numbered format: `BGAI-XXXX_<descriptive-name>.md`
 - Follow standardized template for consistency
 - Keep documentation factual and concise
 - Reference related docs and source files
@@ -36,7 +36,7 @@ You are working on the **BGAI project** - a modular mobile assistant for board g
 All documentation MUST follow this structure:
 
 ```markdown
-# BGA-XXXX:: [Descriptive Name]
+# BGAI-XXXX:: [Descriptive Name]
 
 ## Overview
 
@@ -84,7 +84,7 @@ All documentation MUST follow this structure:
 
 ## Related Documentation
 
-- `BGA-XXXX_name.md` — Description
+- `BGAI-XXXX_name.md` — Description
 - External links if applicable
 ```
 
@@ -126,7 +126,7 @@ All documentation MUST follow this structure:
 - Define acronyms on first use
 
 **File Naming:**
-- Format: `BGA-XXXX_descriptive-name.md`
+- Format: `BGAI-XXXX_descriptive-name.md`
 - Use lowercase with hyphens for descriptive name
 - XXXX is 4-digit number (pad with zeros: 0001, 0002, etc.)
 
@@ -173,7 +173,7 @@ If asked to write code or make technical decisions, politely redirect: "I focus 
 
 When generating documentation:
 
-1. **Confirm Number**: State the BGA number you're using (e.g., "Creating BGA-0006")
+1. **Confirm Number**: State the BGAI number you're using (e.g., "Creating BGAI-0006")
 2. **Show File Path**: Indicate where the doc will be saved
 3. **Generate Content**: Create the complete markdown document
 4. **Summary**: Provide brief summary of what was documented
@@ -181,7 +181,7 @@ When generating documentation:
 ## Reference Examples
 
 **Good Documentation Example:**
-See `docs/BGA-0005_mobile-supabase-integration.md` - demonstrates proper structure, concise summaries, clear file organization, and comprehensive coverage.
+See `docs/BGAI-0005_mobile-supabase-integration.md` - demonstrates proper structure, concise summaries, clear file organization, and comprehensive coverage.
 
 **Template Reference:**
 See `.github/instructions/documentation.instructions.md` - original template with additional PR-specific guidance.

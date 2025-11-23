@@ -1,4 +1,4 @@
-# BGA-0006: Games Endpoints Implementation
+# BGAI-0006: Games Endpoints Implementation
 
 ## Overview
 
@@ -265,7 +265,7 @@ All endpoints are automatically documented in FastAPI's OpenAPI schema:
 ## Migration Notes
 
 **Database:**
-- No migration required (using existing schema from BGA-0001)
+- No migration required (using existing schema from BGAI-0001)
 - Seed data updated with `game_access` feature flags
 - Re-run `npx supabase db reset` to apply updated seeds
 
@@ -312,9 +312,9 @@ All endpoints are automatically documented in FastAPI's OpenAPI schema:
 
 ## Related Documentation
 
-- `BGA-0001_supabase.md` - Database schema and tables
-- `BGA-0002_backend-bootstrap.md` - FastAPI project structure
-- `BGA-0003_authentication.md` - JWT authentication flow
+- `BGAI-0001_supabase.md` - Database schema and tables
+- `BGAI-0002_backend-bootstrap.md` - FastAPI project structure
+- `BGAI-0003_authentication.md` - JWT authentication flow
 - `CLAUDE.md` - Feature flag architecture and guidelines
 - `MVP.md` - Feature roadmap and progress tracking
 

@@ -1,4 +1,4 @@
-# BGA-0008:: Mobile Localization
+# BGAI-0008:: Mobile Localization
 
 ## Overview
 
@@ -30,7 +30,7 @@
 - `mobile/src/localization/translations.ts` — Canonical ES/EN dictionaries plus locale types.
 - `mobile/src/context/LanguageContext.tsx` — Language provider, persistence logic, and translation helper.
 - `mobile/src/components/LanguageSelector.tsx` — UI control to toggle languages.
-- `docs/BGA-0008_abf-0007-mobile-localization.md` — This document.
+- `docs/BGAI-0008_abf-0007-mobile-localization.md` — This document.
 
 ## Detailed Changes
 

@@ -1,4 +1,4 @@
-# BGA-0003:: Supabase Authentication
+# BGAI-0003:: Supabase Authentication
 
 ## Overview
 
@@ -54,4 +54,4 @@
 - Consider caching Supabase profile responses or adding tracing once auth traffic increases.
 
 ## END
-End of Technical Documentation for BGA-0003 - GitHub Copilot
+End of Technical Documentation for BGAI-0003 - GitHub Copilot

@@ -1,4 +1,4 @@
-# BGA-0007: Mobile Games Backend Integration
+# BGAI-0007: Mobile Games Backend Integration
 
 ## Overview
 
@@ -446,8 +446,8 @@ Response 200:
 
 ## Related Documentation
 
-- `BGA-0005_mobile-supabase-integration.md` - Authentication setup
-- `BGA-0006_games-endpoints.md` - Backend API implementation
+- `BGAI-0005_mobile-supabase-integration.md` - Authentication setup
+- `BGAI-0006_games-endpoints.md` - Backend API implementation
 - `CLAUDE.md` - Feature flag architecture
 - `MVP.md` - Progress tracking
 
