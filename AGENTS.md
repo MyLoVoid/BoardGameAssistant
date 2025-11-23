@@ -1,10 +1,12 @@
 # Repository Guidelines
 
 **Documentation**
-Use `/docs` for technical documentation
+- `docs/` stores all living design notes; add new research there instead of `MVP.md`.
+- `docs/BGA-0001_supabase.md` documents the canonical Supabase schema, seeds, and tooling—consult it before touching anything in `supabase/` or running migrations.
 
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
+- `docs/` now tracks numbered architecture notes (e.g., `BGA-0001_supabase.md`) so agents can reference historical decisions without digging through PRs.
 - `app/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.
 - `backend/` contains the Python FastAPI service: `app/` (routers, adapters), `rag/` (chunkers, embeddings), `feature_flags/`, and `tests/`.
 - `supabase/` stores SQL migrations plus seed YAML so dev/prod schemas stay aligned.
@@ -16,6 +18,7 @@ Use `/docs` for technical documentation
 - `cd backend && poetry install && poetry run uvicorn app.main:app --reload` starts the API facade/GenAI adapter.
 - `cd backend && poetry run pytest` executes unit and integration tests, including RAG pipeline fakes.
 - `supabase start` and `supabase db reset` spin up Postgres and reseed feature-flag fixtures before backend tests touching data.
+- Use `supabase db reset && supabase db seed` when applying updates from `docs/BGA-0001_supabase.md`, and run `supabase/create_test_users.sql` afterward if you need the role-scoped demo accounts described there.
 
 ## Coding Style & Naming Conventions
 - React Native uses TypeScript, 2-space indents, PascalCase components, camelCase hooks/utilities, and feature-scoped file names (`BGCGameList.tsx`).
@@ -38,3 +41,4 @@ Use `/docs` for technical documentation
 - Never embed secrets in Git; store keys in Supabase config and `.env.local` (gitignored).
 - Treat feature flags as code: require review plus matching migrations for every change.
 - Keep BGG sync jobs backend-only; the mobile client must consume cached data to avoid leaking API keys.
+- When editing `supabase/migrations`, `supabase/seed.sql`, `supabase/create_test_users.sql`, or `supabase/config.toml`, align with the guardrails in `docs/BGA-0001_supabase.md` so enums, RLS, and CLI ports remain consistent across environments.
