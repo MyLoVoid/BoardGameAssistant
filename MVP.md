@@ -435,6 +435,26 @@ Quieres analítica desde el inicio, así que se define:
 
 ## 10. Estado del proyecto (Progreso actual)
 
+### 📊 Resumen General del MVP
+
+| Componente | Estado | Progreso | Última actualización |
+|------------|--------|----------|---------------------|
+| Base de datos Supabase | ✅ Completado | 100% | BGA-0001 |
+| Backend - Bootstrap + Auth | ✅ Completado | 100% | BGA-0002, BGA-0003 |
+| Backend - Games Endpoints | ✅ Completado | 100% | BGA-0006 |
+| Backend - RAG + GenAI | 🔄 En progreso | 20% | - |
+| App Móvil - Shell | ✅ Completado | 100% | BGA-0004 |
+| App Móvil - Auth Real | ✅ Completado | 100% | BGA-0005 |
+| App Móvil - Games UI | 📋 Pendiente | 0% | - |
+| Pipeline RAG | 📋 Pendiente | 0% | - |
+| Integración BGG | 📋 Pendiente | 0% | - |
+| **TOTAL MVP** | 🔄 En progreso | **~55%** | 2025-01-23 |
+
+**Leyenda:**
+- ✅ Completado (100%)
+- 🔄 En progreso (1-99%)
+- 📋 Pendiente (0%)
+
 ### ✅ Completado
 
 #### **Base de datos Supabase (100%)**
@@ -549,12 +569,60 @@ Quieres analítica desde el inicio, así que se define:
    * ✅ Logout → Limpieza de sesión → Vuelta a login
    * ✅ Token refresh automático cuando expira
 
-### 🔄 En progreso
+#### **Backend API REST - Endpoints de Juegos, FAQs y Feature Flags (BGA-0006) (100%)**
 
-#### **Backend API REST - Juegos, FAQs y Feature Flags dinámicos (35%)**
-* ⏳ Servicio Supabase para `games`, `game_faqs` y `feature_flags` (lecturas filtradas por rol)
-* ⏳ Endpoints `GET /games`, `GET /games/{id}`, `GET /games/{id}/faqs?lang=`
-* ⏳ Cache / rate limits basados en metadata de feature flags
+1. **Sistema de Feature Flags completo**
+   * ✅ Servicio `app/services/feature_flags.py` con validación jerárquica de acceso
+   * ✅ Evaluación por scopes: `user` → `game` → `section` → `global` (más específico a menos específico)
+   * ✅ Roles especiales: Admin (acceso total), Developer+Tester en dev (acceso a beta)
+   * ✅ Funciones: `check_feature_access()`, `check_game_access()`, `check_faq_access()`, `check_chat_access()`
+   * ✅ Feature flags de `game_access` agregados a seed.sql para basic, premium, tester
+
+2. **Servicios de datos con control de acceso**
+   * ✅ `app/services/games.py` - Servicio de juegos con filtrado por feature flags
+   * ✅ `get_games_list(user_id, user_role, status_filter)` - Lista filtrada por acceso
+   * ✅ `get_game_by_id(game_id, user_id, user_role)` - Detalle con validación
+   * ✅ `get_game_feature_access(game_id, user_id, user_role)` - Feature access flags
+   * ✅ `app/services/game_faqs.py` - FAQs con soporte multi-idioma
+   * ✅ `get_game_faqs(game_id, language, fallback_to_en)` - Fallback automático ES → EN
+
+3. **Endpoints REST implementados**
+   * ✅ `GET /games` - Lista de juegos accesibles según rol y feature flags
+     * Filtrado por status (active, beta, hidden)
+     * Solo muestra juegos a los que el usuario tiene acceso
+     * Testers/admins ven juegos beta, basic/premium solo activos
+   * ✅ `GET /games/{id}` - Detalle de juego con feature access flags
+     * Validación de acceso via feature flags
+     * Incluye `has_faq_access` y `has_chat_access` para UI
+     * 404 si no existe o sin acceso (previene enumeración)
+   * ✅ `GET /games/{id}/faqs?lang=es` - FAQs multi-idioma con fallback
+     * Soporte ES/EN desde MVP
+     * Fallback automático si idioma no disponible
+     * Validación de acceso a FAQs via feature flags
+     * Respuesta incluye idioma real usado
+
+4. **Modelos Pydantic agregados** (`app/models/schemas.py`)
+   * ✅ `Game` - Modelo completo de juego con datos BGG
+   * ✅ `GameListItem` - Modelo simplificado para listas (optimizado)
+   * ✅ `GameFAQ` - FAQ multi-idioma
+   * ✅ `FeatureFlag` - Configuración de feature flag
+   * ✅ `FeatureAccess` - Resultado de validación de acceso
+   * ✅ `GamesListResponse`, `GameDetailResponse`, `GameFAQsResponse` - DTOs de API
+
+5. **Testing completo**
+   * ✅ `tests/test_games_endpoints.py` - 15 tests de integración (100% passed)
+   * ✅ Tests de autenticación requerida en todos los endpoints
+   * ✅ Tests de control de acceso por roles (basic, premium, tester)
+   * ✅ Tests de multi-idioma con fallback
+   * ✅ Tests de manejo de errores (404, 403, 422)
+   * ✅ Cobertura 100% de lógica de endpoints
+
+6. **Documentación técnica**
+   * ✅ `docs/BGA-0006_games-endpoints.md` - Documentación completa
+   * ✅ Contratos de API, ejemplos de uso, arquitectura de feature flags
+   * ✅ Instrucciones de testing, notas de migración, consideraciones de seguridad
+
+### 🔄 En progreso
 
 #### **Backend API REST - RAG + GenAI Adapter (20%)**
 * ⏳ Búsqueda vectorial sobre `game_docs_vectors`
@@ -563,65 +631,93 @@ Quieres analítica desde el inicio, así que se define:
 
 ### 📋 Pendiente
 
-1. **Backend API REST - Implementación funcional restante**
-   * ⏳ Endpoints de juegos y FAQs (lectura condicionada por flags/roles)
-   * ⏳ Servicio de feature flags (evaluación de scopes + límites diarios)
-   * ⏳ Rate limiting y analítica (`usage_events`)
-   * ⏳ Pipeline RAG + integración OpenAI/Gemini/Claude (`POST /genai/query`)
-   * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
+1. **Backend API REST - Pipeline RAG + GenAI Adapter**
+   * ⏳ Servicio de búsqueda vectorial en `game_docs_vectors`
+   * ⏳ Función `search_relevant_chunks(game_id, question, language)`
+   * ⏳ Integración con OpenAI/Gemini/Claude para embeddings y respuestas
+   * ⏳ Endpoint `POST /genai/query` completo
+   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`
+   * ⏳ Rate limiting basado en metadata de feature flags
 
-2. **App Móvil (React Native + Expo)**
+2. **Backend API REST - Utilidades y Jobs**
+   * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
+   * ⏳ Script para sincronizar juegos desde BGG API
+   * ⏳ Servicio para registrar eventos en `usage_events` (analítica)
+   * ⏳ Integrar logging en todos los endpoints principales
+
+3. **App Móvil (React Native + Expo) - Integración Backend**
    * ✅ ~~Integrar Supabase JS para login real~~ (Completado en BGA-0005)
    * ✅ ~~Conectar `/auth/me` para refrescar perfil/roles~~ (Completado en BGA-0005)
-   * ⏳ Consumir endpoints reales de juegos/FAQs/chat
-   * ⏳ Añadir localización y assets definitivos
+   * ⏳ Consumir endpoints reales `GET /games` y `GET /games/{id}`
+   * ⏳ Implementar pantalla de lista de juegos con datos reales
+   * ⏳ Implementar pantalla de detalle de juego con FAQs reales
+   * ⏳ Preparar hooks para `POST /genai/query` (chat IA)
+   * ⏳ Añadir localización (i18n) y assets definitivos
 
-3. **Pipeline de procesamiento RAG**
-   * Scripts para procesar PDFs
-   * Generación de embeddings
-   * Carga a `game_docs_vectors`
-
-4. **Integración BGG**
-   * Script de sincronización de datos de juegos
+4. **Pipeline de procesamiento RAG**
+   * ⏳ Script para procesar PDFs y extraer texto
+   * ⏳ Generación de embeddings con OpenAI/Gemini
+   * ⏳ Carga de chunks a `game_docs_vectors`
+   * ⏳ Poblar base de datos con documentación real de 5-10 juegos
 
 ---
 
 ## 11. Próximos pasos inmediatos (checklist de trabajo)
 
-1. **Backend API REST - Endpoints de juegos (BGC)**
-   * `GET /games` - Lista filtrada por rol y feature flags
-   * `GET /games/{id}` - Detalle del juego
-   * `GET /games/{id}/faqs?lang=es` - FAQs filtradas por idioma
+### ✅ Completado Recientemente (BGA-0006)
 
-2. **Backend API REST - Sistema de Feature Flags y límites**
-   * Servicio para validar acceso a features
-   * Función `check_feature_access(user, feature, scope)`
-   * Implementar límites de uso (rate limiting por rol)
+1. **✅ Backend API REST - Endpoints de juegos (BGC)**
+   * ✅ `GET /games` - Lista filtrada por rol y feature flags
+   * ✅ `GET /games/{id}` - Detalle del juego
+   * ✅ `GET /games/{id}/faqs?lang=es` - FAQs filtradas por idioma
 
-3. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * Servicio de búsqueda vectorial en `game_docs_vectors`
-   * Función `search_relevant_chunks(game_id, question, language)`
-   * Integración con OpenAI para embeddings y respuestas
-   * Endpoint `POST /genai/query` completo
+2. **✅ Backend API REST - Sistema de Feature Flags**
+   * ✅ Servicio para validar acceso a features
+   * ✅ Función `check_feature_access(user, feature, scope)`
+   * ✅ Evaluación jerárquica por scopes (user → game → section → global)
+   * ⏳ Implementar rate limiting basado en metadata de feature flags (pendiente)
 
-4. **Backend API REST - Analítica**
-   * Servicio para registrar eventos en `usage_events`
-   * Integrar logging en todos los endpoints principales
-   * Tracking de uso por usuario, juego y feature
+### 🎯 Prioridad Alta (Siguientes tareas)
 
-5. **Scripts de utilidad**
-   * Script para procesar PDFs y generar embeddings
-   * Script para sincronizar juegos desde BGG
-   * Script para poblar `game_docs_vectors` con documentación real
-
-6. **App Móvil - Integración backend**
+3. **App Móvil - Integración con endpoints de juegos**
    * ✅ ~~Sustituir `mockSignIn` por Supabase JS client~~ (Completado en BGA-0005)
    * ✅ ~~Sincronizar perfil mediante `/auth/me`~~ (Completado en BGA-0005)
-   * ⏳ Consumir `GET /games` y `GET /games/{id}/faqs`
-   * ⏳ Preparar hooks para `POST /genai/query`
+   * ⏳ Crear servicio HTTP client para llamar al backend
+   * ⏳ Implementar `useGames()` hook para consumir `GET /games`
+   * ⏳ Actualizar `GamesScreen` para mostrar datos reales del backend
+   * ⏳ Implementar `useGameDetail()` hook para consumir `GET /games/{id}`
+   * ⏳ Actualizar `GameDetailScreen` para mostrar FAQs reales
+   * ⏳ Añadir manejo de estados de carga y errores
 
-7. **Integración y testing end-to-end**
-   * Conectar app móvil con backend
-   * Probar flujo completo: login → ver juegos → consultar FAQ → chat IA
-   * Validar feature flags y límites de uso
+4. **Backend API REST - Pipeline RAG + GenAI Adapter**
+   * ⏳ Servicio de búsqueda vectorial en `game_docs_vectors`
+   * ⏳ Función `search_relevant_chunks(game_id, question, language)`
+   * ⏳ Integración con OpenAI/Gemini/Claude para embeddings y respuestas
+   * ⏳ Endpoint `POST /genai/query` completo
+   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`
+
+5. **Backend API REST - Analítica y Utilidades**
+   * ⏳ Servicio para registrar eventos en `usage_events`
+   * ⏳ Integrar logging en todos los endpoints principales
+   * ⏳ Tracking de uso por usuario, juego y feature
+
+### 🔧 Prioridad Media
+
+6. **Scripts de utilidad**
+   * ⏳ Script para procesar PDFs y generar embeddings
+   * ⏳ Script para sincronizar juegos desde BGG
+   * ⏳ Script para poblar `game_docs_vectors` con documentación real de 5-10 juegos
+
+7. **App Móvil - Features adicionales**
+   * ⏳ Preparar hooks para `POST /genai/query` (chat IA)
+   * ⏳ Añadir localización (i18n) para ES/EN
+   * ⏳ Actualizar assets definitivos (iconos, splash screens)
+
+### 🧪 Prioridad Baja
+
+8. **Integración y testing end-to-end**
+   * ⏳ Conectar app móvil con backend local
+   * ⏳ Probar flujo completo: login → ver juegos → consultar FAQ → chat IA
+   * ⏳ Validar feature flags y límites de uso
+   * ⏳ Performance testing y optimización
 

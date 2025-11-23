@@ -4,6 +4,7 @@ Integration tests for games endpoints using the real Supabase dev stack.
 
 import time
 from collections.abc import Generator
+from functools import lru_cache
 
 import jwt
 import pytest
@@ -14,9 +15,15 @@ from app.config import settings
 from app.main import app
 
 
+@lru_cache(maxsize=1)
+def _get_service_role_client():
+    """Return a cached Supabase client using the service role key."""
+    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+
+
 def _get_user_and_profile(email: str) -> tuple[object, dict]:
     """Fetch a Supabase auth user plus its profile row."""
-    client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+    client = _get_service_role_client()
     users = client.auth.admin.list_users()
 
     target_user = next((user for user in users if getattr(user, "email", "") == email), None)
@@ -50,11 +57,16 @@ def _make_token(user_id: str, email: str, expires_in: int = 3600) -> str:
 
 def _get_test_game_id(bgg_id: int) -> str:
     """Get game ID by BGG ID from database."""
-    client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+    client = _get_service_role_client()
     response = client.table("games").select("id").eq("bgg_id", bgg_id).maybe_single().execute()
     if not response or not response.data:
         raise AssertionError(f"Game with BGG ID {bgg_id} not found in database")
-    return response.data["id"]
+
+    data = response.data
+    if not isinstance(data, dict):
+        raise AssertionError(f"Unexpected response type for game with BGG ID {bgg_id}")
+
+    return str(data["id"])
 
 
 @pytest.fixture(scope="module")
