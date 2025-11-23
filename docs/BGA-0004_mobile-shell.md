@@ -27,6 +27,6 @@
 ## Follow-ups
 
 1. Replace `mockSignIn/mockValidateToken` with Supabase JS client + backend `/auth/validate`.
-2. Consume real backend data for games/FAQs via fetch hooks (after ABG-0005).
+2. Consume real backend data for games/FAQs via fetch hooks.
 3. Introduce localization + theme tokens shared with the design system.
 4. Wire feature-flag checks once backend exposes the evaluation endpoint.
