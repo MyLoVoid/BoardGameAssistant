@@ -8,15 +8,15 @@ from collections.abc import Generator
 import jwt
 import pytest
 from fastapi.testclient import TestClient
-from supabase import create_client
 
 from app.config import settings
 from app.main import app
+from app.services.supabase import get_supabase_client
 
 
 def _get_user_and_profile(email: str) -> tuple[object, dict]:
     """Fetch a Supabase auth user plus its profile row."""
-    client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+    client = get_supabase_client()
     users = client.auth.admin.list_users()
 
     target_user = next((user for user in users if getattr(user, "email", "") == email), None)

@@ -12,6 +12,9 @@
                 "-s"
             ],
             "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
             "console": "integratedTerminal",
             "justMyCode": false
         },
@@ -25,6 +28,9 @@
                 "-v"
             ],
             "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
             "console": "integratedTerminal",
             "justMyCode": false
         },
@@ -38,6 +44,9 @@
                 "--reload"
             ],
             "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
             "console": "integratedTerminal",
             "justMyCode": false
         }

@@ -3,11 +3,28 @@ BGAI Backend API - Main application module
 FastAPI application with endpoints for Board Game Assistant Intelligent
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, games, health
 from app.config import settings
+from app.services.supabase import close_supabase_clients
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup/shutdown tasks for the API."""
+    print("🚀 BGAI Backend API starting...")
+    print(f"   Environment: {settings.environment}")
+    print(f"   Debug mode: {settings.debug}")
+    print(f"   Supabase URL: {settings.supabase_url}")
+    print(f"   CORS origins: {settings.cors_origins_list}")
+    yield
+    close_supabase_clients()
+    print("👋 BGAI Backend API shutting down...")
+
 
 # Create FastAPI application
 app = FastAPI(
@@ -16,6 +33,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
+    lifespan=lifespan,
 )
 
 # Configure CORS
@@ -43,19 +61,3 @@ async def root():
         "docs": "/docs" if settings.debug else "disabled in production",
     }
 
-
-# Startup and shutdown events
-@app.on_event("startup")
-async def startup_event():
-    """Actions to perform on application startup"""
-    print("🚀 BGAI Backend API starting...")
-    print(f"   Environment: {settings.environment}")
-    print(f"   Debug mode: {settings.debug}")
-    print(f"   Supabase URL: {settings.supabase_url}")
-    print(f"   CORS origins: {settings.cors_origins_list}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Actions to perform on application shutdown"""
-    print("👋 BGAI Backend API shutting down...")
