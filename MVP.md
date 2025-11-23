@@ -6,7 +6,7 @@
 
   * App móvil multiplataforma (React Native + Expo).
   * Backend principal en **Supabase** (Auth, Postgres, vectores con pgvector).
-  * **Backend fino propio** (API REST) como fachada + **GenAI Adapter** (RAG por juego, integraciones IA).
+  * **Backend fino propio** (Python + FastAPI) como API REST + **GenAI Adapter** (RAG por juego, integraciones IA).
 * **Escala inicial:** ~100 usuarios testers, 10–50 juegos en MVP (escalable a 500–1000 juegos).
 * **Idiomas:** ES / EN desde el MVP.
 * **Entornos:** dev y prod separados.
@@ -142,12 +142,18 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
 
 * **Backend fino propio (API + GenAI Adapter)**
 
+  * **Stack:** Python 3.11+ con FastAPI
+  * **Dependencias principales:**
+    * FastAPI + Uvicorn (servidor ASGI)
+    * Pydantic (validación de datos)
+    * supabase-py (cliente Supabase)
+    * openai (SDK OpenAI para GPT y embeddings)
+    * LangChain (opcional, para RAG avanzado)
   * Expuesto como API REST.
   * Faz de la app hacia:
 
     * Supabase (para datos).
     * Proveedores de IA (OpenAI/Gemini/Claude, etc.).
-    * Posible n8n u orquestador en el futuro.
     * BoardGameGeek para sincronización de datos (solo backend, nunca móvil).
   * Encapsula:
 
@@ -425,66 +431,133 @@ Quieres analítica desde el inicio, así que se define:
 
 ---
 
-## 10. Próximos pasos (checklist de trabajo)
+## 10. Estado del proyecto (Progreso actual)
 
-1. **Especificar el modelo de datos final**
+### ✅ Completado
 
-   * Escribir un documento con:
+#### **Base de datos Supabase (100%)**
 
-     * todas las tablas (las listadas arriba),
-     * campos y tipos,
-     * relaciones (keys y foreign keys),
-     * notas sobre índices para búsquedas por `game_id` y `language`.
+1. **Esquema completo implementado** (`supabase/migrations/20241122000000_initial_schema.sql`)
+   * ✅ 9 tablas principales creadas:
+     * `profiles` - Perfiles de usuario con roles
+     * `app_sections` - Secciones modulares
+     * `games` - Catálogo de juegos con integración BGG
+     * `game_faqs` - FAQs multi-idioma (ES/EN)
+     * `feature_flags` - Control granular de features
+     * `chat_sessions` - Sesiones de conversación IA
+     * `chat_messages` - Mensajes individuales
+     * `game_docs_vectors` - Vectores para RAG (pgvector)
+     * `usage_events` - Analítica
+   * ✅ Extensión pgvector habilitada
+   * ✅ Índices optimizados (incluyendo HNSW para búsqueda vectorial)
+   * ✅ Row Level Security (RLS) configurado
+   * ✅ Triggers automáticos (updated_at, creación de perfiles)
+   * ✅ Tipos ENUM definidos (roles, idiomas, estados, etc.)
 
-2. **Diseñar la API del backend fino**
+2. **Datos semilla** (`supabase/seed.sql`)
+   * ✅ Sección "Board Game Companion" configurada
+   * ✅ 5 juegos de ejemplo con datos de BGG:
+     * Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne
+   * ✅ FAQs multi-idioma de prueba (ES/EN)
+   * ✅ Feature flags configurados por rol y entorno (dev/prod)
+   * ✅ Chunks de ejemplo para RAG
 
-   * Mínimo:
+3. **Entorno de desarrollo local**
+   * ✅ Supabase local configurado (`boardgameassistant-dev`)
+   * ✅ 5 usuarios de prueba creados con diferentes roles:
+     * admin@bgai.test (Admin123!)
+     * developer@bgai.test (Dev123!)
+     * tester@bgai.test (Test123!)
+     * premium@bgai.test (Premium123!)
+     * basic@bgai.test (Basic123!)
+   * ✅ Variables de entorno separadas (`.env` para prod, `.env.local` para dev)
 
-     * `/app/login` / `/app/me` (o directamente usar el SDK de Supabase desde la app para auth).
-     * `/app/games` (lista de juegos visibles para el usuario según rol y flags).
-     * `/app/games/{id}` (detalle de juego + FAQs filtradas por idioma).
-     * `/app/chat/session` (crear/recuperar sesión si decides separarlo de `query`).
-     * `/genai/query` (endpoint de IA).
-   * Definir para cada uno:
+4. **Herramientas de prueba**
+   * ✅ Script SQL para crear usuarios (`supabase/create_test_users.sql`)
+   * ✅ Página HTML de prueba de login (`test_login.html`)
 
-     * parámetros,
-     * estructura de respuesta,
-     * errores esperables.
+### 🔄 En progreso
 
-3. **Definir reglas iniciales de feature flags**
+#### **Backend API REST (Python + FastAPI)**
+* Pendiente de iniciar
+* Stack definido: FastAPI, Pydantic, supabase-py, openai, LangChain
 
-   * Crear una lista inicial de flags:
+### 📋 Pendiente
 
-     * `faq`, `chat`, `score_helper`, `meta_games`, `beta_features`, etc.
-   * Configurar:
+1. **Backend API REST**
+   * Estructura del proyecto
+   * Configuración de entorno
+   * Endpoints de autenticación
+   * Endpoints de juegos y FAQs
+   * Pipeline RAG completo
+   * Integración con OpenAI/Gemini/Claude
+   * Sistema de feature flags
+   * Rate limiting y analítica
 
-     * qué flags están activos por rol, entorno y juego.
-     * por ejemplo:
+2. **App Móvil (React Native + Expo)**
+   * Estructura del proyecto
+   * Navegación
+   * Pantallas de autenticación
+   * UI de juegos y chat
 
-       * `chat` habilitado global para basic/premium/tester en BGC en prod.
-       * `score_helper` solo habilitado para tester y solo en dev.
+3. **Pipeline de procesamiento RAG**
+   * Scripts para procesar PDFs
+   * Generación de embeddings
+   * Carga a `game_docs_vectors`
 
-4. **Planear el pipeline RAG inicial**
+4. **Integración BGG**
+   * Script de sincronización de datos de juegos
 
-   * Elegir un flujo mínimo:
+---
 
-     * manual PDF o texto → chunking → embeddings → insert en `game_docs_vectors`.
-   * Definir:
+## 11. Próximos pasos inmediatos (checklist de trabajo)
 
-     * tamaño de chunk,
-     * número de chunks recuperados,
-     * filtros por `language` y `source_type`.
+1. **Backend API REST - Setup inicial**
+   * Crear estructura del proyecto `backend/`
+   * Configurar entorno virtual Python
+   * Instalar dependencias (FastAPI, supabase-py, openai, etc.)
+   * Configurar variables de entorno
+   * Crear servidor básico con health check
 
-5. **Configurar entornos Supabase**
+2. **Backend API REST - Autenticación**
+   * Middleware de validación JWT
+   * Endpoint `GET /auth/me` (información del usuario actual)
+   * Sistema de extracción de user_id y role del token
 
-   * Crear proyecto Supabase dev y prod con el mismo esquema.
-   * Documentar qué credenciales usa el backend fino en cada entorno.
-   * Decidir cómo vas a configurar la app para apuntar a dev/prod (variables, builds separados, etc.).
+3. **Backend API REST - Endpoints de juegos**
+   * `GET /games` - Lista filtrada por rol y feature flags
+   * `GET /games/{id}` - Detalle del juego
+   * `GET /games/{id}/faqs?lang=es` - FAQs filtradas por idioma
 
-6. **Analítica básica**
+4. **Backend API REST - Sistema de Feature Flags**
+   * Servicio para validar acceso a features
+   * Función `check_feature_access(user, feature, scope)`
+   * Implementar límites de uso (rate limiting por rol)
 
-   * Establecer qué eventos vas a registrar en `usage_events` desde el primer build:
+5. **Backend API REST - Pipeline RAG**
+   * Servicio de búsqueda vectorial en `game_docs_vectors`
+   * Función `search_relevant_chunks(game_id, question, language)`
+   * Integración con OpenAI para embeddings y respuestas
+   * Endpoint `POST /genai/query` completo
 
-     * `game_open`, `faq_view`, `chat_question`, `chat_answer`.
-   * Añadir en la app llamadas al backend que disparen esos registros (o que el backend los dispare en endpoints clave).
+6. **Backend API REST - Analítica**
+   * Servicio para registrar eventos en `usage_events`
+   * Integrar logging en todos los endpoints principales
+   * Tracking de uso por usuario, juego y feature
+
+7. **Scripts de utilidad**
+   * Script para procesar PDFs y generar embeddings
+   * Script para sincronizar juegos desde BGG
+   * Script para poblar `game_docs_vectors` con documentación real
+
+8. **App Móvil - Setup inicial**
+   * Crear proyecto React Native + Expo
+   * Configurar navegación
+   * Integrar Supabase client
+   * Pantallas de login/registro
+
+9. **Integración y testing end-to-end**
+   * Conectar app móvil con backend
+   * Probar flujo completo: login → ver juegos → consultar FAQ → chat IA
+   * Validar feature flags y límites de uso
 
