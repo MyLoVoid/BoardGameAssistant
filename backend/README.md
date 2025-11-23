@@ -24,19 +24,22 @@ backend/
 │   ├── api/
 │   │   ├── routes/          # Endpoints organizados por dominio
 │   │   │   ├── health.py    # Health checks
-│   │   │   ├── auth.py      # Autenticación (pendiente)
-│   │   │   ├── games.py     # Juegos y FAQs (pendiente)
+│   │   │   ├── auth.py      # Autenticación (Supabase JWT -> perfil)
+│   │   │   ├── games.py     # Juegos/FAQs reales (BGAI-0006)
 │   │   │   └── genai.py     # Pipeline RAG (pendiente)
 │   │   └── dependencies.py  # Dependencias compartidas
 │   ├── core/
-│   │   ├── auth.py          # JWT validation, middleware (pendiente)
-│   │   └── feature_flags.py # Feature flags (pendiente)
+│   │   ├── auth.py          # JWT validation, perfil actual
+│   │   └── feature_flags.py # Evaluación jerárquica (lista)
 │   ├── services/
-│   │   ├── supabase.py      # Cliente Supabase (pendiente)
+│   │   ├── supabase.py      # Cliente Supabase + helpers
+│   │   ├── games.py         # Servicios de juegos
+│   │   ├── game_faqs.py     # FAQs multi-idioma
+│   │   ├── feature_flags.py # Servicio de acceso
 │   │   ├── rag.py           # Pipeline RAG (pendiente)
 │   │   └── analytics.py     # Analytics (pendiente)
 │   ├── models/
-│   │   └── schemas.py       # Modelos Pydantic (pendiente)
+│   │   └── schemas.py       # Modelos Pydantic (Game, GameFAQ, FeatureAccess…)
 │   └── utils/
 │       └── logger.py        # Logging (pendiente)
 ├── pyproject.toml          # ✅ Dependencias y configuración Poetry
@@ -147,20 +150,21 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-## Endpoints Disponibles
+## Endpoints disponibles
 
-### Health Checks
+| Endpoint | Estado | Notas |
+| --- | --- | --- |
+| `GET /`, `/health`, `/health/ready` | ✅ | Health checks básicos. |
+| `GET /auth/me`, `/auth/me/role`, `/auth/validate` | ✅ | Decodifica JWT de Supabase, retorna perfil y rol efectivo (BGAI-0003). |
+| `GET /games` | ✅ | Lista filtrada por feature flags y status (`active/beta/hidden`). |
+| `GET /games/{id}` | ✅ | Detalle con `has_faq_access`/`has_chat_access`. |
+| `GET /games/{id}/faqs?lang=es` | ✅ | FAQs multi-idioma con fallback seguro y control de acceso. |
+| `POST /genai/query` | ⏳ | En construcción (pipeline RAG). |
 
-- `GET /` - Root endpoint con información del servicio
-- `GET /health` - Health check básico
-- `GET /health/ready` - Readiness check
+Swagger y ReDoc (modo debug):
 
-### Documentación API
-
-Cuando el servidor está en modo debug (desarrollo):
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- http://localhost:8000/docs
+- http://localhost:8000/redoc
 
 ## Configuración
 
@@ -245,31 +249,17 @@ Para entornos que requieren `requirements.txt`:
 poetry export -f requirements.txt --output requirements.txt --without-hashes
 ```
 
-## Próximos Pasos
+## Próximos pasos
 
-### Fase 1: Autenticación
-- [ ] Middleware de validación JWT
-- [ ] Endpoint `GET /auth/me`
-- [ ] Extracción de user_id y role del token
-
-### Fase 2: Juegos y FAQs
-- [ ] `GET /games` - Lista filtrada por rol
-- [ ] `GET /games/{id}` - Detalle del juego
-- [ ] `GET /games/{id}/faqs` - FAQs por idioma
-
-### Fase 3: Feature Flags
-- [ ] Servicio de validación de acceso a features
-- [ ] Rate limiting por rol
-- [ ] Límites de uso
-
-### Fase 4: Pipeline RAG
-- [ ] Búsqueda vectorial en game_docs_vectors
-- [ ] Integración con OpenAI/Gemini/Claude
-- [ ] Endpoint `POST /genai/query`
-
-### Fase 5: Analytics
-- [ ] Registro de eventos en usage_events
-- [ ] Tracking de uso por usuario/juego/feature
+- **Pipeline RAG + GenAI Adapter**
+  - Servicio de búsqueda vectorial (`game_docs_vectors`) + construcción de prompts.
+  - Endpoint `POST /genai/query` con logging en `chat_sessions`, `chat_messages`, `usage_events`.
+  - Rate limiting configurable vía feature flags.
+- **Analytics service**
+  - Registrar eventos (`usage_events`) desde endpoints clave.
+  - API interna para consultar métricas básicas (pendiente).
+- **BGG ingest + scripts RAG**
+  - Jobs/CLI para sincronizar juegos y procesar PDFs/manuales → embeddings → carga en Supabase.
 
 ## Troubleshooting
 

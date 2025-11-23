@@ -4,12 +4,12 @@ This document provides a comprehensive overview of the "Board Game Assistant Int
 
 ## Project Overview
 
-This is a **Code Project** currently in the detailed planning and design phase. The goal is to build a modular, multi-platform mobile application that serves as an intelligent assistant for board game players.
+This is a **Code Project** in active development. The goal is to build a modular, multi-platform mobile application that serves as an intelligent assistant for board game players.
 
 The application will provide per-game assistance, including rule clarifications via a GenAI-powered chat, FAQs, and general game information. The entire system is designed to be highly modular, with features, games, and user access controlled by a feature flag system.
 
 **Documentation**
-Use `/docs` for technical documentation
+Use `/docs` for technical documentation. The `MVP.md` file contains the detailed project specification and progress checklist.
 
 ### Core Technologies:
 *   **Mobile App:** React Native with Expo
@@ -21,12 +21,34 @@ Use `/docs` for technical documentation
 
 ## Building and Running
 
-As the project is in the design phase, there are no build or run commands yet. The `MVP.md` document contains a detailed checklist of the next steps required to begin implementation.
+This project is divided into three main components: a React Native mobile app, a Python backend, and a Supabase instance for database and authentication.
 
-### TODO:
-*   **[TODO]** Define and document the command to run the React Native app (e.g., `npx expo start`).
-*   **[TODO]** Define and document the command to start the custom backend API server.
-*   **[TODO]** Document the process for setting up the Supabase local development environment.
+### 1. Supabase
+The local development environment is managed by the Supabase CLI.
+- **Start:** `supabase start`
+- **Stop:** `supabase stop`
+- **Reset Database:** `supabase db reset` (This will re-apply migrations and seed data)
+
+*Note: You must have the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and running in your environment.*
+
+### 2. Backend (FastAPI)
+The backend is a FastAPI server managed with Poetry.
+1.  Navigate to the backend directory: `cd backend`
+2.  Install dependencies: `poetry install`
+3.  Run the development server: `poetry run python run.py`
+
+The API will be available at `http://localhost:8000`.
+
+### 3. Mobile App (React Native + Expo)
+The mobile app is built with React Native and Expo.
+1.  Navigate to the mobile directory: `cd mobile`
+2.  Install dependencies: `npm install`
+3.  Start the development server: `npx expo start`
+
+This will open the Expo developer menu. To run the app, you can:
+- **On a physical device:** Install the "Expo Go" app and scan the QR code from the terminal.
+- **On an emulator:** Press `a` (for Android) or `i` (for iOS) if you have them configured.
+- **In a web browser:** Press `w`.
 
 ## Development Conventions
 
@@ -49,6 +71,6 @@ The conceptual data model is defined in `MVP.md` and includes tables for:
 
 ## Key Files
 
-*   **`MVP.md`**: The core technical specification document. It contains the executive summary, functional scope, technical architecture, data model, and development checklist for the Minimum Viable Product. This is the most important file in the directory.
+*   **`MVP.md`**: The core technical specification document. It contains the executive summary, functional scope, technical architecture, data model, and a detailed development checklist for the Minimum Viable Product. This is the most important file in the directory.
 *   **`AGENTS.md` / `CLAUDE.md`**: These likely contain supplementary notes or explorations related to specific AI models or agentic concepts being considered for the GenAI Adapter.
 *   **`README.md`**: Currently empty, but will likely hold the public-facing project description.

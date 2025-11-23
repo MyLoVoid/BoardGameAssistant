@@ -37,7 +37,7 @@ The documentation agent should:
 
 **Example Output**:
 ```
-/docs/BGAI-0004_mobile-supabase-auth.md
+/docs/BGAI-0008_mobile-localization.md
 ```
 
 **Notes**:
@@ -64,7 +64,7 @@ See `docs/BGAI-0005_mobile-supabase-integration.md` for a complete example follo
 
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
-- `docs/` now tracks numbered architecture notes (e.g., `BGAI-0001_supabase.md`) so agents can reference historical decisions without digging through PRs.
+- `docs/` tracks numbered notes (`BGAI-0001_supabase.md` … `BGAI-0008_mobile-localization.md`) so agents can reference history quickly.
 - `mobile/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.
 - `backend/` contains the Python FastAPI service: `app/` (routers, adapters), `rag/` (chunkers, embeddings), `feature_flags/`, and `tests/`.
 - `supabase/` stores SQL migrations plus seed YAML so dev/prod schemas stay aligned.
@@ -72,14 +72,13 @@ See `docs/BGAI-0005_mobile-supabase-integration.md` for a complete example follo
 
 ## Build, Test, and Development Commands
 - `cd mobile && npm install && npx expo start` boots the mobile client with live reload.
-- `cd mobile && npm run lint` enforces ESLint + Prettier; CI should fail on warnings.
+- `cd mobile && npm run lint` runs Expo’s ESLint preset (autoconfigured in `eslint.config.js`); fix warnings before pushing.
 - `cd backend && poetry install && poetry run uvicorn app.main:app --reload` starts the API facade/GenAI adapter.
 - `cd backend && poetry run pytest` executes unit and integration tests, including RAG pipeline fakes.
 - `supabase start` and `supabase db reset` spin up Postgres and reseed feature-flag fixtures before backend tests touching data.
 - Use `supabase db reset && supabase db seed` when applying updates from `docs/BGAI-0001_supabase.md`, and run `supabase/create_test_users.sql` afterward if you need the role-scoped demo accounts described there.
 
-## Coding Style & Naming Conventions
-- React Native uses TypeScript, 2-space indents, PascalCase components, camelCase hooks/utilities, and feature-scoped file names (`BGCGameList.tsx`).
+- React Native uses TypeScript, 2-space indents, PascalCase components, camelCase hooks/utilities, and feature-scoped file names (`BGCGameList.tsx`). All user-facing copy must go through `useLanguage().t()` instead of hardcoded strings.
 - Python backend code follows Black (88 chars), isort, and mypy; modules snake_case, Pydantic models PascalCase.
 - Keep feature-flag configs declarative: YAML per environment under `backend/feature_flags/ENV.yaml`.
 
@@ -95,8 +94,8 @@ See `docs/BGAI-0005_mobile-supabase-integration.md` for a complete example follo
 - PRs must link to Supabase migration IDs, include screenshots for UI work, and list test commands/logs.
 - Describe any new secrets or env vars and include rollback/flag plans for risky changes.
 
-## Security & Configuration Tips
 - Never embed secrets in Git; store keys in Supabase config and `.env.local` (gitignored).
 - Treat feature flags as code: require review plus matching migrations for every change.
 - Keep BGG sync jobs backend-only; the mobile client must consume cached data to avoid leaking API keys.
 - When editing `supabase/migrations`, `supabase/seed.sql`, `supabase/create_test_users.sql`, or `supabase/config.toml`, align with the guardrails in `docs/BGAI-0001_supabase.md` so enums, RLS, and CLI ports remain consistent across environments.
+- Respect the mobile localization state: `LanguageProvider` lives at the top of the tree. Any new screens/hooks must consume `useLanguage` for strings and for language-aware requests (e.g., FAQs, chat).
