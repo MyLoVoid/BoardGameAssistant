@@ -1,49 +1,73 @@
-import { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import ScreenContainer from '@/components/ScreenContainer';
-import { useAuth } from '@/hooks/useAuth';
+import EmptyState from '@/components/EmptyState';
+import { useGames } from '@/hooks/useGames';
 import type { GamesStackParamList } from '@/types/navigation';
-import { mockGames } from '@/data/mockGames';
 import { colors, spacing } from '@/constants/theme';
 
 type Props = NativeStackScreenProps<GamesStackParamList, 'GameList'>;
 
 const GameListScreen = ({ navigation }: Props) => {
-  const { user } = useAuth();
+  const { games, isLoading, error, refetch } = useGames();
 
-  const availableGames = useMemo(() => {
-    if (!user) {
-      return [];
-    }
-    if (user.role === 'tester' || user.role === 'admin' || user.role === 'developer') {
-      return mockGames;
-    }
-    return mockGames.filter((game) => game.status === 'active');
-  }, [user]);
+  if (isLoading && games.length === 0) {
+    return (
+      <ScreenContainer>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Cargando juegos...</Text>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <ScreenContainer>
+        <EmptyState
+          title="Error al cargar juegos"
+          description={error}
+          actionText="Reintentar"
+          onAction={refetch}
+        />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
       <FlatList
-        data={availableGames}
+        data={games}
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.primary} />
+        }
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
             onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
           >
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.meta}>
-              {item.minPlayers}-{item.maxPlayers} jugadores · {item.playTime} min
-            </Text>
-            <Text style={styles.rating}>BGG {item.rating}</Text>
-            <Text style={styles.languages}>Idiomas: {item.languages.join(', ').toUpperCase()}</Text>
+            <Text style={styles.name}>{item.name_base}</Text>
+            {item.min_players !== null && item.max_players !== null && (
+              <Text style={styles.meta}>
+                {item.min_players}-{item.max_players} jugadores
+                {item.playing_time !== null && ` · ${item.playing_time} min`}
+              </Text>
+            )}
+            {item.rating !== null && (
+              <Text style={styles.rating}>BGG {item.rating.toFixed(1)}</Text>
+            )}
+            {item.status === 'beta' && <Text style={styles.beta}>BETA</Text>}
           </Pressable>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>No tienes juegos disponibles con tu rol actual.</Text>
+          <EmptyState
+            title="No hay juegos disponibles"
+            description="No tienes acceso a ningún juego con tu rol actual."
+          />
         }
       />
     </ScreenContainer>
@@ -51,6 +75,15 @@ const GameListScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: colors.textMuted,
+    marginTop: spacing.md,
+  },
   card: {
     backgroundColor: colors.card,
     padding: spacing.lg,
@@ -72,15 +105,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: spacing.xs,
   },
-  languages: {
-    color: colors.textMuted,
+  beta: {
+    color: colors.warning,
     fontSize: 12,
+    fontWeight: '700',
     marginTop: spacing.xs,
-  },
-  empty: {
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.xl,
   },
 });
 

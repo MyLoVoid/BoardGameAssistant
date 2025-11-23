@@ -8,6 +8,9 @@ export const colors = {
   textMuted: '#94A3B8',
   border: '#1E293B',
   danger: '#F87171',
+  success: '#34D399',
+  successMuted: '#065F46',
+  warning: '#FBBF24',
 };
 
 export const spacing = {
