@@ -15,10 +15,6 @@ const nextConfig = {
       },
     ],
   },
-  // Allow dev server access from local network
-  experimental: {
-    allowedDevOrigins: ['192.168.68.46'],
-  },
 }
 
 module.exports = nextConfig
