@@ -11,8 +11,31 @@ from dataclasses import dataclass
 from xml.etree import ElementTree as ET
 
 import httpx
+from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 BGG_API_URL = "https://www.boardgamegeek.com/xmlapi2/thing"
+
+
+_BGG_CLIENT: httpx.AsyncClient | None = None
+
+
+def _get_bgg_client() -> httpx.AsyncClient:
+    """Return a cached httpx client for BGG API calls."""
+    global _BGG_CLIENT
+    if _BGG_CLIENT is None:
+        _BGG_CLIENT = httpx.AsyncClient(
+            timeout=httpx.Timeout(15.0, connect=5.0),
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
+    return _BGG_CLIENT
+
+
+async def close_bgg_client() -> None:
+    """Close the BGG HTTP client."""
+    global _BGG_CLIENT
+    if _BGG_CLIENT is not None:
+        await _BGG_CLIENT.aclose()
+        _BGG_CLIENT = None
 
 
 class BGGServiceError(Exception):
@@ -72,7 +95,7 @@ def _get_value_attr(element: ET.Element | None) -> str | None:
     return element.attrib.get("value")
 
 
-def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
+async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
     """
     Fetch base metadata for a game from BoardGameGeek.
 
@@ -87,10 +110,20 @@ def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
         BGGServiceError: Network or parsing failure.
         BGGGameNotFound: The BGG API returned no items for the given ID.
     """
+    client = _get_bgg_client()
 
+    # OPTIMIZATION: Retry on network errors with exponential backoff
     try:
-        response = httpx.get(BGG_API_URL, params={"id": bgg_id, "stats": 1}, timeout=timeout)
-        response.raise_for_status()
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError)),
+        ):
+            with attempt:
+                response = await client.get(
+                    BGG_API_URL, params={"id": bgg_id, "stats": 1}, timeout=timeout
+                )
+                response.raise_for_status()
     except httpx.HTTPError as exc:
         raise BGGServiceError(f"BGG request failed: {exc}") from exc
 

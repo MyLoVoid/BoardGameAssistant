@@ -17,6 +17,14 @@ This implementation adds three core endpoints to the backend API for accessing g
 
 All endpoints implement proper authentication, authorization via feature flags, and comprehensive error handling.
 
+## Async Refactor (2025-11-25)
+
+- The FastAPI application, routers, and services now expose fully `async` call paths so database calls, BGG syncs, and Supabase lookups no longer block the event loop.
+- `app/services/admin_games.py`, `app/services/games.py`, and related adapters now await Supabase client operations plus BGG fetchers, ensuring background tasks (e.g., chat streaming) share the same loop safely.
+- Pytest integration specs were updated to keep using synchronous-style helpers while the app remains async. `tests/supabase_test_helpers.py` now shells out to Supabase REST/Admin endpoints via `httpx` and returns lightweight `SimpleNamespace` objects so legacy attribute access (e.g., `user.id`) continues to work.
+- When monkeypatching async services (e.g., `bgg_service.fetch_bgg_game`) tests must now supply async fakes. Existing suites (`test_admin_games_api.py`) were rewritten accordingly to avoid `TypeError: object ... can't be used in 'await' expression`.
+- These adjustments remove prior event-loop collisions we saw when combining async routers with sync fixtures and make it safe to extend the backend with streaming responses or async Supabase RPC calls.
+
 ## Key Files
 
 ### New Files

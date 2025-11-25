@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     print(f"   Supabase URL: {settings.supabase_url}")
     print(f"   CORS origins: {settings.cors_origins_list}")
     yield
-    close_supabase_clients()
+    await close_supabase_clients()
     print("👋 BGAI Backend API shutting down...")
 
 

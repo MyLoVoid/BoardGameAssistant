@@ -167,7 +167,7 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
   - Storage para PDFs (reglamentos, ayudas, expansiones).
 
 - **Backend fino propio (API REST + GenAI Adapter)**
-  - **Stack:** Python 3.13+ con FastAPI.
+  - **Stack:** Python 3.13+ con FastAPI (completamente async en todas las rutas y servicios).
   - Gestiona dependencias con Poetry.
   - Expuesto como API REST.
   - Faz de la app hacia:

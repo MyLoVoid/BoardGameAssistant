@@ -53,7 +53,7 @@ async def list_games(
     Returns:
         GamesListResponse with list of games and total count
     """
-    games = get_games_list(
+    games = await get_games_list(
         user_id=current_user.user_id,
         user_role=current_user.role,
         status_filter=status_filter,
@@ -90,7 +90,7 @@ async def get_game(
     Returns:
         GameDetailResponse with game details and feature access flags
     """
-    game = get_game_by_id(
+    game = await get_game_by_id(
         game_id=game_id,
         user_id=current_user.user_id,
         user_role=current_user.role,
@@ -103,7 +103,7 @@ async def get_game(
         )
 
     # Get feature access flags for this game
-    feature_access = get_game_feature_access(
+    feature_access = await get_game_feature_access(
         game_id=game_id,
         user_id=current_user.user_id,
         user_role=current_user.role,
@@ -157,7 +157,7 @@ async def get_game_faqs_endpoint(
         GameFAQsResponse with list of FAQs in the requested (or fallback) language
     """
     # Check if user has access to this game
-    game = get_game_by_id(
+    game = await get_game_by_id(
         game_id=game_id,
         user_id=current_user.user_id,
         user_role=current_user.role,
@@ -170,7 +170,7 @@ async def get_game_faqs_endpoint(
         )
 
     # Check if user has FAQ access for this game
-    faq_access = check_faq_access(
+    faq_access = await check_faq_access(
         user_id=current_user.user_id,
         user_role=current_user.role,
         game_id=game_id,
@@ -183,7 +183,7 @@ async def get_game_faqs_endpoint(
         )
 
     # Get FAQs with language fallback
-    faqs, actual_language = get_game_faqs(
+    faqs, actual_language = await get_game_faqs(
         game_id=game_id,
         language=lang,
         fallback_to_en=True,

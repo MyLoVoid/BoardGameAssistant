@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 import pytest
 
@@ -42,12 +44,20 @@ SAMPLE_XML = """
 """
 
 
+class DummyClient:
+    def __init__(self, response: DummyResponse):
+        self._response = response
+
+    async def get(self, *args, **kwargs):
+        return self._response
+
+
 def test_fetch_bgg_game_parses_basic_fields(monkeypatch: pytest.MonkeyPatch):
     """BGG XML response should be parsed into BGGGameData."""
 
-    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: DummyResponse(SAMPLE_XML))
+    monkeypatch.setattr(bgg, "_get_bgg_client", lambda: DummyClient(DummyResponse(SAMPLE_XML)))
 
-    data = bgg.fetch_bgg_game(123)
+    data = asyncio.run(bgg.fetch_bgg_game(123))
     assert data.bgg_id == 123
     assert data.name == "Sample Game"
     assert data.min_players == 1
@@ -61,8 +71,9 @@ def test_fetch_bgg_game_parses_basic_fields(monkeypatch: pytest.MonkeyPatch):
 def test_fetch_bgg_game_raises_when_not_found(monkeypatch: pytest.MonkeyPatch):
     """BGGGameNotFound is raised if the XML contains no items."""
 
-    empty_response = "<items></items>"
-    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: DummyResponse(empty_response))
+    monkeypatch.setattr(
+        bgg, "_get_bgg_client", lambda: DummyClient(DummyResponse("<items></items>"))
+    )
 
     with pytest.raises(bgg.BGGGameNotFound):
-        bgg.fetch_bgg_game(999)
+        asyncio.run(bgg.fetch_bgg_game(999))

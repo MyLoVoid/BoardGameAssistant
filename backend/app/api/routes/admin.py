@@ -59,7 +59,7 @@ async def create_game_endpoint(
 ) -> Game:
     """Create a new game via the admin portal."""
     try:
-        return create_game(request)
+        return await create_game(request)
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -75,7 +75,7 @@ async def update_game_endpoint(
     current_user: CurrentAdmin,
 ) -> Game:
     try:
-        return update_game(game_id, request)
+        return await update_game(game_id, request)
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -90,7 +90,7 @@ async def import_game_from_bgg_endpoint(
     current_user: CurrentAdmin,
 ) -> BGGImportResponse:
     try:
-        game, action = import_game_from_bgg(request)
+        game, action = await import_game_from_bgg(request)
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -113,7 +113,7 @@ async def sync_game_from_bgg_endpoint(
     current_user: CurrentAdmin,
 ) -> Game:
     try:
-        return sync_game_from_bgg(game_id)
+        return await sync_game_from_bgg(game_id)
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -130,7 +130,7 @@ async def create_game_faq_endpoint(
     current_user: CurrentAdmin,
 ) -> GameFAQ:
     try:
-        return create_game_faq(game_id, request.model_dump())
+        return await create_game_faq(game_id, request.model_dump())
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -147,7 +147,7 @@ async def update_game_faq_endpoint(
     current_user: CurrentAdmin,
 ) -> GameFAQ:
     try:
-        return update_game_faq(game_id, faq_id, request.model_dump(exclude_unset=True))
+        return await update_game_faq(game_id, faq_id, request.model_dump(exclude_unset=True))
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -163,7 +163,7 @@ async def delete_game_faq_endpoint(
     current_user: CurrentAdmin,
 ) -> SuccessResponse:
     try:
-        delete_game_faq(game_id, faq_id)
+        await delete_game_faq(game_id, faq_id)
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -185,7 +185,7 @@ async def create_game_document_endpoint(
     current_user: CurrentAdmin,
 ) -> GameDocument:
     try:
-        return create_game_document(game_id, request.model_dump())
+        return await create_game_document(game_id, request.model_dump())
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
 
@@ -201,7 +201,7 @@ async def process_game_knowledge_endpoint(
     current_user: CurrentAdmin,
 ) -> KnowledgeProcessResponse:
     try:
-        processed_ids, knowledge_docs = process_game_knowledge(
+        processed_ids, knowledge_docs = await process_game_knowledge(
             game_id,
             request,
             triggered_by=current_user.user_id,
