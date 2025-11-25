@@ -69,9 +69,7 @@ def _get_test_game_id(bgg_id: int) -> str:
 def _get_bgc_section_id() -> str:
     """Fetch the Board Game Companion section ID."""
     client = get_supabase_client()
-    response = (
-        client.table("app_sections").select("id").eq("key", "BGC").maybe_single().execute()
-    )
+    response = client.table("app_sections").select("id").eq("key", "BGC").maybe_single().execute()
     if not response or not response.data:
         raise AssertionError("BGC section not found in database")
 
@@ -169,9 +167,7 @@ def test_sync_game_from_bgg_updates_metadata(
     assert body["last_synced_from_bgg_at"] is not None
 
 
-def test_sync_game_requires_bgg_id(
-    client: TestClient, admin_user, game_without_bgg, monkeypatch
-):
+def test_sync_game_requires_bgg_id(client: TestClient, admin_user, game_without_bgg, monkeypatch):
     """Sync should fail if the game has no BGG ID configured."""
 
     # Ensure the fetch is never called
