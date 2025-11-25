@@ -49,6 +49,20 @@ export interface Game {
   updated_at: string;
 }
 
+export interface GameListItem {
+  id: string;
+  name: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  bgg_id?: number;
+  min_players?: number;
+  max_players?: number;
+  playing_time?: number;
+  rating?: number;
+  status: GameStatus;
+  year_published?: number;
+}
+
 // FAQ
 export interface FAQ {
   id: string;

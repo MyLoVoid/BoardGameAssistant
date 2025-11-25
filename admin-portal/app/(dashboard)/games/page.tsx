@@ -10,11 +10,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ImportBGGModal } from '@/components/games/import-bgg-modal';
 import { apiClient } from '@/lib/api';
 import { Plus, Search, RefreshCw, Eye, AlertCircle } from 'lucide-react';
-import type { Game, GameStatus } from '@/lib/types';
+import type { GameListItem, GameStatus } from '@/lib/types';
 
 export default function GamesPage() {
   const router = useRouter();
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<GameListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');

@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosInstance } from 'axios';
 import { supabase } from './supabase';
 import type {
   Game,
+  GameListItem,
   FAQ,
   GameDocument,
   AppSection,
@@ -14,12 +15,44 @@ import type {
   ProcessKnowledgeRequest,
   ProcessKnowledgeResponse,
   APIError,
+  GameStatus,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
+type ApiGameListItem = {
+  id: string;
+  name?: string | null;
+  name_base?: string | null;
+  thumbnail_url?: string | null;
+  image_url?: string | null;
+  bgg_id?: number | null;
+  min_players?: number | null;
+  max_players?: number | null;
+  playing_time?: number | null;
+  rating?: number | null;
+  status: GameStatus;
+  year_published?: number | null;
+};
+
 class APIClient {
   private client: AxiosInstance;
+
+  private normalizeGameListItem(game: ApiGameListItem): GameListItem {
+    return {
+      id: game.id,
+      thumbnail_url: game.thumbnail_url ?? undefined,
+      image_url: game.image_url ?? undefined,
+      bgg_id: game.bgg_id ?? undefined,
+      name: game.name ?? game.name_base ?? 'Untitled game',
+      min_players: game.min_players ?? undefined,
+      max_players: game.max_players ?? undefined,
+      playing_time: game.playing_time ?? undefined,
+      rating: game.rating ?? undefined,
+      status: game.status,
+      year_published: game.year_published ?? undefined,
+    };
+  }
 
   constructor() {
     this.client = axios.create({
@@ -67,9 +100,14 @@ class APIClient {
   // Games API
   // ============================================
 
-  async getGames(): Promise<Game[]> {
-    const response = await this.client.get<Game[]>('/games');
-    return response.data;
+  async getGames(): Promise<GameListItem[]> {
+    type GamesListResponse = {
+      games: ApiGameListItem[];
+      total: number;
+    };
+
+    const response = await this.client.get<GamesListResponse>('/games');
+    return response.data.games.map((game) => this.normalizeGameListItem(game));
   }
 
   async getGame(id: string): Promise<Game> {
