@@ -3,7 +3,7 @@
 ## Overview
 
 **Title**: Admin Portal Frontend - Next.js UI for Game Management
-**Author**: Claude Code
+**Author**: Camilo Ramirez
 **Date**: 2025-11-24
 **Goal**: Build complete web-based administration portal for managing games, FAQs, and knowledge documents using Next.js 14, consuming the admin backend API endpoints from BGAI-0010.
 

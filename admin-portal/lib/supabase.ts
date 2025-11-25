@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { clearAuthCookies } from './auth-cookies';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -35,13 +36,16 @@ export async function getUserWithRole() {
   if (!user) return null;
 
   const { data, error } = await supabase
-    .from('users')
-    .select('*')
+    .from('profiles')
+    .select('id, role, created_at, updated_at')
     .eq('id', user.id)
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    email: user.email ?? '',
+  };
 }
 
 // Sign in with email and password
@@ -59,6 +63,7 @@ export async function signIn(email: string, password: string) {
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+  clearAuthCookies();
 }
 
 // Check if user has admin or developer role

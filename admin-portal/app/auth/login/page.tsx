@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signIn } from '@/lib/supabase';
+import { persistAuthCookies } from '@/lib/auth-cookies';
 import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -21,7 +22,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
+      const { session } = await signIn(email, password);
+      if (!session) {
+        throw new Error('No session returned from Supabase');
+      }
+      persistAuthCookies(session);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
@@ -60,6 +65,7 @@ export default function LoginPage() {
                 placeholder="admin@bgai.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
                 required
                 disabled={loading}
               />
@@ -75,6 +81,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
                 disabled={loading}
               />
