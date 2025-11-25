@@ -318,7 +318,9 @@ def process_game_knowledge(
             knowledge_resp = (
                 supabase.table("knowledge_documents").insert(knowledge_payload).execute()
             )
-            knowledge_record = _extract_single(cast(list[SupabaseRecord] | None, knowledge_resp.data))
+            knowledge_record = _extract_single(
+                cast(list[SupabaseRecord] | None, knowledge_resp.data)
+            )
             if not knowledge_record:
                 raise AdminPortalError("Failed to insert knowledge record")
 
