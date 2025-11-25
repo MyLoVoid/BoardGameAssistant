@@ -191,7 +191,7 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
   - Permite a admins y content editors gestionar juegos, FAQs y documentos.
 
 - **BoardGameGeek (BGG)**
-  - Solo se usa desde backend para sincronizar datos de juegos.
+  - Solo se usa desde backend para sincronizarevisa r datos de juegos.
   - Datos (nombre, jugadores, rating, imágenes, etc.) se guardan en la tabla `games` y/o `bgg_cache`.
   - La app y el portal nunca llaman a BGG directamente.
 
@@ -505,7 +505,7 @@ Para el MVP:
 | Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
 | Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
-| Portal de Administración de Juegos      | 📋 Pendiente  | 0%       | -                    |
+| Portal de Administración de Juegos      | 🔄 En progreso | 35%     | BGAI-0010            |
 | **TOTAL MVP**                           | 🔄 En progreso | ~60%    | 2025-11-24           |
 
 **Leyenda:**
@@ -749,16 +749,15 @@ Para el MVP:
    * ⏳ Servicio para registrar eventos en `usage_events` (analítica)
    * ⏳ Integrar logging en todos los endpoints principales
 
-3. **Portal de Administración de Juegos**
-   - Diseño de modelo de datos detallado para `game_localizations` y `knowledge_documents`.
-   - Endpoints admin en FastAPI:
-     - `POST /admin/games`.
-     - `POST /admin/games/import-bgg`.
-     - `PATCH /admin/games/{id}`.
+3. **Portal de Administración de Juegos (35% - backend listo, UI pendiente)**
+   - ✅ Extendido esquema con `knowledge_documents` para rastrear jobs de procesamiento.
+   - ✅ Endpoints admin en FastAPI:
+     - `POST /admin/games` / `PATCH /admin/games/{id}`.
+     - `POST /admin/games/import-bgg` (sincroniza datos desde BGG).
      - `POST /admin/games/{id}/faqs` / `PATCH` / `DELETE`.
      - `POST /admin/games/{id}/documents`.
      - `POST /admin/games/{id}/process-knowledge`.
-   - Implementación del portal Next.js (UI) consumiendo estos endpoints.
+   - ⏳ Implementación del portal Next.js (UI) consumiendo estos endpoints.
 
 4. **App Móvil (React Native + Expo) - Integración Backend**
    * ✅ ~~Integrar Supabase JS para login real~~ (BGAI-0005)

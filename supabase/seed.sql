@@ -152,6 +152,10 @@ DECLARE
   gloomhaven_id UUID;
   wingspan_id UUID;
   terraforming_id UUID;
+  gloomhaven_rulebook_es_id UUID;
+  gloomhaven_rulebook_en_id UUID;
+  wingspan_rulebook_en_id UUID;
+  terraforming_pending_id UUID;
 BEGIN
   SELECT id INTO gloomhaven_id FROM public.games WHERE bgg_id = 174430;
   SELECT id INTO wingspan_id FROM public.games WHERE bgg_id = 266192;
@@ -255,6 +259,56 @@ BEGIN
       'application/pdf',
       'pending',
       '{"pages": 28, "version": "1.0", "note": "Awaiting upload to AI provider"}'
+    );
+
+  SELECT id INTO gloomhaven_rulebook_es_id
+    FROM public.game_documents
+    WHERE game_id = gloomhaven_id AND language = 'es' AND source_type = 'rulebook'
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+  SELECT id INTO gloomhaven_rulebook_en_id
+    FROM public.game_documents
+    WHERE game_id = gloomhaven_id AND language = 'en' AND source_type = 'rulebook'
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+  SELECT id INTO wingspan_rulebook_en_id
+    FROM public.game_documents
+    WHERE game_id = wingspan_id AND language = 'en' AND source_type = 'rulebook'
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+  SELECT id INTO terraforming_pending_id
+    FROM public.game_documents
+    WHERE game_id = terraforming_id AND language = 'es' AND status = 'pending'
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+  INSERT INTO public.knowledge_documents (
+    game_id, game_document_id, language, source_type,
+    provider_name, provider_file_id, vector_store_id,
+    status, metadata, processed_at
+  ) VALUES
+    (
+      gloomhaven_id, gloomhaven_rulebook_es_id, 'es', 'rulebook',
+      'openai', 'file-abc123def456', 'vs_xyz789',
+      'ready', '{"chunks": 120, "seed": true}'::jsonb, NOW()
+    ),
+    (
+      gloomhaven_id, gloomhaven_rulebook_en_id, 'en', 'rulebook',
+      'openai', 'file-en123xyz789', 'vs_en456abc',
+      'ready', '{"chunks": 118, "seed": true}'::jsonb, NOW()
+    ),
+    (
+      wingspan_id, wingspan_rulebook_en_id, 'en', 'rulebook',
+      'gemini', 'gemini-file-abc123xyz', NULL,
+      'ready', '{"chunks": 42, "seed": true}'::jsonb, NOW()
+    ),
+    (
+      terraforming_id, terraforming_pending_id, 'es', 'rulebook',
+      NULL, NULL, NULL,
+      'pending', '{"note": "Awaiting ingestion"}'::jsonb, NULL
     );
 
 END $$;

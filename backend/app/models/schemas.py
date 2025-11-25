@@ -149,7 +149,7 @@ class GameFAQ(BaseModel):
     language: str = Field(..., description="Language code: es, en")
     question: str = Field(..., description="FAQ question")
     answer: str = Field(..., description="FAQ answer")
-    order: int = Field(0, description="Display order")
+    display_order: int = Field(0, description="Display order")
     visible: bool = Field(True, description="Visibility flag")
     created_at: datetime | None = Field(None, description="Creation timestamp")
     updated_at: datetime | None = Field(None, description="Last update timestamp")
@@ -217,3 +217,180 @@ class GameFAQsResponse(BaseModel):
     game_id: str = Field(..., description="Game UUID")
     language: str = Field(..., description="Language of FAQs")
     total: int = Field(..., description="Total number of FAQs")
+
+
+# ============================================
+# Admin Portal Request/Response Models
+# ============================================
+
+
+class GameCreateRequest(BaseModel):
+    """Payload for creating a new game from the admin portal"""
+
+    section_id: str = Field(..., description="Section UUID this game belongs to")
+    name_base: str = Field(..., description="Base name for the game")
+    bgg_id: int | None = Field(None, description="BoardGameGeek ID")
+    status: str = Field("active", description="Initial status")
+    min_players: int | None = Field(None, description="Minimum players")
+    max_players: int | None = Field(None, description="Maximum players")
+    playing_time: int | None = Field(None, description="Playing time in minutes")
+    rating: float | None = Field(None, description="BGG community rating")
+    thumbnail_url: str | None = Field(None, description="Thumbnail URL")
+    image_url: str | None = Field(None, description="Full image URL")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GameUpdateRequest(BaseModel):
+    """Payload for updating an existing game"""
+
+    section_id: str | None = Field(None, description="New section UUID")
+    name_base: str | None = Field(None, description="Game display name")
+    bgg_id: int | None = Field(None, description="BoardGameGeek ID")
+    status: str | None = Field(None, description="Updated status")
+    min_players: int | None = Field(None, description="Minimum players")
+    max_players: int | None = Field(None, description="Maximum players")
+    playing_time: int | None = Field(None, description="Playing time in minutes")
+    rating: float | None = Field(None, description="BGG rating")
+    thumbnail_url: str | None = Field(None, description="Thumbnail URL")
+    image_url: str | None = Field(None, description="Full image URL")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class BGGImportRequest(BaseModel):
+    """Request body for importing a game from BGG"""
+
+    bgg_id: int = Field(..., description="BoardGameGeek game ID")
+    section_id: str = Field(..., description="Section where the imported game will live")
+    status: str | None = Field(None, description="Optional status override")
+    overwrite_existing: bool = Field(
+        True,
+        description="When true, existing games with the same BGG ID are updated with new metadata",
+    )
+
+
+class BGGImportResponse(BaseModel):
+    """Response for BGG import operations"""
+
+    game: Game = Field(..., description="Game that was created/updated")
+    action: str = Field(..., description="created | updated")
+    synced_at: datetime = Field(..., description="Timestamp of the sync operation")
+    source: str = Field("bgg", description="Data source identifier")
+
+
+class FAQCreateRequest(BaseModel):
+    """Payload for creating FAQs"""
+
+    language: str = Field(..., description="Language code (es/en)")
+    question: str = Field(..., description="FAQ question")
+    answer: str = Field(..., description="FAQ answer")
+    display_order: int = Field(0, description="Display order")
+    visible: bool = Field(True, description="Visibility flag")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class FAQUpdateRequest(BaseModel):
+    """Payload for updating FAQs"""
+
+    language: str | None = Field(None, description="Language code (es/en)")
+    question: str | None = Field(None, description="FAQ question")
+    answer: str | None = Field(None, description="FAQ answer")
+    display_order: int | None = Field(None, description="Display order")
+    visible: bool | None = Field(None, description="Visibility flag")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class DocumentCreateRequest(BaseModel):
+    """Payload for creating a new game document reference"""
+
+    language: str = Field(..., description="Language code")
+    source_type: str = Field(..., description="Source type (rulebook, faq, etc.)")
+    file_name: str = Field(..., description="Original file name")
+    file_path: str = Field(..., description="Path in Supabase Storage")
+    file_size: int = Field(..., description="File size in bytes")
+    file_type: str = Field(..., description="MIME type")
+    provider_name: str | None = Field(None, description="AI provider handling the document")
+    provider_file_id: str | None = Field(None, description="Provider file identifier")
+    vector_store_id: str | None = Field(None, description="Provider vector store identifier")
+    metadata: dict[str, Any] | None = Field(None, description="Extra metadata (JSON)")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GameDocument(BaseModel):
+    """Game document metadata record"""
+
+    id: str = Field(..., description="Document UUID")
+    game_id: str = Field(..., description="Game UUID")
+    language: str = Field(..., description="Document language")
+    source_type: str = Field(..., description="Source type (rulebook, faq, etc.)")
+    file_name: str = Field(..., description="Original file name")
+    file_path: str = Field(..., description="Supabase storage path")
+    file_size: int = Field(..., description="File size in bytes")
+    file_type: str = Field(..., description="MIME type")
+    provider_name: str | None = Field(None, description="AI provider")
+    provider_file_id: str | None = Field(None, description="Provider file identifier")
+    vector_store_id: str | None = Field(None, description="Provider vector store identifier")
+    status: str = Field(..., description="Processing status")
+    metadata: dict[str, Any] | None = Field(None, description="Metadata JSON payload")
+    error_message: str | None = Field(None, description="Last processing error (if any)")
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Update timestamp")
+    processed_at: datetime | None = Field(None, description="Processing completion timestamp")
+    uploaded_at: datetime | None = Field(None, description="Upload timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KnowledgeDocument(BaseModel):
+    """Knowledge processing record linked to a game document"""
+
+    id: str = Field(..., description="Knowledge record UUID")
+    game_id: str = Field(..., description="Associated game UUID")
+    game_document_id: str | None = Field(None, description="Source document UUID")
+    language: str = Field(..., description="Language code")
+    source_type: str = Field(..., description="Document type (rulebook, faq, etc.)")
+    provider_name: str | None = Field(None, description="AI provider name")
+    provider_file_id: str | None = Field(None, description="Provider file ID")
+    vector_store_id: str | None = Field(None, description="Provider vector store ID")
+    status: str = Field(..., description="Processing status")
+    metadata: dict[str, Any] | None = Field(None, description="Processing metadata JSON")
+    error_message: str | None = Field(None, description="Error message if failed")
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+    processed_at: datetime | None = Field(None, description="Completion timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KnowledgeProcessRequest(BaseModel):
+    """Request body for /admin/games/{id}/process-knowledge"""
+
+    document_ids: list[str] | None = Field(
+        None,
+        description="Specific document IDs to process. Defaults to pending documents for the game.",
+    )
+    language: str | None = Field(None, description="Optional language filter")
+    provider_name: str | None = Field(None, description="Provider to use for processing")
+    provider_file_id: str | None = Field(None, description="Provider file ID override")
+    vector_store_id: str | None = Field(None, description="Provider vector store ID override")
+    notes: str | None = Field(None, description="Optional notes to store in metadata")
+    mark_as_ready: bool = Field(
+        False,
+        description="If true, mark documents and knowledge records as ready immediately",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class KnowledgeProcessResponse(BaseModel):
+    """Response for knowledge processing trigger"""
+
+    game_id: str = Field(..., description="Game UUID")
+    processed_document_ids: list[str] = Field(..., description="Document IDs affected")
+    knowledge_documents: list[KnowledgeDocument] = Field(
+        ..., description="Knowledge records created for this request"
+    )
