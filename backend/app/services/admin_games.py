@@ -22,7 +22,7 @@ from app.models.schemas import (
     KnowledgeDocument,
     KnowledgeProcessRequest,
 )
-from app.services.bgg import BGGServiceError, fetch_bgg_game
+from app.services import bgg as bgg_service
 from app.services.supabase import SupabaseRecord, get_supabase_admin_client
 
 
@@ -73,6 +73,22 @@ def _ensure_faq_exists(faq_id: str) -> SupabaseRecord:
     return record
 
 
+def _build_bgg_payload(bgg_data: bgg_service.BGGGameData, synced_at: datetime) -> dict[str, Any]:
+    """Convert BGG metadata into the fields stored in Supabase."""
+
+    return {
+        "name_base": bgg_data.name,
+        "min_players": bgg_data.min_players,
+        "max_players": bgg_data.max_players,
+        "playing_time": bgg_data.playing_time,
+        "rating": bgg_data.rating,
+        "thumbnail_url": bgg_data.thumbnail_url,
+        "image_url": bgg_data.image_url,
+        # Supabase client expects ISO strings for timestamptz fields
+        "last_synced_from_bgg_at": synced_at.isoformat(),
+    }
+
+
 def create_game(payload: GameCreateRequest) -> Game:
     """Create a new game record."""
 
@@ -114,23 +130,16 @@ def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
     """Import or refresh a game using the BGG XML API."""
 
     try:
-        bgg_data = fetch_bgg_game(request.bgg_id)
-    except BGGServiceError as exc:
+        bgg_data = bgg_service.fetch_bgg_game(request.bgg_id)
+    except bgg_service.BGGServiceError as exc:
         raise AdminPortalError(str(exc), status_code=status.HTTP_502_BAD_GATEWAY) from exc
 
     supabase = get_supabase_admin_client()
     synced_at = _now()
     payload: dict[str, Any] = {
         "section_id": request.section_id,
-        "name_base": bgg_data.name,
         "bgg_id": request.bgg_id,
-        "min_players": bgg_data.min_players,
-        "max_players": bgg_data.max_players,
-        "playing_time": bgg_data.playing_time,
-        "rating": bgg_data.rating,
-        "thumbnail_url": bgg_data.thumbnail_url,
-        "image_url": bgg_data.image_url,
-        "last_synced_from_bgg_at": synced_at,
+        **_build_bgg_payload(bgg_data, synced_at),
     }
     if request.status:
         payload["status"] = request.status
@@ -163,6 +172,42 @@ def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
         raise AdminPortalError(f"Failed to write BGG data: {exc}") from exc
 
     return Game(**record), action
+
+
+def sync_game_from_bgg(game_id: str) -> Game:
+    """Refresh an existing game using its stored BGG ID."""
+
+    record = _ensure_game_exists(game_id)
+    bgg_id = record.get("bgg_id")
+    if not bgg_id:
+        raise AdminPortalError(
+            "Game does not have a BGG ID configured, cannot sync",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        bgg_id_int = int(bgg_id)
+    except (TypeError, ValueError):
+        raise AdminPortalError(
+            f"Game has invalid BGG ID: {bgg_id}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        ) from None
+
+    try:
+        bgg_data = bgg_service.fetch_bgg_game(bgg_id_int)
+    except bgg_service.BGGServiceError as exc:
+        raise AdminPortalError(str(exc), status_code=status.HTTP_502_BAD_GATEWAY) from exc
+
+    supabase = get_supabase_admin_client()
+    payload = _build_bgg_payload(bgg_data, _now())
+
+    try:
+        supabase.table("games").update(payload).eq("id", game_id).execute()
+    except Exception as exc:  # pragma: no cover - network/service errors
+        raise AdminPortalError(f"Failed to sync game {game_id} from BGG: {exc}") from exc
+
+    updated = _ensure_game_exists(game_id)
+    return Game(**updated)
 
 
 def create_game_faq(game_id: str, payload: dict[str, Any]) -> GameFAQ:

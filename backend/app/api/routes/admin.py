@@ -33,6 +33,7 @@ from app.services.admin_games import (
     delete_game_faq,
     import_game_from_bgg,
     process_game_knowledge,
+    sync_game_from_bgg,
     update_game,
     update_game_faq,
 )
@@ -100,6 +101,21 @@ async def import_game_from_bgg_endpoint(
         synced_at=synced_at,
         source="bgg",
     )
+
+
+@router.post(
+    "/games/{game_id}/sync-bgg",
+    response_model=Game,
+    summary="Sync an existing game with BGG metadata",
+)
+async def sync_game_from_bgg_endpoint(
+    game_id: str,
+    current_user: CurrentAdmin,
+) -> Game:
+    try:
+        return sync_game_from_bgg(game_id)
+    except AdminPortalError as exc:
+        raise _handle_admin_error(exc) from exc
 
 
 @router.post(
