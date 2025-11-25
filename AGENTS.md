@@ -64,7 +64,7 @@ See `docs/BGAI-0005_mobile-supabase-integration.md` for a complete example follo
 
 ## Project Structure & Module Organization
 - `MVP.md` (root) captures the authoritative architecture and scope; move future design notes into `docs/`.
-- `docs/` tracks numbered notes (`BGAI-0001_supabase.md` … `BGAI-0008_mobile-localization.md`) so agents can reference history quickly.
+- `docs/` tracks numbered notes (`BGAI-0001_supabase.md` … `BGAI-0009_mobile-chat-history.md`) so agents can reference history quickly; review `BGAI-0009` before touching chat UX.
 - `mobile/` hosts the Expo React Native client: `src/` (screens, hooks, localization), `assets/` (icons, rulebooks), and `__tests__/`.
 - `backend/` contains the Python FastAPI service: `app/` (routers, adapters), `rag/` (chunkers, embeddings), `feature_flags/`, and `tests/`.
 - `supabase/` stores SQL migrations plus seed YAML so dev/prod schemas stay aligned.
@@ -81,6 +81,13 @@ See `docs/BGAI-0005_mobile-supabase-integration.md` for a complete example follo
 - React Native uses TypeScript, 2-space indents, PascalCase components, camelCase hooks/utilities, and feature-scoped file names (`BGCGameList.tsx`). All user-facing copy must go through `useLanguage().t()` instead of hardcoded strings.
 - Python backend code follows Black (88 chars), isort, and mypy; modules snake_case, Pydantic models PascalCase.
 - Keep feature-flag configs declarative: YAML per environment under `backend/feature_flags/ENV.yaml`.
+
+## Content & RAG Guardrails
+- New board-game content always flows through Supabase: create/update `games`, `game_faqs`, and scope-specific `feature_flags` (roles + dev/prod) instead of hardcoding availability. Respect status flags (`active`, `beta`, `hidden`) so the client can gate rollouts.
+- All BoardGameGeek syncs run server-side (see `MVP.md` §8). Use backend jobs or scripts to fetch XML, normalize fields, and update Supabase tables; mobile and admin tools must never hit BGG directly.
+- Vector documents live in `game_docs_vectors`. Follow the ingestion rules from `MVP.md`: upload raw files to storage, chunk ~200–500 words, generate embeddings with the configured provider (`text-embedding-ada-002` by default), and capture metadata (language, source_type, page). Do not insert rows without populated embeddings.
+- `POST /genai/query` (FastAPI) is the only entry point for AI answers. It enforces feature-flag checks, multi-language (ES/EN), session management (`chat_sessions`/`chat_messages`), and rate limits stored in feature-flag metadata (`daily_limit`). Keep any new logic compatible with this contract and update schemas if you need extra telemetry.
+- `usage_events` already tracks `chat_question`, `chat_answer`, `game_open`, `faq_view`, etc. When adding analytics or admin flows, emit structured events (with `environment`) instead of ad-hoc logging so dashboards remain in sync.
 
 ## Testing Guidelines
 - UI tests live next to components as `Component.test.tsx` using React Testing Library; snapshot only when UI stabilizes.

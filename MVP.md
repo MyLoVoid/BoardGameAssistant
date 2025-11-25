@@ -26,8 +26,9 @@
 - **GenAI & RAG**:
   - GenAI Adapter en backend propio (FastAPI).
   - RAG por juego con diseño **proveedor-agnóstico**:
-    - Hoy: tablas y soporte para `pgvector` en Supabase (se debe depreciar por nueva solución).
-    - Futuro inmediato: evaluar **File Search “todo en uno”** (OpenAI / Gemini) como motor principal, usando el backend como capa de abstracción.
+    - **Estrategia adoptada**: **File Search delegado a proveedores** (OpenAI File API, Gemini File API, Claude).
+    - Los documentos se suben a los servicios de vectorización nativos de cada proveedor.
+    - El backend actúa como orquestador y abstracción entre la app y los diferentes proveedores de IA.
 
 **Escala inicial del MVP:**
 
@@ -162,8 +163,7 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
     - Feature flags.
     - Historial de chat.
     - Analítica de uso.
-    - Documentos y/o vectores para RAG.
-  - Extensión **pgvector** habilitada para búsqueda vectorial.
+    - Referencias a documentos subidos a proveedores de IA.
   - Storage para PDFs (reglamentos, ayudas, expansiones).
 
 - **Backend fino propio (API REST + GenAI Adapter)**
@@ -197,10 +197,12 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
 
 - **Proveedor de GenAI/RAG**
   - Diseñado como componente intercambiable:
-    - Opción 1: Supabase + pgvector (`game_docs_vectors`).
-    - Opción 2: OpenAI File Search.
-    - Opción 3: Gemini File Search.
+    - **OpenAI File Search** (Files API + Vector Stores + Assistants API).
+    - **Gemini File Search** (File API + Grounding con Google Search).
+    - **Claude** (Prompt Caching + context injection).
   - El GenAI Adapter se implementa contra una interfaz común para poder cambiar el proveedor sin tocar la app ni el portal.
+  - Los documentos se suben directamente a los vector stores de cada proveedor.
+  - La tabla `game_documents` almacena referencias (file IDs, vector store IDs) para tracking y gestión.
 
 ### 4.2. Entornos
 
@@ -298,15 +300,25 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
    * content
    * created_at
 
-8. **`game_docs_vectors`** (RAG)
+8. **`game_documents`** (Referencias a documentos en proveedores de IA)
 
    * id
    * game_id
-   * language      → `es` / `en`
-   * source_type   → `rulebook`, `faq`, `bgg`, `house_rules`, etc.
-   * chunk_text    → (depreciar)
-   * embedding     → (depreciar)
-   * metadata      → información adicional (página, sección del manual, etc.)
+   * language          → `es` / `en`
+   * source_type       → `rulebook`, `faq`, `bgg`, `house_rules`, `expansion`, etc.
+   * file_name         → nombre original del archivo
+   * file_path         → ruta en Supabase Storage
+   * file_size         → tamaño en bytes
+   * file_type         → mime type (`application/pdf`, `text/markdown`, etc.)
+   * provider_name     → `openai`, `gemini`, `claude`, o null
+   * provider_file_id  → ID del archivo en el proveedor (ej: OpenAI File ID)
+   * vector_store_id   → ID del vector store en el proveedor (si aplica)
+   * status            → `pending`, `uploading`, `processing`, `ready`, `error`
+   * error_message     → mensaje de error si `status = error`
+   * processed_at      → timestamp de procesamiento exitoso
+   * metadata          → JSON con información adicional (página, sección del manual, etc.)
+   * uploaded_at       → timestamp de subida inicial
+   * updated_at        → timestamp de última actualización
 
 9. **`usage_events`** (analítica básica)
 
@@ -326,26 +338,29 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
 ### 6.1. RAG por juego (concepto)
 
 - Cada juego tiene su propia base de conocimiento, construida a partir de:
-  - Documentos originales (`knowledge_documents`).
+  - Documentos originales subidos por administradores (PDFs de reglamentos, ayudas, expansiones).
   - FAQs extendidas.
   - Información relevante de BGG u otras fuentes.
 
-- El índice de búsqueda puede vivir en:
-  - Tablas internas (`game_docs_vectors` + pgvector). → (depreciar)
-  - Vector store externo via File Search (OpenAI / Gemini).
+- **Estrategia de vectorización delegada a proveedores:**
+  - Los documentos se suben directamente a los servicios de File Search de cada proveedor de IA.
+  - **OpenAI**: Files API + Vector Stores + Assistants API.
+  - **Gemini**: File API + Grounding.
+  - **Claude**: Context injection directo (sin vector store nativo, se usa prompt caching).
+  - La tabla `game_documents` almacena referencias (`provider_file_id`, `vector_store_id`) para tracking.
 
-Pipeline RAG (conceptual):
+Pipeline RAG (actualizado):
 
 1. Pregunta del usuario llega con `game_id` y `language`.
 2. El GenAI Adapter consulta la configuración de RAG para ese juego:
-   - Proveedor activo (pgvector interno, OpenAI File Search, Gemini File Search, etc.).
-3. Se buscan los N trozos más relevantes filtrando por:
-   - `game_id`.
-   - `language`.
-   - opcionalmente `source_type` si quieres priorizar manual vs FAQs.
-4. Se construye el prompt con la pregunta + los trozos relevantes.
-5. Se envía el prompt al modelo de IA.
-6. Se recibe la respuesta, se guarda y se devuelve al cliente.
+   - Proveedor activo (OpenAI, Gemini, Claude).
+   - Obtiene los `provider_file_id` y `vector_store_id` desde `game_documents` filtrando por `game_id`, `language` y `status = 'ready'`.
+3. El GenAI Adapter delega la búsqueda semántica al proveedor:
+   - **OpenAI**: usa Assistants API con el `vector_store_id` asociado.
+   - **Gemini**: usa File API + grounding con los `provider_file_id`.
+   - **Claude**: inyecta el contexto directamente en el prompt (requiere pre-carga del contenido).
+4. El proveedor devuelve la respuesta con referencias/citaciones de los documentos relevantes.
+5. Se recibe la respuesta, se guarda en `chat_messages` y se devuelve al cliente con metadatos de citación.
 
 ### 6.2. Endpoint principal del GenAI Adapter
 
@@ -383,8 +398,10 @@ Salida (conceptual):
 
 6. Ejecuta pipeline RAG:
    * Captura el historial de la sesión y la pregunta actual.
-   * Llama al modelo de IA con prompt enriquecido (Files Search) para buscar la respuesta.
-   * (Opcional) Posbible búsqueda en internet (foros, webs, etc).   
+   * Obtiene referencias a documentos desde `game_documents` (filtrado por `game_id`, `language`, `status = 'ready'`).
+   * Delega la búsqueda al proveedor de IA configurado (OpenAI File Search, Gemini, Claude).
+   * El proveedor ejecuta búsqueda semántica en su propio vector store y devuelve respuesta + citaciones.
+   * (Opcional) Posible búsqueda en internet (foros, webs, etc) si el proveedor lo soporta (ej: Gemini Grounding).
    * (Opcional) Aplica post-procesamiento si es necesario (filtrado, formateo, etc.).
   
 7. Al recibir la respuesta:
@@ -459,15 +476,15 @@ Para el MVP:
      - Traducciones centralizadas (`translations.ts`).
      - Componentes consumen `t(key)` para mantener consistencia.
   2. **Contenido dinámico**:
-     - FAQs (`game_faqs.language`) y chunks (`game_docs_vectors.language`) sirven el idioma solicitado.
+     - FAQs (`game_faqs.language`) y documentos (`game_documents.language`) sirven el idioma solicitado.
      - Hooks móviles reintentan la descarga cuando cambia el idioma.
   3. **Idioma de sesión/chat**:
      - `chat_sessions.language` mantiene el valor elegido.
-     - El GenAI Adapter recibe el idioma para buscar chunks y generar respuestas coherentes.
+     - El GenAI Adapter recibe el idioma para buscar documentos relevantes en el proveedor y generar respuestas coherentes.
 
 - **Fallback actual**
   - Si el usuario selecciona ES, se buscan primero FAQs `language = 'es'`; si no existen, se usa EN y se indica el idioma en la UI.
-  - RAG seguirá el mismo patrón: búsqueda en el idioma preferido con fallback a EN hasta que se indexen más documentos.
+  - RAG seguirá el mismo patrón: búsqueda de documentos en el idioma preferido con fallback a EN hasta que se suban más documentos multi-idioma.
 
 ---
 
@@ -510,13 +527,13 @@ Para el MVP:
      * `feature_flags` - Control granular de features
      * `chat_sessions` - Sesiones de conversación IA
      * `chat_messages` - Mensajes individuales
-     * `game_docs_vectors` - Vectores para RAG (pgvector) → (depreciar)
+     * `game_documents` - Referencias a documentos en proveedores de IA (antes `game_docs_vectors`)
      * `usage_events` - Analítica
-   * ✅ Extensión pgvector habilitada
-   * ✅ Índices optimizados (incluyendo HNSW para búsqueda vectorial)
    * ✅ Row Level Security (RLS) configurado
    * ✅ Triggers automáticos (updated_at, creación de perfiles)
    * ✅ Tipos ENUM definidos (roles, idiomas, estados, etc.)
+   * ✅ Índices optimizados para búsquedas por juego, idioma, estado
+   * 🔄 **Migración pendiente**: Renombrar `game_docs_vectors` → `game_documents` y depreciar campos `chunk_text`, `embedding`
 
 2. **Datos semilla** (`supabase/seed.sql`)
    * ✅ Sección "Board Game Companion" configurada
@@ -524,7 +541,7 @@ Para el MVP:
      * Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne
    * ✅ FAQs multi-idioma de prueba (ES/EN)
    * ✅ Feature flags configurados por rol y entorno (dev/prod)
-   * ✅ Chunks de ejemplo para RAG
+   * 🔄 **Migración pendiente**: Actualizar seed de `game_docs_vectors` a `game_documents` con estructura de referencias a proveedores
 
 3. **Entorno de desarrollo local**
    * ✅ Supabase local configurado (`boardgameassistant-dev`)
@@ -704,16 +721,25 @@ Para el MVP:
 ### 🔄 En progreso
 
 #### **Backend API REST - RAG + GenAI Adapter (20%)**
-- Definida interfaz de servicio para búsqueda de chunks relevante.
-- Pendiente integrar motores concretos (pgvector vs File Search) y cerrar contrato de `POST /genai/query`.
+- Definida interfaz de servicio para búsqueda con proveedores externos.
+- **Estrategia actualizada**: Delegar vectorización a OpenAI File Search, Gemini File API, Claude.
+- Pendiente:
+  - Implementar adaptadores para cada proveedor (OpenAI, Gemini, Claude).
+  - Servicio de subida de documentos a proveedores.
+  - Endpoint `POST /genai/query` completo con delegación a proveedores.
+  - Migración de tabla `game_docs_vectors` → `game_documents` con nueva estructura.
 
 ### 📋 Pendiente
 
 1. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Servicio de integración con File Search.
-   * ⏳ Función `search_relevant_chunks(game_id, question, language)`.
-   * ⏳ Integración con OpenAI/Gemini/Claude para embeddings y respuestas.
-   * ⏳ Endpoint `POST /genai/query` completo.
+   * ⏳ Migración de BD: Renombrar `game_docs_vectors` → `game_documents` con nueva estructura.
+   * ⏳ Servicio de subida de documentos a proveedores (OpenAI Files API, Gemini File API).
+   * ⏳ Adaptadores específicos por proveedor:
+     - OpenAI: Files API + Vector Stores + Assistants API
+     - Gemini: File API + Grounding
+     - Claude: Context injection + Prompt Caching
+   * ⏳ Servicio de orquestación para delegar búsqueda semántica a proveedores.
+   * ⏳ Endpoint `POST /genai/query` completo con delegación.
    * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`.
    * ⏳ Rate limiting basado en metadata de feature flags.
 
@@ -741,9 +767,14 @@ Para el MVP:
    * ⏳ Preparar hooks/UI para `POST /genai/query` (chat IA)
    * ⏳ Actualizar assets definitivos antes de publicar builds
 
-5. **Pipeline de procesamiento RAG**
-   * ⏳ Script para procesar PDFs/manuales → texto → embeddings.
-   * ⏳ Flujo para capturar juego, historia, pregunta, enviar a IA y guardar respuesta. 
+5. **Pipeline de procesamiento de documentos**
+   * ⏳ Endpoint admin para subir documentos a Supabase Storage.
+   * ⏳ Job/servicio para procesar documentos:
+     - Subir PDF a proveedor de IA (OpenAI Files API, Gemini File API).
+     - Crear/actualizar vector store (si aplica).
+     - Guardar referencias (`provider_file_id`, `vector_store_id`) en `game_documents`.
+     - Actualizar estado (`pending` → `uploading` → `processing` → `ready`).
+   * ⏳ Endpoint admin `POST /admin/games/{id}/process-knowledge` para disparar procesamiento. 
 
 5. **Mejoras adicionales de app móvil**
    - Assets definitivos (iconos, splash, ilustraciones).
@@ -792,10 +823,10 @@ Para el MVP:
    * ⏳ Flujo de onboarding por `bgg_id`.
 
 
-5. **Scripts de utilidad y pipeline RAG**
-   * ⏳ Procesar al menos 5–10 juegos reales (PDFs → texto → Files Search).
+5. **Scripts de utilidad y pipeline de documentos**
+   * ⏳ Procesar al menos 5–10 juegos reales (PDFs → subida a proveedores → referencias en BD).
    * ⏳ Job/botón para sincronizar juegos desde BGG.
-   * ⏳ Script para procesar PDFs/manuales → texto → embeddings.
+   * ⏳ Script de migración para convertir datos existentes de `game_docs_vectors` a `game_documents`.
 
 6. Afinar analítica y logging en backend:
    * ⏳ Servicio de `usage_events` y dashboards básicos.

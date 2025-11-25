@@ -8,9 +8,10 @@ Board Game Assistant Intelligent (BGAI) - A modular mobile assistant for board g
 
 **Architecture:**
 - Mobile App: React Native + Expo (Android/iOS)
-- Main Backend: Supabase (Auth, Postgres with pgvector)
-- Custom Backend: API REST facade + GenAI Adapter (RAG per game, AI integrations)
+- Main Backend: Supabase (Auth, Postgres, Storage)
+- Custom Backend: API REST facade + GenAI Adapter (RAG per game via provider-specific File Search, AI integrations)
 - External Data: BoardGameGeek (BGG) API for game information sync
+- AI Providers: OpenAI (Files API + Vector Stores), Gemini (File API + Grounding), Claude (Context Injection)
 
 **Languages:** Spanish (ES) and English (EN) from MVP
 **Environments:** Separate dev and prod environments
@@ -33,10 +34,17 @@ Roles: `admin`, `developer`, `basic`, `premium`, `tester`
 - Usage limits (e.g., daily chat questions) stored in feature flag metadata
 
 ### RAG (Retrieval Augmented Generation) System
+**Updated Strategy: Delegated vectorization to AI providers**
+
 Each game has its own knowledge base:
-- Game documentation chunked and stored in `game_docs_vectors` with pgvector embeddings
-- Filtered by `game_id` + `language` + optionally `source_type`
-- Pipeline: user question → vector search → context retrieval → LLM prompt → response
+- Game documents (PDFs, manuals, expansions) uploaded to Supabase Storage
+- Documents are then uploaded to provider-specific vector stores:
+  - **OpenAI**: Files API + Vector Stores + Assistants API
+  - **Gemini**: File API + Grounding with Google Search
+  - **Claude**: Context injection + Prompt Caching (no native vector store)
+- References stored in `game_documents` table with `provider_file_id` and `vector_store_id`
+- Filtered by `game_id` + `language` + `status = 'ready'` + optionally `source_type`
+- Pipeline: user question → backend fetches document refs → delegates to provider's semantic search → LLM response with citations
 - Supported providers: OpenAI, Gemini, Claude (configurable per session)
 
 ### Data Model Key Tables
@@ -46,7 +54,7 @@ Each game has its own knowledge base:
 - `game_faqs` - Multi-language FAQs per game
 - `feature_flags` - Granular feature access control
 - `chat_sessions` + `chat_messages` - Conversation history
-- `game_docs_vectors` - RAG embeddings (pgvector)
+- `game_documents` - Document references with provider file IDs (uploaded to OpenAI/Gemini/Claude vector stores)
 - `usage_events` - Analytics tracking
 
 ### Backend API Structure
@@ -58,13 +66,17 @@ Custom backend acts as facade between mobile app and:
 **Critical endpoint:** `POST /genai/query`
 - Input: `game_id`, `question`, `language`, `session_id` (optional)
 - Validates user token, checks feature flags, enforces usage limits
-- Executes RAG pipeline, logs analytics events
-- Output: `session_id`, `answer`, `citations`, `model_info`, `limits`
+- Executes RAG pipeline by delegating to configured AI provider (OpenAI/Gemini/Claude)
+- Backend fetches document references from `game_documents` and passes provider IDs to the AI service
+- Logs analytics events
+- Output: `session_id`, `answer`, `citations` (with source document references), `model_info`, `limits`
 
 ## Multi-Language Strategy
-- Content in `game_faqs` and `game_docs_vectors` tagged with `language` field
+- Content in `game_faqs` and `game_documents` tagged with `language` field
+- Documents uploaded separately per language to provider vector stores
 - Fallback: ES preferred → EN if not available
 - Session language stored in `chat_sessions`
+- RAG searches only documents matching the session language (with fallback to EN)
 
 ## Analytics from Day 1
 Track via `usage_events` and session tables:
