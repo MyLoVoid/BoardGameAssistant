@@ -37,7 +37,7 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # 3) App móvil Expo
 cd mobile
 npm install
-npx expo start --android   # o --ios / --web
+npx expo start --clear --android   # o --ios / --web
 ```
 
 Env vars clave:

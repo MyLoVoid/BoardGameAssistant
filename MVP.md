@@ -1,26 +1,50 @@
+# MVP – Board Game Assistant Intelligence (BGAI)
+
+> Versión: 2025-11-24  
+> Estado: **MVP en desarrollo** (incluye Portal de Administración de Juegos y estado de proyecto actualizado)
+
 ## 0. Resumen ejecutivo del MVP
 
 * **Producto:** App móvil “Board Game Assitant Inteligent” (BGAI), asistente modular para juegos de mesa.
-* **Plataformas:** Android e iOS.
-* **Arquitectura elegida:**
+**Plataformas:**
 
-  * App móvil multiplataforma (React Native + Expo).
-  * Backend principal en **Supabase** (Auth, Postgres, vectores con pgvector).
-  * **Backend fino propio** (Python + FastAPI) como API REST + **GenAI Adapter** (RAG por juego, integraciones IA).
-* **Escala inicial:** ~100 usuarios testers, 10–50 juegos en MVP (escalable a 500–1000 juegos).
-* **Idiomas:** ES / EN desde el MVP.
-* **Entornos:** dev y prod separados.
+- App móvil para **Android e iOS** (multiplataforma, React Native + Expo).
+- **Portal web de administración de juegos** (Next.js + Supabase + backend propio).
+
+**Arquitectura elegida (alto nivel):**
+
+- **App móvil** (React Native + Expo).
+- **Backend propio fino** (Python + FastAPI) como **fachada única**:
+  - API REST para la app móvil.
+  - API REST `/admin/...` para el portal de administración.
+  - Orquestador de GenAI/RAG.
+  - Integración con BoardGameGeek (BGG).
+- **Supabase** como backend principal:
+  - Autenticación (Auth).
+  - Base de datos Postgres (usuarios, juegos, FAQs, vectores RAG, analítica, etc.).
+  - Almacenamiento de archivos (PDFs de reglas, ayudas, expansiones).
+- **GenAI & RAG**:
+  - GenAI Adapter en backend propio (FastAPI).
+  - RAG por juego con diseño **proveedor-agnóstico**:
+    - Hoy: tablas y soporte para `pgvector` en Supabase (se debe depreciar por nueva solución).
+    - Futuro inmediato: evaluar **File Search “todo en uno”** (OpenAI / Gemini) como motor principal, usando el backend como capa de abstracción.
+
+**Escala inicial del MVP:**
+
+- ~100 usuarios testers.
+- **10–50 juegos** en MVP (diseñado para escalar a **500–1000 juegos**).
+- Idiomas soportados desde el MVP: **ES / EN**.
+- Entornos separados: **dev** y **prod**.
 
 ---
 
 ## 1. Objetivo y contexto
-
-* Crear una app que actúe como **asistente para juegos de mesa**, centrada inicialmente en una sección de ayuda por juego.
-* Toda la arquitectura debe ser **modular**:
-
-  * Secciones que se puedan activar/desactivar.
-  * Juegos como “subsecciones” configurables.
-  * Features (FAQ, chat IA, score helpers, etc.) controlados por configuración, no hardcodeados.
+- Crear una app que actúe como **asistente para juegos de mesa**, centrada inicialmente en una sección de ayuda por juego.
+- Arquitectura **modular**:
+  - Secciones que se puedan activar/desactivar.
+  - Juegos como “subsecciones” configurables.
+  - Features (FAQ, chat IA, score helpers, etc.) controlados por configuración (**feature flags**), no quemados en la app.
+- Todo el contenido (textos, FAQs, documentos para RAG) se gestiona desde un **Portal de Administración de Juegos**, accesible vía web solo para roles internos.
 
 ---
 
@@ -29,88 +53,87 @@
 ### 2.1. Funcionalidades principales
 
 1. **Login y gestión de usuarios**
-
-   * Registro / login con email + password.
-   * Roles de usuario: `admin`, `developer`, `basic`, `premium`, `tester`.
-   * MVP sin pagos reales, pero con roles y estructura listos para diferenciar features.
+   
+   - Registro / login con email + password.
+   - Roles de usuario: `admin`, `developer`, `basic`, `premium`, `tester`.
+   - MVP sin pagos reales, pero con roles y estructura listos para diferenciar features.
 
 2. **Sección Board Game Companion (BGC)**
 
-   * Home de la sección con lista de juegos disponibles.
-   * Entre 10 y 50 juegos en el MVP (pensado para escalar a 500–1000).
+   - Home de la sección con lista de juegos disponibles.
+   - Entre 10 y 50 juegos en el MVP (pensado para escalar a 500–1000).
 
 3. **Detalle de juego (subsección por juego)**
 
-   * **Home del juego**:
-
-     * Información general del juego (nombre, nº de jugadores, tiempo, rating, portada, etc.).
-     * Datos sincronizados desde **BoardGameGeek (BGG)** y cacheados en la BD propia.
-   * **FAQs**:
-
-     * Lista de preguntas y respuestas por juego.
-     * Multi-idioma ES/EN (al menos un idioma seguro).
-   * **Enlace a BGG**:
-
-     * Link a la página oficial del juego en BGG.
-   * **Helper GenAI (chat)**:
-
-     * Interfaz tipo chat donde el usuario hace preguntas sobre el juego.
-     * El backend llama al servicio GenAI (RAG por juego) y devuelve las respuestas.
-     * Historial de conversación guardado por usuario/juego/sesión.
+   - **Home del juego**:
+     - Información general del juego (nombre, nº de jugadores, tiempo, rating, portada, etc.).
+     - Datos sincronizados desde **BoardGameGeek (BGG)** y cacheados en la BD propia.
+   - **FAQs**:
+     - Lista de preguntas y respuestas por juego.
+     - Multi-idioma ES/EN (al menos un idioma seguro).
+   - **Enlace a BGG**:
+     - Link a la página oficial del juego en BGG.
+   - **Helper GenAI (chat)**:
+     - Interfaz tipo chat donde el usuario hace preguntas sobre el juego.
+     - El backend llama al servicio GenAI (RAG por juego) y devuelve las respuestas.
+     - Historial de conversación guardado por usuario/juego/sesión.
 
 4. **Monetización (estructura, no cobro real)**
 
-   * Diferenciación conceptual entre `basic`, `premium` y `tester` mediante:
-
-     * Acceso a juegos.
-     * Acceso a ciertas features (por ej., helpers avanzados).
-     * Límites de uso (número de preguntas al día).
+   - Diferenciación conceptual entre `basic`, `premium` y `tester` mediante:
+     - Acceso a juegos.
+     - Acceso a ciertas features (por ej., helpers avanzados).
+     - Límites de uso (número de preguntas al día).
 
 5. **Sin modo offline en el MVP**, pero sin cerrarse puertas para añadirlo después (modelo de datos y llamadas pensado para ello).
 
 6. **Localización completa (ES/EN)**
 
-   * Selector de idioma persistente dentro de la app.
-   * Toda la UI soporta español e inglés y cambia dinámicamente.
-   * Las consultas a FAQs y chat usan el idioma elegido.
+   - Selector de idioma persistente dentro de la app.
+   - Toda la UI soporta español e inglés y cambia dinámicamente.
+   - Las consultas a FAQs y chat usan el idioma elegido.
 
+7. **Portal de Administración de Juegos (web, solo internos)**
+
+   - Onboarding de juegos a partir de su **ID de BGG**.
+   - Configuración de datos básicos y estado de publicación del juego.
+   - Definición de la **página inicial** del juego por idioma (textos, imagen principal, enlace BGG).
+   - Gestión de **FAQs** por juego e idioma.
+   - Subida y gestión de **documentos de conocimiento** (reglamentos, ayudas, expansiones, etc.).
+   - Botón de **“Procesar conocimiento”** que dispara en el backend la ingestión RAG para ese juego.
+   - 
 ---
 
 ## 3. Usuarios, roles y diferencias iniciales
 
-Roles definidos:
+Roles definidos en el MVP:
 
-* **admin**
+- **admin**
+  - Acceso total a todas las secciones y juegos.
+  - Puede gestionar configuración, features, juegos, FAQs, documentación.
+  - Acceso completo al Portal de Administración.
 
-  * Acceso total a todas las secciones y juegos.
-  * Puede gestionar configuración, features, juegos, etc.
+- **developer**
+  - Similar a admin en entorno dev (tests y pruebas).
+  - Pensado para pruebas técnicas y debugging.
 
-* **developer**
+- **basic**
+  - Acceso a juegos “free”.
+  - Acceso a FAQs completas.
+  - Chat IA con límite diario de preguntas (por definir, p. ej. 20 preguntas/día).
+  - Sin acceso a helpers avanzados (score helper, meta features) en primera instancia.
 
-  * Similar a admin en entorno dev (tests y pruebas).
-  * Pensado para pruebas técnicas y debugging.
+- **premium**
+  - Acceso a todos los juegos actuales.
+  - Chat IA con límite más alto o prácticamente sin límite (para el MVP).
+  - Acceso a helpers avanzados (score helper, meta games cuando se creen).
+  - Posible acceso anticipado a nuevas secciones.
 
-* **basic**
-
-  * Acceso a juegos “free”.
-  * Acceso a FAQs completas.
-  * Chat IA con límite diario de preguntas (por definir, p. ej. 20 preguntas/día).
-  * Sin acceso a helpers avanzados (score helper, meta features) en primera instancia.
-
-* **premium**
-
-  * Acceso a todos los juegos actuales.
-  * Chat IA con límite más alto o prácticamente sin límite (para el MVP).
-  * Acceso a helpers avanzados (score helper, meta games cuando se creen).
-  * Posible acceso anticipado a nuevas secciones.
-
-* **tester**
-
-  * Rol de prueba interna:
-
-    * Acceso a todos los juegos.
-    * Todas las features activas, incluidas las marcadas como beta.
-    * Sin límites de uso estrictos (o límites muy altos).
+- **tester**
+  - Rol de prueba interna:
+    - Acceso a todos los juegos.
+    - Todas las features activas, incluidas las marcadas como beta.
+    - Sin límites de uso estrictos (o límites muy altos).
 
 La activación efectiva de features se modela con **feature flags**, no con lógica quemada en la app.
 
@@ -120,77 +143,75 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
 
 ### 4.1. Visión general
 
-* **App móvil (React Native + Expo)**
+- **App móvil (React Native + Expo)**
+  - UI, navegación, estado de la app.
+  - No contiene lógica de negocio compleja; se limita a consumir APIs y mostrar datos.
+  - Modulada por secciones:
+    - Módulo Auth.
+    - Módulo Navegación.
+    - Módulo “Board Game Companion”.
+    - Módulo “Juego” que se configura dinámicamente según la info que llega del backend.
 
-  * UI, navegación, estado de la app.
-  * No contiene lógica de negocio compleja; se limita a consumir APIs y mostrar datos.
-  * Modulada por secciones:
+- **Supabase (backend principal)**
+  - Autenticación (email/password, con opción de social login futuro como Google).
+  - Base de datos Postgres para:
+    - Usuarios y roles.
+    - Secciones.
+    - Juegos.
+    - FAQs.
+    - Feature flags.
+    - Historial de chat.
+    - Analítica de uso.
+    - Documentos y/o vectores para RAG.
+  - Extensión **pgvector** habilitada para búsqueda vectorial.
+  - Storage para PDFs (reglamentos, ayudas, expansiones).
 
-    * Módulo Auth.
-    * Módulo Navegación.
-    * Módulo “Board Game Companion”.
-    * Módulo “Juego” que se configura dinámicamente según la info que llega del backend.
+- **Backend fino propio (API REST + GenAI Adapter)**
+  - **Stack:** Python 3.13+ con FastAPI.
+  - Gestiona dependencias con Poetry.
+  - Expuesto como API REST.
+  - Faz de la app hacia:
+    - Supabase (datos y storage).
+    - Proveedores de IA (OpenAI/Gemini/Claude, etc.).
+    - BoardGameGeek para sincronización de datos (solo backend, nunca móvil).
+  - Encapsula:
+    - Autorización (roles, feature flags, límites).
+    - RAG (búsqueda de contexto + llamada al modelo de IA).
+    - Lógica de negocio (qué features tiene cada usuario/juego).
+    - Registro de analítica y usage events.
+  - Expone dos “frentes” claros:
+    - API pública para app móvil (`/games`, `/games/{id}`, `/games/{id}/faqs`, `/genai/query`, etc.).
+    - API admin para el portal (`/admin/games`, `/admin/games/import-bgg`, `/admin/games/{id}/faqs`, `/admin/games/{id}/documents`, `/admin/games/{id}/process-knowledge`, etc.).
 
-* **Supabase (backend principal)**
+- **Portal de Administración (Next.js + Supabase)**
+  - Web interna, no forma parte de la app móvil.
+  - Autenticación via Supabase Auth.
+  - Consume la API admin de FastAPI para todas las operaciones de negocio.
+  - Puede usar lecturas directas a Supabase con RLS para listados simples cuando tenga sentido.
+  - Permite a admins y content editors gestionar juegos, FAQs y documentos.
 
-  * Autenticación (email/password, con opción de social login futuro como Google).
-  * Base de datos Postgres para:
+- **BoardGameGeek (BGG)**
+  - Solo se usa desde backend para sincronizar datos de juegos.
+  - Datos (nombre, jugadores, rating, imágenes, etc.) se guardan en la tabla `games` y/o `bgg_cache`.
+  - La app y el portal nunca llaman a BGG directamente.
 
-    * Usuarios y roles.
-    * Secciones.
-    * Juegos.
-    * FAQs.
-    * Feature flags.
-    * Historial de chat.
-    * Eventos de uso.
-    * Documentos vectorizados para RAG.
-  * pgvector para embeddings por juego.
-
-* **Backend fino propio (API + GenAI Adapter)**
-
-  * **Stack:** Python 3.13+ con FastAPI (soporta 3.14+)
-  * **Gestión de dependencias:** Poetry
-  * **Dependencias principales:**
-    * FastAPI 0.115+ + Uvicorn (servidor ASGI)
-    * Pydantic v2 (validación de datos con máximo rendimiento)
-    * supabase-py 2.10+ (cliente Supabase)
-    * OpenAI 1.58+ / Google Gemini 0.8+ / Anthropic Claude 0.42+
-    * LangChain 0.3+ (framework para RAG y aplicaciones LLM)
-    * pgvector 0.3+ (extensión PostgreSQL para búsqueda vectorial)
-  * Expuesto como API REST.
-  * Faz de la app hacia:
-
-    * Supabase (para datos).
-    * Proveedores de IA (OpenAI/Gemini/Claude, etc.).
-    * BoardGameGeek para sincronización de datos (solo backend, nunca móvil).
-  * Encapsula:
-
-    * Autorización (roles, feature flags, límites).
-    * RAG (búsqueda de contexto en vectores + llamada al modelo de IA).
-    * Lógica de negocio (qué features tiene cada usuario/juego).
-    * Registro de analítica y usage events.
-
-* **BoardGameGeek (BGG)**
-
-  * Solo se usa desde backend para sincronizar datos de juegos.
-  * Datos (nombre, jugadores, rating, imágenes, etc.) se guardan en la tabla `games`.
-  * La app no llama nunca a BGG directamente.
+- **Proveedor de GenAI/RAG**
+  - Diseñado como componente intercambiable:
+    - Opción 1: Supabase + pgvector (`game_docs_vectors`).
+    - Opción 2: OpenAI File Search.
+    - Opción 3: Gemini File Search.
+  - El GenAI Adapter se implementa contra una interfaz común para poder cambiar el proveedor sin tocar la app ni el portal.
 
 ### 4.2. Entornos
 
-* **Entorno dev**
+- **Entorno dev**
+  - App dev configurada para backend dev y Supabase dev.
+  - Portal admin dev apuntando a backend dev y Supabase dev.
+  - Datos de prueba, juegos de test, usuarios fake.
 
-  * App dev configurada para hablar con:
-
-    * Backend dev.
-    * Supabase dev.
-  * Datos de prueba, juegos de test, usuarios fake.
-
-* **Entorno prod**
-
-  * App prod (la que verá el usuario final).
-  * Habla con backend prod y Supabase prod.
-  * Datos reales de testers y juegos oficiales.
+- **Entorno prod**
+  - App prod (la que verá el usuario final) conectada a backend prod y Supabase prod.
+  - Portal admin prod (dominio restringido / protegido) conectado a backend prod y Supabase prod.
 
 Ambos entornos mantienen el mismo esquema de BD, pero distintos datos y configuración de flags.
 
@@ -283,8 +304,8 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
    * game_id
    * language      → `es` / `en`
    * source_type   → `rulebook`, `faq`, `bgg`, `house_rules`, etc.
-   * chunk_text
-   * embedding
+   * chunk_text    → (depreciar)
+   * embedding     → (depreciar)
    * metadata      → información adicional (página, sección del manual, etc.)
 
 9. **`usage_events`** (analítica básica)
@@ -302,70 +323,87 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
 
 ## 6. Diseño de RAG y GenAI Adapter
 
-### 6.1. RAG por juego
+### 6.1. RAG por juego (concepto)
 
-* Cada juego tiene su propia base de conocimiento en `game_docs_vectors`, con:
+- Cada juego tiene su propia base de conocimiento, construida a partir de:
+  - Documentos originales (`knowledge_documents`).
+  - FAQs extendidas.
+  - Información relevante de BGG u otras fuentes.
 
-  * textos chunked (trozos) de reglas, FAQs extendidos, contenido relevante.
-  * embeddings calculados (pgvector).
-  * metadata para saber origen e idioma.
+- El índice de búsqueda puede vivir en:
+  - Tablas internas (`game_docs_vectors` + pgvector). → (depreciar)
+  - Vector store externo via File Search (OpenAI / Gemini).
 
 Pipeline RAG (conceptual):
 
 1. Pregunta del usuario llega con `game_id` y `language`.
-2. Se buscan en `game_docs_vectors` los N trozos más relevantes filtrando por:
-
-   * `game_id`
-   * `language`
-   * opcionalmente `source_type` si quieres priorizar manual vs FAQs.
-3. Se construye el prompt con la pregunta + los trozos relevantes.
-4. Se envía el prompt al modelo de IA (OpenAI/Gemini/Claude, etc.).
-5. Se recibe respuesta, se guarda y se devuelve al cliente.
+2. El GenAI Adapter consulta la configuración de RAG para ese juego:
+   - Proveedor activo (pgvector interno, OpenAI File Search, Gemini File Search, etc.).
+3. Se buscan los N trozos más relevantes filtrando por:
+   - `game_id`.
+   - `language`.
+   - opcionalmente `source_type` si quieres priorizar manual vs FAQs.
+4. Se construye el prompt con la pregunta + los trozos relevantes.
+5. Se envía el prompt al modelo de IA.
+6. Se recibe la respuesta, se guarda y se devuelve al cliente.
 
 ### 6.2. Endpoint principal del GenAI Adapter
 
-* **Endpoint:** `POST /genai/query`
+- **Endpoint:** `POST /genai/query` (opcional, puede variar en el desarrollo)
 
-**Entrada (request body, conceptual):**
+Entrada (conceptual):
 
-* `game_id`
-* `question`
-* `language`      → `es` / `en`
-* `session_id`    → opcional; si no se envía, se crea una nueva sesión
-* (El `user_id` se infiere del token de autenticación en el backend)
+- `game_id`
+- `question`
+- `language`      → `es` / `en`
+- `session_id`    → opcional; si no se envía, se crea una nueva sesión
+- (`user_id` se infiere del token de autenticación)
 
-**Salida (response body, conceptual):**
+Salida (conceptual):
 
-* `session_id`    → id de sesión usada/creada
-* `answer`        → respuesta en texto para mostrar al usuario
-* `citations`     → lista opcional de referencias, por ejemplo ids de `game_docs_vectors` o trozos citados
-* `model_info`    → `provider`, `model_name`
-* `limits`        → opcional, información de límites de uso (por ejemplo “te quedan 5 preguntas hoy”)
+- `session_id`    → id de sesión usada/creada
+- `answer`        → respuesta en texto
+- `citations`     → referencias a trozos/documentos
+- `model_info`    → `provider`, `model_name`
+- `limits`        → información de límites de uso (por ejemplo “te quedan X preguntas hoy”)
 
 **Lógica interna del endpoint:**
 
 1. Valida token (de Supabase) y obtiene `user_id` y `role`.
-2. Comprueba permisos mediante `feature_flags`:
-
+2. 
+3. Comprueba permisos mediante `feature_flags`:
    * ¿Tiene acceso al `chat` para ese `game_id` en ese entorno?
-3. Resuelve `session_id`:
 
+4. Resuelve `session_id`:
    * Si no llega, crea una nueva sesión en `chat_sessions`.
    * Si llega, verifica que pertenece a ese `user_id` y `game_id`.
-4. Antes de la IA:
-
+ * 
+5. Antes de la IA:
    * Registra un `usage_event` tipo `chat_question`.
-5. Ejecuta pipeline RAG:
 
-   * Consulta `game_docs_vectors` para contexto.
-   * Llama al modelo de IA con prompt enriquecido.
-6. Al recibir la respuesta:
-
+6. Ejecuta pipeline RAG:
+   * Captura el historial de la sesión y la pregunta actual.
+   * Llama al modelo de IA con prompt enriquecido (Files Search) para buscar la respuesta.
+   * (Opcional) Posbible búsqueda en internet (foros, webs, etc).   
+   * (Opcional) Aplica post-procesamiento si es necesario (filtrado, formateo, etc.).
+  
+7. Al recibir la respuesta:
    * Inserta mensajes en `chat_messages` (pregunta + respuesta).
    * Actualiza `chat_sessions` (timestamps, contadores, token estimate).
    * Registra un `usage_event` tipo `chat_answer`.
-7. Devuelve la respuesta al cliente.
 
+8. Devuelve la respuesta al cliente.
+
+Lógica interna resumida:
+
+1. Validar token y obtener `user_id` y `role`.
+2. Comprobar permisos mediante `feature_flags`.
+3. Resolver/crear `session_id` en `chat_sessions`.
+4. Registrar un `usage_event` tipo `chat_question`.
+5. Ejecutar el flujo RAG con el proveedor activo.
+6. Guardar mensajes en `chat_messages` y actualizar métricas.
+7. Registrar `usage_event` tipo `chat_answer`.
+8. Devolver respuesta al cliente.
 ---
 
 ## 7. Analítica en el MVP
@@ -375,75 +413,61 @@ Quieres analítica desde el inicio, así que se define:
 * **Fuentes de analítica:**
 
   * `chat_sessions` y `chat_messages`:
-
     * uso por juego y usuario.
     * longitud de conversaciones.
     * uso por modelo, idioma, etc.
+  
   * `usage_events`:
-
     * qué juegos se abren más.
     * cuántas veces se consulta FAQ vs chat.
     * comparativa por rol (basic vs premium vs tester).
-
-* **Preguntas típicas que podrás responder:**
-
-  * ¿Qué juegos son más usados?
-  * ¿Cuántas preguntas se hacen por día?
-  * ¿Qué idioma se usa más?
-  * ¿Los testers usan nuevas features?
 
 ---
 
 ## 8. BGG como fuente de datos
 
-* Flujo para BGG:
+Flujo para BGG (desde backend / portal admin):
 
-  1. Identificas los juegos y sus `bgg_id`.
-  2. Desde backend (o job específico) llamas a la API de BGG.
-  3. Parseas XML, extraes:
+1. El admin identifica el juego y su `bgg_id`.
+2. Desde el portal, se llama a `POST /admin/games/import-bgg`.
+3. El backend llama a la API de BGG y parsea XML.
+4. Se extraen:
+   - nombre,
+   - nº jugadores,
+   - tiempo,
+   - rating,
+   - imágenes, etc.
+5. Se guarda/actualiza en `games` y `bgg_cache`.
+6. Campo `last_synced_from_bgg_at` registra la última sincronización.
 
-     * nombre,
-     * nº jugadores,
-     * tiempo,
-     * rating,
-     * imágenes.
-  4. Guardas/actualizas en `games`.
-  5. Opcionalmente logs `last_synced_from_bgg_at`.
+Para el MVP:
 
-* Para el MVP:
-
-  * Basta con un proceso manual/semi-automático para los 10–50 juegos iniciales.
-  * No hace falta automatizar actualizaciones periódicas todavía.
+- Basta con un proceso manual/semi-automático para los 10–50 juegos iniciales.
+- No hace falta automatizar actualizaciones periódicas todavía.
 
 ---
 
 ## 9. Multi-idioma (ES / EN)
 
-* **Estado actual**
+- **Estado actual**
+  - La UI ya es bilingüe gracias al `LanguageProvider`+`useLanguage` en el cliente móvil.
+  - El usuario puede cambiar entre ES/EN desde el perfil; la preferencia se persiste en SecureStore/AsyncStorage.
+  - Las pantallas Home, Auth, BGC, Chat/Historial y navegación actualizan textos en caliente al cambiar el selector.
 
-  * La UI ya es bilingüe gracias al `LanguageProvider`+`useLanguage` en el cliente móvil.
-  * El usuario puede cambiar entre ES/EN desde el perfil; la preferencia se persiste en SecureStore/AsyncStorage.
-  * Las pantallas Home, Auth, BGC, Chat y navegación actualizan textos en caliente al cambiar el selector.
-
-* **Cobertura funcional**
-
+- **Cobertura funcional**
   1. **UI de la app (front)**:
-
-     * Traducciones centralizadas (`translations.ts`).
-     * Componentes consumen `t(key)` para mantener consistencia.
+     - Traducciones centralizadas (`translations.ts`).
+     - Componentes consumen `t(key)` para mantener consistencia.
   2. **Contenido dinámico**:
-
-     * FAQs (`game_faqs.language`) y chunks (`game_docs_vectors.language`) sirven el idioma solicitado.
-     * Hooks móviles reintentan la descarga cuando cambia el idioma.
+     - FAQs (`game_faqs.language`) y chunks (`game_docs_vectors.language`) sirven el idioma solicitado.
+     - Hooks móviles reintentan la descarga cuando cambia el idioma.
   3. **Idioma de sesión/chat**:
+     - `chat_sessions.language` mantiene el valor elegido.
+     - El GenAI Adapter recibe el idioma para buscar chunks y generar respuestas coherentes.
 
-     * `chat_sessions.language` mantiene el valor elegido.
-     * El GenAI Adapter recibirá el idioma para buscar chunks y generar respuestas coherentes.
-
-* **Fallback actual**
-
-  * Si el usuario selecciona ES, se buscan primero FAQs `language = 'es'`; si no existen, se usa EN y se indica el idioma en la UI.
-  * RAG continuará el mismo patrón: búsqueda en el idioma preferido con fallback seguro a EN hasta que se indexen más documentos.
+- **Fallback actual**
+  - Si el usuario selecciona ES, se buscan primero FAQs `language = 'es'`; si no existen, se usa EN y se indica el idioma en la UI.
+  - RAG seguirá el mismo patrón: búsqueda en el idioma preferido con fallback a EN hasta que se indexen más documentos.
 
 ---
 
@@ -451,24 +475,26 @@ Quieres analítica desde el inicio, así que se define:
 
 ### 📊 Resumen General del MVP
 
-| Componente | Estado | Progreso | Última actualización |
-|------------|--------|----------|---------------------|
-| Base de datos Supabase | ✅ Completado | 100% | BGAI-0001 |
-| Backend - Bootstrap + Auth | ✅ Completado | 100% | BGAI-0002, BGAI-0003 |
-| Backend - Games Endpoints | ✅ Completado | 100% | BGAI-0006 |
-| Backend - RAG + GenAI | 🔄 En progreso | 20% | - |
-| App Móvil - Shell | ✅ Completado | 100% | BGAI-0004 |
-| App Móvil - Auth Real | ✅ Completado | 100% | BGAI-0005 |
-| App Móvil - Games UI | ✅ Completado | 100% | BGAI-0007 |
-| App Móvil - Localización (selector y FAQs) | ✅ Completado | 100% | BGAI-0008 |
-| App Móvil - Historial (pre-chat IA) | ✅ Completado | 100% | BGAI-0009 |
-| Pipeline RAG | 📋 Pendiente | 0% | - |
-| Integración BGG | 📋 Pendiente | 0% | - |
-| **TOTAL MVP** | 🔄 En progreso | **~60%** | 2025-11-23 |
+| Componente                              | Estado        | Progreso | Última actualización |
+|-----------------------------------------|--------------|----------|----------------------|
+| Base de datos Supabase                  | ✅ Completado | 100%     | BGAI-0001            |
+| Backend - Bootstrap + Auth              | ✅ Completado | 100%     | BGAI-0002, BGAI-0003 |
+| Backend - Endpoints de Juegos/FAQs      | ✅ Completado | 100%     | BGAI-0006            |
+| App Móvil - Shell                       | ✅ Completado | 100%     | BGAI-0004            |
+| App Móvil - Auth real                   | ✅ Completado | 100%     | BGAI-0005            |
+| App Móvil - Games UI                    | ✅ Completado | 100%     | BGAI-0007            |
+| App Móvil - Localización (ES/EN)        | ✅ Completado | 100%     | BGAI-0008            |
+| App Móvil - Historial (pre-chat IA)     | ✅ Completado | 100%     | BGAI-0009            |
+| Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
+| Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
+| Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
+| Portal de Administración de Juegos      | 📋 Pendiente  | 0%       | -                    |
+| **TOTAL MVP**                           | 🔄 En progreso | ~60%    | 2025-11-24           |
 
 **Leyenda:**
+
 - ✅ Completado (100%)
-- 🔄 En progreso (1-99%)
+- 🔄 En progreso (1–99%)
 - 📋 Pendiente (0%)
 
 ### ✅ Completado
@@ -484,7 +510,7 @@ Quieres analítica desde el inicio, así que se define:
      * `feature_flags` - Control granular de features
      * `chat_sessions` - Sesiones de conversación IA
      * `chat_messages` - Mensajes individuales
-     * `game_docs_vectors` - Vectores para RAG (pgvector)
+     * `game_docs_vectors` - Vectores para RAG (pgvector) → (depreciar)
      * `usage_events` - Analítica
    * ✅ Extensión pgvector habilitada
    * ✅ Índices optimizados (incluyendo HNSW para búsqueda vectorial)
@@ -678,19 +704,18 @@ Quieres analítica desde el inicio, así que se define:
 ### 🔄 En progreso
 
 #### **Backend API REST - RAG + GenAI Adapter (20%)**
-* ⏳ Búsqueda vectorial sobre `game_docs_vectors`
-* ⏳ Endpoint `POST /genai/query` con pipeline completo (chunks + llamada a LLM + logging)
-* ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`
+- Definida interfaz de servicio para búsqueda de chunks relevante.
+- Pendiente integrar motores concretos (pgvector vs File Search) y cerrar contrato de `POST /genai/query`.
 
 ### 📋 Pendiente
 
 1. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Servicio de búsqueda vectorial en `game_docs_vectors`
-   * ⏳ Función `search_relevant_chunks(game_id, question, language)`
-   * ⏳ Integración con OpenAI/Gemini/Claude para embeddings y respuestas
-   * ⏳ Endpoint `POST /genai/query` completo
-   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`
-   * ⏳ Rate limiting basado en metadata de feature flags
+   * ⏳ Servicio de integración con File Search.
+   * ⏳ Función `search_relevant_chunks(game_id, question, language)`.
+   * ⏳ Integración con OpenAI/Gemini/Claude para embeddings y respuestas.
+   * ⏳ Endpoint `POST /genai/query` completo.
+   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`.
+   * ⏳ Rate limiting basado en metadata de feature flags.
 
 2. **Backend API REST - Utilidades y Jobs**
    * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
@@ -698,18 +723,36 @@ Quieres analítica desde el inicio, así que se define:
    * ⏳ Servicio para registrar eventos en `usage_events` (analítica)
    * ⏳ Integrar logging en todos los endpoints principales
 
-3. **App Móvil (React Native + Expo) - Integración Backend**
+3. **Portal de Administración de Juegos**
+   - Diseño de modelo de datos detallado para `game_localizations` y `knowledge_documents`.
+   - Endpoints admin en FastAPI:
+     - `POST /admin/games`.
+     - `POST /admin/games/import-bgg`.
+     - `PATCH /admin/games/{id}`.
+     - `POST /admin/games/{id}/faqs` / `PATCH` / `DELETE`.
+     - `POST /admin/games/{id}/documents`.
+     - `POST /admin/games/{id}/process-knowledge`.
+   - Implementación del portal Next.js (UI) consumiendo estos endpoints.
+
+4. **App Móvil (React Native + Expo) - Integración Backend**
    * ✅ ~~Integrar Supabase JS para login real~~ (BGAI-0005)
    * ✅ ~~Conectar `/games` + `/games/{id}` y FAQs reales~~ (BGAI-0007)
    * ✅ ~~Añadir selector de idioma y UI bilingüe~~ (BGAI-0008)
    * ⏳ Preparar hooks/UI para `POST /genai/query` (chat IA)
    * ⏳ Actualizar assets definitivos antes de publicar builds
 
-4. **Pipeline de procesamiento RAG**
-   * ⏳ Script para procesar PDFs y extraer texto
-   * ⏳ Generación de embeddings con OpenAI/Gemini
-   * ⏳ Carga de chunks a `game_docs_vectors`
-   * ⏳ Poblar base de datos con documentación real de 5-10 juegos
+5. **Pipeline de procesamiento RAG**
+   * ⏳ Script para procesar PDFs/manuales → texto → embeddings.
+   * ⏳ Flujo para capturar juego, historia, pregunta, enviar a IA y guardar respuesta. 
+
+5. **Mejoras adicionales de app móvil**
+   - Assets definitivos (iconos, splash, ilustraciones).
+   - Ajustes visuales + soporte para modo oscuro antes de publicar en TestFlight/Play.
+
+6. **Integración y testing end-to-end**
+   - Smoke tests completos: login → lista → detalle → chat IA.
+   - Validar límites por rol/feature flag.
+   - Performance testing básico.
 
 ---
 
@@ -726,29 +769,44 @@ Quieres analítica desde el inicio, así que se define:
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
 1. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Servicio de búsqueda vectorial sobre `game_docs_vectors`.
-   * ⏳ Endpoint `POST /genai/query` con chunks + llamada a LLM + logging.
-   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags.
-2. **App móvil - Integración del chat IA**
+   * ⏳ Finalizar los detalles e implementar la estrategia File Search
+   * ⏳ Implementar `POST /genai/query`.
+   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags
+
+2. Diseñar e implementar el **Portal de Administración de Juegos (backend)**:
+   * ⏳  Endpoints `/admin/...` para juegos, FAQs, documentos y `process-knowledge`.
+   * ⏳  Extender esquema de BD con `knowledge_documents`.
+  
+3. **App móvil - Integración del chat IA**
    * ⏳ Hooks y servicios para `POST /genai/query`.
    * ⏳ UI del chat conectada al backend (estado de envío, errores, historiales reales).
-3. **Backend API REST - Analítica y utilidades**
+    
+4. **Backend API REST - Analítica y utilidades**
    * ⏳ Servicio dedicado para `usage_events`.
    * ⏳ Instrumentación de logging y métricas en endpoints críticos.
 
 ### 🔧 Prioridad Media
 
-4. **Scripts de utilidad y pipeline RAG**
-   * ⏳ Procesar PDFs/manuales → texto → embeddings.
-   * ⏳ Poblar `game_docs_vectors` con documentación de 5–10 juegos.
+4. Implementar **Portal de Administración (frontend Next.js)**:
+   * ⏳ Screens de lista de juegos y detalle con pestañas (Home, FAQs, Documentos).
+   * ⏳ Flujo de onboarding por `bgg_id`.
+
+
+5. **Scripts de utilidad y pipeline RAG**
+   * ⏳ Procesar al menos 5–10 juegos reales (PDFs → texto → Files Search).
    * ⏳ Job/botón para sincronizar juegos desde BGG.
-5. **App móvil - mejoras adicionales**
+   * ⏳ Script para procesar PDFs/manuales → texto → embeddings.
+
+6. Afinar analítica y logging en backend:
+   * ⏳ Servicio de `usage_events` y dashboards básicos.
+  
+7. **App móvil - mejoras adicionales**
    * ⏳ Assets definitivos (iconos, splash, ilustraciones).
    * ⏳ Ajustes visuales + soporte para modo oscuro antes de publicar en TestFlight/Play.
 
 ### 🧪 Prioridad Baja
 
-6. **Integración y testing end-to-end**
+7. **Integración y testing end-to-end**
    * ⏳ Smoke tests completos: login → lista → detalle → chat IA.
    * ⏳ Validar límites por rol/feature flag y realizar performance testing básico.
 

@@ -27,10 +27,6 @@ langchain = "^1.0.8"
 langchain-openai = "^1.0.3"
 langchain-community = "^0.4.1"
 
-# Database & Vectors
-pgvector = "^0.3.0"
-psycopg2-binary = "^2.9.10"
-
 # HTTP & Utilities
 httpx = "^0.28.0"
 python-multipart = "^0.0.20"
