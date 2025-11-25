@@ -26,7 +26,7 @@
 			"type": "http",
 			"url": "https://mcp.context7.com/mcp",
 			"headers": {
-				"CONTEXT7_API_KEY": "ctx7sk-d405aca5-fa44-4878-a83e-3d4f419fe148"
+				"CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
 			}
 		},
 		"playwright": {
