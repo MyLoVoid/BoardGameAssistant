@@ -6,26 +6,215 @@
 -- =====================================================
 -- TEST USERS
 -- =====================================================
--- Note: In local development, you can create test users via Supabase Studio
--- or use the auth.users table directly. The profile will be auto-created
--- via the handle_new_user() trigger.
+-- Create 5 test users with different roles for local development.
+-- Users are inserted into auth.users with encrypted passwords.
+-- Profiles are auto-created by handle_new_user() trigger.
 --
--- For manual testing, create users with these emails:
--- - admin@bgai.test (role: admin)
--- - developer@bgai.test (role: developer)
--- - tester@bgai.test (role: tester)
--- - premium@bgai.test (role: premium)
--- - basic@bgai.test (role: basic)
---
--- Password for all test users: Test123456!
---
--- You can create them via Supabase Studio UI or API calls.
+-- Available test users:
+-- - admin@bgai.test (Admin123!)
+-- - developer@bgai.test (Dev123!)
+-- - tester@bgai.test (Test123!)
+-- - premium@bgai.test (Premium123!)
+-- - basic@bgai.test (Basic123!)
+-- =====================================================
 
--- For demo purposes, we'll insert profiles assuming users exist
--- In production, these would be created via signup flow
+DO $$
+DECLARE
+  admin_id UUID;
+  dev_id UUID;
+  tester_id UUID;
+  premium_id UUID;
+  basic_id UUID;
+BEGIN
+  -- Create Admin user
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'admin@bgai.test',
+    crypt('Admin123!', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"display_name":"Admin User","role":"admin"}',
+    NOW(),
+    NOW(),
+    '',
+    '',
+    '',
+    ''
+  )
+  RETURNING id INTO admin_id;
 
--- Insert test user IDs (replace with actual UUIDs after creating users in auth)
--- This is just for reference structure
+  -- Create Developer user
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'developer@bgai.test',
+    crypt('Dev123!', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"display_name":"Developer User","role":"developer"}',
+    NOW(),
+    NOW(),
+    '',
+    '',
+    '',
+    ''
+  )
+  RETURNING id INTO dev_id;
+
+  -- Create Tester user
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'tester@bgai.test',
+    crypt('Test123!', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"display_name":"Tester User","role":"tester"}',
+    NOW(),
+    NOW(),
+    '',
+    '',
+    '',
+    ''
+  )
+  RETURNING id INTO tester_id;
+
+  -- Create Premium user
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'premium@bgai.test',
+    crypt('Premium123!', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"display_name":"Premium User","role":"premium"}',
+    NOW(),
+    NOW(),
+    '',
+    '',
+    '',
+    ''
+  )
+  RETURNING id INTO premium_id;
+
+  -- Create Basic user
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    'basic@bgai.test',
+    crypt('Basic123!', gen_salt('bf')),
+    NOW(),
+    '{"provider":"email","providers":["email"]}',
+    '{"display_name":"Basic User","role":"basic"}',
+    NOW(),
+    NOW(),
+    '',
+    '',
+    '',
+    ''
+  )
+  RETURNING id INTO basic_id;
+
+  -- Update roles in profiles table (after trigger creates them)
+  UPDATE public.profiles SET role = 'admin' WHERE id = admin_id;
+  UPDATE public.profiles SET role = 'developer' WHERE id = dev_id;
+  UPDATE public.profiles SET role = 'tester' WHERE id = tester_id;
+  UPDATE public.profiles SET role = 'premium' WHERE id = premium_id;
+  UPDATE public.profiles SET role = 'basic' WHERE id = basic_id;
+
+  RAISE NOTICE 'Test users created successfully!';
+END $$;
 
 -- =====================================================
 -- APP SECTIONS

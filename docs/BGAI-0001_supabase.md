@@ -41,8 +41,15 @@
 - Supplies sample `game_documents` and `knowledge_documents` rows (without embeddings) to validate the RAG pipeline contract while backend ingestion jobs remain in progress.
 
 ### Tooling & Local Dev Experience
-- `create_test_users.sql` inserts hashed Supabase auth records for each role, ensuring the `handle_new_user` trigger backfills the matching profile entries. Roles are reasserted post-insert to mirror production expectations.
-- Notes reusable credentials and verification query for quick smoke tests inside Supabase Studio.
+- **Test Users**: Now automatically created in `seed.sql` (integrated from `create_test_users.sql`). Running `npx supabase db reset` will create 5 test users:
+  - `admin@bgai.test` / `Admin123!` (role: admin)
+  - `developer@bgai.test` / `Dev123!` (role: developer)
+  - `tester@bgai.test` / `Test123!` (role: tester)
+  - `premium@bgai.test` / `Premium123!` (role: premium)
+  - `basic@bgai.test` / `Basic123!` (role: basic)
+- Users are inserted into `auth.users` with encrypted passwords using `crypt()` and `gen_salt('bf')` from pgcrypto extension.
+- The `handle_new_user` trigger automatically creates corresponding `profiles` entries, with roles explicitly updated after creation.
+- No manual user creation needed - all test accounts are ready for development/testing after database reset.
 - `config.toml` aligns CLI services on stable ports (API 54321, DB 54322, Studio 54323) and switches on API, storage, realtime, analytics, edge functions, and seeding (`seed.sql`) so `supabase start` mirrors the target stack.
 - Auth config allows local email/password sign-ups with short OTP throttles, HTTPS redirect allow-list, optional OpenAI key for Studio AI, and placeholders for future OAuth/Twilio hookups.
 - Keeps storage/file limits conservative (50MiB) and enables experimental S3 knobs for future OrioleDB/backups without activating them by default.
