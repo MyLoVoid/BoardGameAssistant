@@ -60,7 +60,9 @@ class Settings(BaseSettings):
     rate_limit_period: int = 60
 
     # CORS
-    cors_origins: str = "http://localhost:19006,http://localhost:8081"
+    cors_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:19006,http://localhost:8081"
+    )
     cors_allow_credentials: bool = True
 
     # Logging
