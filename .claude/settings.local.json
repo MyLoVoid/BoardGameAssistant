@@ -3,17 +3,11 @@
     "allow": [
       "Bash(test:*)",
       "Bash(mkdir:*)",
-      "Bash(supabase --version:*)",
       "Bash(npx supabase status)",
-      "Bash(npx supabase:*)",
-      "Bash(psql:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
       "Bash(cat:*)",
       "Bash(docker ps:*)",
       "Bash(curl:*)",
       "Bash(python -m venv:*)",
-      "Bash(./venv/Scripts/python.exe run.py)",
       "Bash(dir C:UserscaramirezsDocuments_PYTHONBoardGameAssistant)"
     ],
     "deny": [],
