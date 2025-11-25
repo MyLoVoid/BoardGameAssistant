@@ -505,8 +505,8 @@ Para el MVP:
 | Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
 | Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
-| Portal de Administración de Juegos      | 🔄 En progreso | 35%     | BGAI-0010            |
-| **TOTAL MVP**                           | 🔄 En progreso | ~60%    | 2025-11-24           |
+| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011 |
+| **TOTAL MVP**                           | 🔄 En progreso | ~70%    | 2025-11-24           |
 
 **Leyenda:**
 
@@ -707,16 +707,109 @@ Para el MVP:
 4. **QA**
    * ✅ `npm run lint` con ESLint de Expo y correcciones de estilo asociadas.
 
-#### **App móvil - Historial “Chat” (BGAI-0009) (100%)**
+#### **App móvil - Historial "Chat" (BGAI-0009) (100%)**
 
 1. **Renombrado del tab**
-   * ✅ El tab inferior pasó de “Chat” a “Historial/History” en ambos idiomas.
+   * ✅ El tab inferior pasó de "Chat" a "Historial/History" en ambos idiomas.
    * ✅ `LanguageProvider` expone las nuevas claves `history.*`.
 2. **Pantalla preparatoria**
    * ✅ `ChatScreen` ahora muestra un historial placeholder de sesiones por juego, en vez de un chat mock.
    * ✅ El mensaje comunica que el chat IA llegará pronto y servirá como hub de conversaciones.
 3. **Documentación**
    * ✅ `docs/BGAI-0009_mobile-chat-history.md` explica el motivo y el plan previo a implementar `POST /genai/query`.
+
+#### **Portal de Administración de Juegos (BGAI-0010, BGAI-0011) (100%)**
+
+**BGAI-0010 — Backend Admin API**
+
+1. **Endpoints administrativos completos** (`backend/app/api/routes/admin.py`)
+   * ✅ `POST /admin/games` - Crear juego
+   * ✅ `PATCH /admin/games/{id}` - Actualizar juego
+   * ✅ `POST /admin/games/import-bgg` - Importar desde BoardGameGeek
+   * ✅ `POST /admin/games/{id}/faqs` - Crear FAQ
+   * ✅ `PATCH /admin/games/{id}/faqs/{faq_id}` - Actualizar FAQ
+   * ✅ `DELETE /admin/games/{id}/faqs/{faq_id}` - Eliminar FAQ
+   * ✅ `POST /admin/games/{id}/documents` - Crear documento
+   * ✅ `POST /admin/games/{id}/process-knowledge` - Procesar conocimiento para RAG
+   * ✅ Todos los endpoints protegidos con `require_role("admin", "developer")`
+
+2. **Servicios de administración** (`backend/app/services/admin_games.py`)
+   * ✅ Operaciones CRUD para juegos, FAQs y documentos
+   * ✅ Integración con BGG API para importar juegos
+   * ✅ Orquestación de procesamiento de conocimiento
+   * ✅ Validación de permisos y manejo de errores
+
+3. **Integración BGG** (`backend/app/services/bgg.py`)
+   * ✅ Cliente XML para BoardGameGeek API
+   * ✅ Parseo de metadatos (nombre, jugadores, tiempo, rating, imágenes)
+   * ✅ Manejo de errores para juegos no encontrados
+   * ✅ Tests unitarios completos
+
+4. **Esquema de conocimiento** (`supabase/migrations/20241125000000_add_knowledge_documents.sql`)
+   * ✅ Tabla `knowledge_documents` para tracking de procesamiento RAG
+   * ✅ Índices y RLS policies configurados
+   * ✅ Seeds actualizados con datos de ejemplo
+
+**BGAI-0011 — Frontend Next.js**
+
+1. **Proyecto Next.js completo** (`admin-portal/`)
+   * ✅ Next.js 14 con App Router y TypeScript
+   * ✅ Tailwind CSS para diseño profesional
+   * ✅ 2,213+ líneas de código TypeScript/React
+   * ✅ 35 archivos principales creados
+   * ✅ 410 paquetes npm instalados
+
+2. **Sistema de autenticación**
+   * ✅ Login con Supabase Auth
+   * ✅ Validación de roles (solo admin/developer)
+   * ✅ Protección de rutas con middleware
+   * ✅ Persistencia de sesión
+   * ✅ Integración con backend `/auth/me`
+
+3. **Gestión de juegos**
+   * ✅ Lista de juegos con búsqueda y filtros por status
+   * ✅ Modal de importación desde BGG
+   * ✅ Detalle de juego con tabs (Home, FAQs, Documentos)
+   * ✅ Edición inline de información
+   * ✅ Botón "Sync from BGG"
+   * ✅ Estados de carga y manejo de errores
+
+4. **Gestión de FAQs (CRUD completo)**
+   * ✅ Crear FAQs en Español e Inglés
+   * ✅ Editar y eliminar FAQs
+   * ✅ Filtrado por idioma
+   * ✅ Control de visibilidad y orden
+   * ✅ Validación con React Hook Form + Zod
+
+5. **Gestión de documentos**
+   * ✅ Crear referencias de documentos
+   * ✅ Listar documentos con estado (pending, processing, ready)
+   * ✅ Botón "Process Knowledge" con multi-selección
+   * ✅ Tracking de estado de procesamiento
+   * ✅ Filtrado por idioma y tipo de fuente
+
+6. **UI/UX profesional**
+   * ✅ Layout con sidebar y header
+   * ✅ Componentes reutilizables (Button, Input, Modal, Tabs, etc.)
+   * ✅ Loading states y spinners
+   * ✅ Notificaciones de éxito/error
+   * ✅ Confirmaciones para acciones destructivas
+   * ✅ Diseño responsive
+
+7. **Cliente API TypeScript** (`admin-portal/lib/api.ts`)
+   * ✅ Axios configurado con interceptores
+   * ✅ Headers de autenticación automáticos
+   * ✅ Manejo de errores 401/403/404
+   * ✅ Types completos para requests/responses
+   * ✅ Integración con todos los endpoints admin
+
+8. **Documentación completa**
+   * ✅ `admin-portal/README.md` - Documentación completa
+   * ✅ `admin-portal/SETUP.md` - Guía rápida (3 pasos)
+   * ✅ `admin-portal/PROJECT_SUMMARY.md` - Resumen de implementación
+   * ✅ `docs/BGAI-0011_admin-portal-frontend.md` - Documentación técnica oficial
+   * ✅ `ADMIN_PORTAL_COMPLETE.md` - Resumen ejecutivo en raíz
+   * ✅ `admin-portal-checklist.md` - Checklist de verificación
 
 ### 🔄 En progreso
 
@@ -749,31 +842,21 @@ Para el MVP:
    * ⏳ Servicio para registrar eventos en `usage_events` (analítica)
    * ⏳ Integrar logging en todos los endpoints principales
 
-3. **Portal de Administración de Juegos (35% - backend listo, UI pendiente)**
-   - ✅ Extendido esquema con `knowledge_documents` para rastrear jobs de procesamiento.
-   - ✅ Endpoints admin en FastAPI:
-     - `POST /admin/games` / `PATCH /admin/games/{id}`.
-     - `POST /admin/games/import-bgg` (sincroniza datos desde BGG).
-     - `POST /admin/games/{id}/faqs` / `PATCH` / `DELETE`.
-     - `POST /admin/games/{id}/documents`.
-     - `POST /admin/games/{id}/process-knowledge`.
-   - ⏳ Implementación del portal Next.js (UI) consumiendo estos endpoints.
-
-4. **App Móvil (React Native + Expo) - Integración Backend**
+3. **App Móvil (React Native + Expo) - Integración Backend**
    * ✅ ~~Integrar Supabase JS para login real~~ (BGAI-0005)
    * ✅ ~~Conectar `/games` + `/games/{id}` y FAQs reales~~ (BGAI-0007)
    * ✅ ~~Añadir selector de idioma y UI bilingüe~~ (BGAI-0008)
    * ⏳ Preparar hooks/UI para `POST /genai/query` (chat IA)
    * ⏳ Actualizar assets definitivos antes de publicar builds
 
-5. **Pipeline de procesamiento de documentos**
+4. **Pipeline de procesamiento de documentos**
    * ⏳ Endpoint admin para subir documentos a Supabase Storage.
    * ⏳ Job/servicio para procesar documentos:
      - Subir PDF a proveedor de IA (OpenAI Files API, Gemini File API).
      - Crear/actualizar vector store (si aplica).
      - Guardar referencias (`provider_file_id`, `vector_store_id`) en `game_documents`.
      - Actualizar estado (`pending` → `uploading` → `processing` → `ready`).
-   * ⏳ Endpoint admin `POST /admin/games/{id}/process-knowledge` para disparar procesamiento. 
+   * ⏳ Endpoint admin `POST /admin/games/{id}/process-knowledge` para disparar procesamiento.
 
 5. **Mejoras adicionales de app móvil**
    - Assets definitivos (iconos, splash, ilustraciones).
@@ -795,6 +878,17 @@ Para el MVP:
    * Estados de carga/errores, pull-to-refresh y fallback multi-idioma funcionando en Expo/Android.
 2. **BGAI-0008 — Localización completa con selector de idioma**
    * `LanguageProvider` + `LanguageSelector` entregan UI bilingüe y FAQs según la preferencia persistida.
+3. **BGAI-0010 — Portal de Administración - Backend API**
+   * Endpoints `/admin/...` completos para gestión de juegos, FAQs, documentos y procesamiento de conocimiento.
+   * Integración BGG API para importar juegos automáticamente.
+   * Tabla `knowledge_documents` para tracking de procesamiento RAG.
+4. **BGAI-0011 — Portal de Administración - Frontend Next.js**
+   * Portal web completo con Next.js 14, TypeScript y Tailwind CSS (2,213+ líneas de código).
+   * Autenticación con Supabase Auth y validación de roles (admin/developer).
+   * UI completa para gestión de juegos (importar desde BGG, editar, sincronizar).
+   * CRUD completo de FAQs con soporte multi-idioma (ES/EN).
+   * Gestión de documentos con botón "Process Knowledge" para RAG.
+   * Documentación completa en `admin-portal/` y `docs/BGAI-0011_admin-portal-frontend.md`.
 
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
@@ -803,26 +897,17 @@ Para el MVP:
    * ⏳ Implementar `POST /genai/query`.
    * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags
 
-2. Diseñar e implementar el **Portal de Administración de Juegos (backend)**:
-   * ⏳  Endpoints `/admin/...` para juegos, FAQs, documentos y `process-knowledge`.
-   * ⏳  Extender esquema de BD con `knowledge_documents`.
-  
-3. **App móvil - Integración del chat IA**
+2. **App móvil - Integración del chat IA**
    * ⏳ Hooks y servicios para `POST /genai/query`.
    * ⏳ UI del chat conectada al backend (estado de envío, errores, historiales reales).
-    
-4. **Backend API REST - Analítica y utilidades**
+
+3. **Backend API REST - Analítica y utilidades**
    * ⏳ Servicio dedicado para `usage_events`.
    * ⏳ Instrumentación de logging y métricas en endpoints críticos.
 
 ### 🔧 Prioridad Media
 
-4. Implementar **Portal de Administración (frontend Next.js)**:
-   * ⏳ Screens de lista de juegos y detalle con pestañas (Home, FAQs, Documentos).
-   * ⏳ Flujo de onboarding por `bgg_id`.
-
-
-5. **Scripts de utilidad y pipeline de documentos**
+4. **Scripts de utilidad y pipeline de documentos**
    * ⏳ Procesar al menos 5–10 juegos reales (PDFs → subida a proveedores → referencias en BD).
    * ⏳ Job/botón para sincronizar juegos desde BGG.
    * ⏳ Script de migración para convertir datos existentes de `game_docs_vectors` a `game_documents`.
