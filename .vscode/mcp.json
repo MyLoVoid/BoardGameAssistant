@@ -7,13 +7,16 @@
 				"Authorization": "Bearer ${env:GITHUB_TOKEN_MyLoVoid}"
 			}
 		},
-		"notionMCP": {
+		"notion": {
 			"command": "npx",
 			"args": [
 				"-y",
 				"mcp-remote",
 				"https://mcp.notion.com/mcp"
-			]
+			],
+			"env": {
+				"NOTION_TOKEN": "${env:NOTION_TOKEN}"
+			}
 		},
 		"supabase": {
 			"url": "http://127.0.0.1:54321/mcp"
