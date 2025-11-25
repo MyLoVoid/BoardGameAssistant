@@ -119,7 +119,7 @@ def get_available_languages_for_game(game_id: str) -> list[str]:
         )
 
         data = cast(list[SupabaseRecord], response.data)
-        languages = list(set(faq["language"] for faq in data))
+        languages = list({faq["language"] for faq in data})
         return sorted(languages)
     except Exception as exc:
         print(f"Error fetching available languages for game {game_id}: {exc}")
