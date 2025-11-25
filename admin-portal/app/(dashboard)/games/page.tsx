@@ -11,7 +11,6 @@ import { ImportBGGModal } from '@/components/games/import-bgg-modal';
 import { apiClient } from '@/lib/api';
 import { Plus, Search, RefreshCw, Eye, AlertCircle } from 'lucide-react';
 import type { Game, GameStatus } from '@/lib/types';
-import { debounce } from '@/lib/utils';
 
 export default function GamesPage() {
   const router = useRouter();

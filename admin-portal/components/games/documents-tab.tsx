@@ -92,8 +92,14 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
         document_ids: Array.from(selectedDocs),
       });
 
-      const successCount = result.results.filter(r => r.status === 'success').length;
-      const failCount = result.results.filter(r => r.status === 'error').length;
+      const { success: successCount, fail: failCount } = result.results.reduce(
+        (acc, r) => {
+          if (r.status === 'success') acc.success += 1;
+          else if (r.status === 'error') acc.fail += 1;
+          return acc;
+        },
+        { success: 0, fail: 0 }
+      );
 
       setSuccess(`Knowledge processing complete! Success: ${successCount}, Failed: ${failCount}`);
       setSelectedDocs(new Set());

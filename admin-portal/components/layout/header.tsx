@@ -38,9 +38,11 @@ export function Header() {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-6">
       <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground">
-          Environment: <span className="font-medium text-foreground">{process.env.NEXT_PUBLIC_ENVIRONMENT || 'dev'}</span>
-        </span>
+        {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production' && (
+          <span className="text-sm text-muted-foreground">
+            Environment: <span className="font-medium text-foreground">{process.env.NEXT_PUBLIC_ENVIRONMENT || 'dev'}</span>
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
