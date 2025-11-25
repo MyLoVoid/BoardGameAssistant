@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { GameInfoTab } from '@/components/games/game-info-tab';
@@ -11,28 +11,40 @@ import { apiClient } from '@/lib/api';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import type { Game } from '@/lib/types';
 
-export default function GameDetailPage({ params }: { params: { id: string } }) {
+export default function GameDetailPage() {
   const router = useRouter();
+  const params = useParams<{ id: string | string[] }>();
+  const gameId = Array.isArray(params?.id) ? params?.id[0] : params?.id;
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
-    loadGame();
-  }, [params.id]);
+    if (!gameId) {
+      return;
+    }
+    void loadGame(gameId);
+  }, [gameId]);
 
-  const loadGame = async () => {
+  const loadGame = async (id: string) => {
     setLoading(true);
     setError('');
     try {
-      const data = await apiClient.getGame(params.id);
+      const data = await apiClient.getGame(id);
       setGame(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load game');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    if (!gameId) {
+      return;
+    }
+    void loadGame(gameId);
   };
 
   if (loading) {
@@ -86,7 +98,7 @@ export default function GameDetailPage({ params }: { params: { id: string } }) {
         </TabsList>
 
         <TabsContent value="home">
-          <GameInfoTab game={game} onUpdate={loadGame} />
+          <GameInfoTab game={game} onUpdate={handleRefresh} />
         </TabsContent>
 
         <TabsContent value="faqs">
