@@ -193,33 +193,50 @@ export async function proxy(request: NextRequest) {
 #### Games List Page (`app/(dashboard)/games/page.tsx`)
 
 **Features:**
-- Fetches games from `GET /games` (public endpoint, shows all games for admins)
-- Search functionality (filters by name)
+- Fetches games from `GET /games` (admins see every accessible entry)
+- Search functionality (filters by name or BGG ID)
 - Status filter dropdown (All, Active, Beta, Hidden)
-- "Import from BGG" button (opens modal)
-- Games grid with cards showing:
-  - Thumbnail image
-  - Game name
-  - BGG ID
-  - Players (min-max)
-  - Playing time
-  - Status badge (color-coded)
-  - "View Details" button
-- Loading skeleton states
-- Empty state with call-to-action
-- Error handling with retry
+- Manual refresh + "Import from BGG" shortcut
+- Responsive table with thumbnail, players, status badge, and quick actions
+- Loading and empty states plus inline error banner
 
 **Implementation Details:**
 ```typescript
-// Fetches games on mount and when filters change
-const { data: games, isLoading, error, refetch } = useGames();
+useEffect(() => {
+  loadGames();
+}, []);
 
-// Client-side filtering
-const filteredGames = games?.filter(game => {
-  const matchesSearch = game.name_base.toLowerCase().includes(search);
-  const matchesStatus = statusFilter === 'all' || game.status === statusFilter;
-  return matchesSearch && matchesStatus;
-});
+const loadGames = async () => {
+  setLoading(true);
+  setError('');
+  try {
+    const data = await apiClient.getGames(); // unwraps { games, total }
+    setGames(data);
+  } catch (err) {
+    setError(err.message ?? 'Failed to load games');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const filteredGames = useMemo(() => {
+  let filtered = games;
+
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter((game) => game.status === statusFilter);
+  }
+
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    filtered = filtered.filter(
+      (game) =>
+        game.name.toLowerCase().includes(query) ||
+        game.bgg_id?.toString().includes(query)
+    );
+  }
+
+  return filtered;
+}, [games, statusFilter, searchQuery]);
 ```
 
 #### Import from BGG Modal (`components/games/import-bgg-modal.tsx`)
@@ -248,7 +265,7 @@ const schema = z.object({
 
 **Features:**
 - Tab navigation (Home, FAQs, Documents)
-- Fetches game details from `GET /games/{id}`
+- Fetches game details from `GET /games/{id}` using the Next.js 16 `useParams()` hook (avoids the Promise-based `params` limitation)
 - Dynamic tab rendering based on selection
 - Breadcrumb navigation (Games > Game Name)
 - Loading states per tab
@@ -338,11 +355,11 @@ const api = axios.create({
 **API Functions:**
 
 **Games:**
-- `getGames()` - GET /games
-- `getGameById(id)` - GET /games/{id}
-- `createGame(data)` - POST /admin/games
-- `updateGame(id, data)` - PATCH /admin/games/{id}
-- `importFromBGG(data)` - POST /admin/games/import-bgg
+- `getGames()` - GET /games (unwraps `{ games, total }` and normalizes `name_base → name`)
+- `getGame(id)` - GET /games/{id} (unwraps `{ game, has_faq_access, has_chat_access }`)
+- `createGame(data)` - POST /admin/games (maps `name` to `name_base` before sending)
+- `updateGame(id, data)` - PATCH /admin/games/{id}` (only sends changed fields, converts names/playing time)
+- `importFromBGG(data)` - POST /admin/games/import-bgg (maps response to `Game`)
 
 **FAQs:**
 - `getGameFAQs(gameId, lang?)` - GET /games/{id}/faqs?lang={lang}
@@ -371,18 +388,36 @@ export type ProviderName = 'openai' | 'gemini' | 'claude';
 export interface Game {
   id: string;
   section_id: string;
-  name_base: string;
-  bgg_id: number | null;
-  min_players: number | null;
-  max_players: number | null;
-  playing_time: number | null;
-  rating: number | null;
-  thumbnail_url: string | null;
-  image_url: string | null;
+  bgg_id?: number;
+  name: string;
+  description?: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  min_players?: number;
+  max_players?: number;
+  min_playtime?: number;
+  max_playtime?: number;
+  year_published?: number;
+  bgg_rating?: number;
+  bgg_weight?: number;
   status: GameStatus;
-  last_synced_from_bgg_at: string | null;
+  last_synced_from_bgg_at?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface GameListItem {
+  id: string;
+  name: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  bgg_id?: number;
+  min_players?: number;
+  max_players?: number;
+  playing_time?: number;
+  rating?: number;
+  status: GameStatus;
+  year_published?: number;
 }
 
 export interface GameFAQ {
@@ -403,18 +438,17 @@ export interface GameDocument {
   language: Language;
   source_type: SourceType;
   file_name: string;
-  file_path: string;
-  file_size: number | null;
-  file_type: string | null;
-  provider_name: ProviderName | null;
-  provider_file_id: string | null;
-  vector_store_id: string | null;
+  file_path?: string;
+  file_size_bytes?: number;
+  provider_name: ProviderName;
+  provider_file_id?: string;
+  vector_store_id?: string;
   status: DocumentStatus;
-  error_message: string | null;
-  processed_at: string | null;
-  metadata: Record<string, any> | null;
-  uploaded_at: string;
+  error_message?: string;
+  metadata?: Record<string, any>;
+  uploaded_by?: string;
   updated_at: string;
+  created_at: string;
 }
 ```
 
@@ -523,7 +557,7 @@ export interface ProcessKnowledgeResponse {
 4. Backend validates role (admin/developer required)
 5. Session persists in browser local storage
 6. Token refreshes automatically via Supabase client
-7. Middleware validates session on protected routes
+7. `proxy.ts` validates session on protected routes
 
 ### 10. Security Considerations
 
@@ -534,7 +568,7 @@ export interface ProcessKnowledgeResponse {
 - Role enforcement on backend (not just frontend)
 
 **Route Protection:**
-- Middleware checks for valid session
+- `proxy.ts` checks for valid session
 - Redirects unauthenticated users to login
 - No hardcoded credentials in code
 - Environment variables for sensitive data
@@ -964,7 +998,7 @@ npm run start        # Serve production build
 6. **Technical:**
    - ✅ TypeScript strict mode
    - ✅ Type-safe API client
-   - ✅ Route protection middleware
+   - ✅ Route protection proxy
    - ✅ Code organization and modularity
    - ✅ Environment configuration
 

@@ -11,6 +11,7 @@ A Next.js-based web portal for managing games, FAQs, and knowledge documents for
   - Import games from BoardGameGeek (BGG)
   - Edit game metadata and information
   - Sync game data from BGG
+  - Admin list uses the backend `/games` response (GamesListResponse) and the API client normalizes Supabase's `name_base` field so titles always show up
 - **FAQ Management**: Create, edit, and delete FAQs in multiple languages (ES/EN)
 - **Document Management**:
   - Add document references for game knowledge
@@ -21,7 +22,7 @@ A Next.js-based web portal for managing games, FAQs, and knowledge documents for
 
 ## Tech Stack
 
-- **Framework**: Next.js 14+ (App Router)
+- **Framework**: Next.js 16 (App Router + `proxy.ts`)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Authentication**: Supabase Auth
@@ -197,7 +198,7 @@ admin-portal/
 │   ├── api.ts                   # Backend API client
 │   ├── types.ts                 # TypeScript type definitions
 │   └── utils.ts                 # Utility functions
-├── middleware.ts                # Next.js middleware (auth protection)
+├── proxy.ts                     # Next.js 16 proxy guard (auth protection)
 ├── .env.local                   # Environment variables
 ├── next.config.js               # Next.js configuration
 ├── tailwind.config.ts           # Tailwind CSS configuration
@@ -228,6 +229,9 @@ The portal consumes the FastAPI backend at `http://127.0.0.1:8000`:
 - `GET /games/{id}` - Get game details
 - `GET /games/{id}/faqs` - Get game FAQs
 - `GET /sections` - Get app sections
+
+> `GET /games` returns the backend `GamesListResponse` (`{ games, total }`).  
+> The API client normalizes each entry so the UI always reads `game.name` even though Supabase stores `name_base`.
 
 All admin endpoints require authentication with a Supabase JWT token and admin/developer role.
 
@@ -276,7 +280,7 @@ npm run lint
 ## Security Notes
 
 - **Internal Use Only**: This portal is for admin/developer use only
-- **No Public Access**: All routes are protected by authentication middleware
+- **No Public Access**: All routes are protected by the authentication proxy
 - **Role-Based Access**: Only admin and developer roles can access
 - **Token Validation**: Backend validates Supabase JWT on every request
 - **No Sensitive Data**: Never hardcode API keys or secrets in the frontend

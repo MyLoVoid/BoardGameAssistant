@@ -753,7 +753,7 @@ Para el MVP:
 **BGAI-0011 — Frontend Next.js**
 
 1. **Proyecto Next.js completo** (`admin-portal/`)
-   * ✅ Next.js 14 con App Router y TypeScript
+   * ✅ Next.js 16 (React 19) con App Router y TypeScript
    * ✅ Tailwind CSS para diseño profesional
    * ✅ 2,213+ líneas de código TypeScript/React
    * ✅ 35 archivos principales creados
@@ -804,12 +804,9 @@ Para el MVP:
    * ✅ Integración con todos los endpoints admin
 
 8. **Documentación completa**
-   * ✅ `admin-portal/README.md` - Documentación completa
+   * ✅ `admin-portal/README.md` - Documentación funcional/técnica consolidada del portal
    * ✅ `admin-portal/SETUP.md` - Guía rápida (3 pasos)
-   * ✅ `admin-portal/PROJECT_SUMMARY.md` - Resumen de implementación
    * ✅ `docs/BGAI-0011_admin-portal-frontend.md` - Documentación técnica oficial
-   * ✅ `ADMIN_PORTAL_COMPLETE.md` - Resumen ejecutivo en raíz
-   * ✅ `admin-portal-checklist.md` - Checklist de verificación
 
 ### 🔄 En progreso
 
@@ -883,7 +880,7 @@ Para el MVP:
    * Integración BGG API para importar juegos automáticamente.
    * Tabla `knowledge_documents` para tracking de procesamiento RAG.
 4. **BGAI-0011 — Portal de Administración - Frontend Next.js**
-   * Portal web completo con Next.js 14, TypeScript y Tailwind CSS (2,213+ líneas de código).
+   * Portal web completo con Next.js 16, React 19, TypeScript y Tailwind CSS (2,213+ líneas de código).
    * Autenticación con Supabase Auth y validación de roles (admin/developer).
    * UI completa para gestión de juegos (importar desde BGG, editar, sincronizar).
    * CRUD completo de FAQs con soporte multi-idioma (ES/EN).
