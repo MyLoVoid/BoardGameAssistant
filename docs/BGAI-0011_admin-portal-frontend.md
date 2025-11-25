@@ -5,18 +5,19 @@
 **Title**: Admin Portal Frontend - Next.js UI for Game Management
 **Author**: Camilo Ramirez
 **Date**: 2025-11-24
-**Goal**: Build complete web-based administration portal for managing games, FAQs, and knowledge documents using Next.js 14, consuming the admin backend API endpoints from BGAI-0010.
+**Last Updated**: 2025-11-25 (Upgraded to Next.js 16 & React 19)
+**Goal**: Build complete web-based administration portal for managing games, FAQs, and knowledge documents using Next.js 16, consuming the admin backend API endpoints from BGAI-0010.
 
 ## Summary
 
 This implementation delivers a full-featured administrative web portal for internal users (admin/developer roles) to manage the BGAI game catalog:
 
-- Created Next.js 14 project with App Router, TypeScript, and Tailwind CSS
+- Created Next.js 16 project with App Router, TypeScript, and Tailwind CSS (upgraded from v14)
 - Implemented Supabase authentication with role-based access control
 - Built complete game management UI (list, detail, import from BGG)
 - Implemented full CRUD for FAQs with multi-language support (ES/EN)
 - Created document management interface with RAG knowledge processing
-- Added route protection middleware and session persistence
+- Added route protection with Next.js 16 proxy (migrated from middleware) and session persistence
 - Integrated with all `/admin` backend endpoints from BGAI-0010
 - Delivered professional UI with loading states, error handling, and user feedback
 
@@ -68,7 +69,7 @@ admin-portal/
 │   ├── supabase.ts               # Supabase client
 │   ├── types.ts                  # TypeScript types
 │   └── utils.ts                  # Utility functions
-├── middleware.ts                 # Route protection
+├── proxy.ts                      # Route protection (Next.js 16 convention)
 ├── .env.local                    # Environment variables
 ├── README.md                     # Complete documentation
 ├── SETUP.md                      # Quick setup guide
@@ -92,7 +93,7 @@ admin-portal/
 
 ### 1. Project Setup & Configuration
 
-**Next.js 14 with App Router:**
+**Next.js 16 with App Router:**
 - Initialized with TypeScript and ESLint
 - Configured App Router for file-based routing
 - Set up Tailwind CSS with custom theme
@@ -101,17 +102,18 @@ admin-portal/
 **Dependencies Installed:**
 ```json
 {
-  "next": "^14.2.0",
-  "react": "^18.3.0",
-  "react-dom": "^18.3.0",
-  "typescript": "^5.3.0",
-  "@supabase/supabase-js": "^2.39.0",
-  "axios": "^1.6.0",
-  "react-hook-form": "^7.50.0",
-  "zod": "^3.22.0",
-  "lucide-react": "^0.344.0",
-  "clsx": "^2.1.0",
-  "tailwind-merge": "^2.2.0"
+  "next": "^16.0.4",
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
+  "typescript": "^5.7.0",
+  "@supabase/supabase-js": "^2.48.0",
+  "axios": "^1.7.0",
+  "react-hook-form": "^7.55.0",
+  "@hookform/resolvers": "^5.2.2",
+  "zod": "^3.25.0",
+  "lucide-react": "^0.554.0",
+  "clsx": "^2.1.1",
+  "tailwind-merge": "^2.6.0"
 }
 ```
 
@@ -142,12 +144,21 @@ NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 - Redirect to login if unauthorized
 - Fetch user profile from backend `/auth/me` endpoint
 
-**Route Protection (`middleware.ts`):**
+**Route Protection (`proxy.ts`):**
 ```typescript
-// Protects all routes under /dashboard
-// Redirects to /auth/login if not authenticated
-// Validates session and refreshes if needed
+// Next.js 16 uses "proxy.ts" instead of "middleware.ts"
+// Function must be named "proxy" instead of "middleware"
+export async function proxy(request: NextRequest) {
+  // Protects all routes under /dashboard
+  // Redirects to /auth/login if not authenticated
+  // Validates session and refreshes if needed
+}
 ```
+
+**Migration Note (2025-11-25):**
+- Migrated from `middleware.ts` → `proxy.ts` following Next.js 16 conventions
+- Renamed exported function from `middleware` → `proxy`
+- Added `suppressHydrationWarning` to root `<html>` tag for React 19 compatibility
 
 ### 3. Layout & Navigation
 
@@ -692,29 +703,30 @@ npm run dev
 ## Dependencies & Versions
 
 **Runtime:**
-- next: ^14.2.0
-- react: ^18.3.0
-- react-dom: ^18.3.0
-- @supabase/supabase-js: ^2.39.0
-- axios: ^1.6.0
-- react-hook-form: ^7.50.0
-- zod: ^3.22.0
-- lucide-react: ^0.344.0
-- clsx: ^2.1.0
-- tailwind-merge: ^2.2.0
+- next: ^16.0.4
+- react: ^19.0.0
+- react-dom: ^19.0.0
+- @supabase/supabase-js: ^2.48.0
+- axios: ^1.7.0
+- react-hook-form: ^7.55.0
+- @hookform/resolvers: ^5.2.2
+- zod: ^3.25.0
+- lucide-react: ^0.554.0
+- clsx: ^2.1.1
+- tailwind-merge: ^2.6.0
 
 **Dev Dependencies:**
-- typescript: ^5.3.0
-- @types/node: ^20
-- @types/react: ^18
-- @types/react-dom: ^18
-- eslint: ^8
-- eslint-config-next: ^14.2.0
-- tailwindcss: ^3.4.0
-- postcss: ^8
-- autoprefixer: ^10
+- typescript: ^5.7.0
+- @types/node: ^22.10.0
+- @types/react: ^19.0.0
+- @types/react-dom: ^19.0.0
+- eslint: ^9.18.0
+- eslint-config-next: ^16.0.4
+- tailwindcss: ^3.4.18
+- postcss: ^8.5.0
+- autoprefixer: ^10.4.20
 
-**Total Package Count:** 410 packages
+**Total Package Count:** 406 packages (optimized after Next.js 16 upgrade)
 
 ## Integration Points
 
@@ -955,6 +967,41 @@ npm run start        # Serve production build
    - ✅ Route protection middleware
    - ✅ Code organization and modularity
    - ✅ Environment configuration
+
+## Version History
+
+### v1.1.0 (2025-11-25) - Next.js 16 & React 19 Upgrade
+**Changes:**
+- ✅ Upgraded Next.js from 14.2.33 → 16.0.4
+- ✅ Upgraded React from 18.3.1 → 19.2.0
+- ✅ Upgraded React-DOM from 18.3.1 → 19.2.0
+- ✅ Upgraded TypeScript from 5.3.0 → 5.7.0
+- ✅ Migrated `middleware.ts` → `proxy.ts` (Next.js 16 convention)
+- ✅ Renamed exported function `middleware` → `proxy`
+- ✅ Added `suppressHydrationWarning` to `<html>` tag (React 19 compatibility)
+- ✅ Updated all dependencies to latest compatible versions
+- ✅ Verified zero security vulnerabilities
+- ✅ Tested all functionality working correctly
+
+**Breaking Changes:**
+- File `middleware.ts` removed, replaced with `proxy.ts`
+- Function export name changed from `middleware` to `proxy`
+
+**Benefits:**
+- Latest React 19 features and performance improvements
+- Next.js 16 optimizations and new capabilities
+- Better TypeScript support with v5.7
+- Enhanced development experience
+- Future-proof for upcoming features
+
+### v1.0.0 (2025-11-24) - Initial Release
+**Features:**
+- Complete admin portal with Next.js 14 App Router
+- Supabase authentication with role-based access
+- Games management with BGG import
+- FAQ CRUD with multi-language support
+- Document management with RAG processing
+- Professional UI with Tailwind CSS
 
 ## END
 
