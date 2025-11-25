@@ -6,13 +6,14 @@ cd mobile && npx expo start --clear --android.
 
 ## Board Game Assistant Intelligent (BGAI)
 
-App móvil + backend para asistir partidas de juegos de mesa con FAQs, chat IA y contenido curado.
+App móvil + portal admin + backend para asistir partidas de juegos de mesa con FAQs, chat IA y contenido curado.
 
 ### Arquitectura resumida
 
 - **Mobile (Expo / React Native / TypeScript)**: cliente principal con login Supabase, sección BGC, selector de idioma ES/EN y consumo de los endpoints reales (`/auth`, `/games`, `/games/{id}`, `/games/{id}/faqs`). Todo el copy pasa por `LanguageProvider` (`mobile/src/context/LanguageContext.tsx`).
-- **Backend (Python 3.13 + FastAPI + Poetry)**: expone autenticación, endpoints de juegos/FAQs, feature flags y en progreso RAG + GenAI Adapter.
-- **Supabase (Postgres + Auth + pgvector)**: esquema completo con usuarios, juegos, FAQs multi-idioma, feature flags, chat sessions/messages, vectors y usage events.
+- **Admin Portal (Next.js 14 / TypeScript / Tailwind)**: portal web interno para gestión completa de juegos (importar desde BGG, editar), FAQs multi-idioma (CRUD) y documentos de conocimiento (RAG). Solo acceso para roles `admin` y `developer`. Ver [admin-portal/README.md](admin-portal/README.md).
+- **Backend (Python 3.13 + FastAPI + Poetry)**: expone autenticación, endpoints de juegos/FAQs, endpoints admin (`/admin/games`, `/admin/games/{id}/faqs`, `/admin/games/{id}/documents`, `/admin/games/{id}/process-knowledge`), feature flags y en progreso RAG + GenAI Adapter.
+- **Supabase (Postgres + Auth + pgvector)**: esquema completo con usuarios, juegos, FAQs multi-idioma, feature flags, chat sessions/messages, game_documents y usage events.
 - **Docs**: cada feature mayor queda registrado en `/docs/BGAI-XXXX_*.md` (ver lista abajo) y el alcance vivo está en `MVP.md`.
 
 ### Requisitos locales
@@ -34,7 +35,13 @@ cd backend
 poetry install
 poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# 3) App móvil Expo
+# 3) Admin Portal (Next.js) - OPCIONAL
+cd admin-portal
+npm install
+npm run dev  # http://localhost:3000
+# Login: admin@bgai.com / Admin123! (crear usuario: ver admin-portal/SETUP.md)
+
+# 4) App móvil Expo
 cd mobile
 npm install
 npx expo start --clear --android   # o --ios / --web
@@ -43,6 +50,7 @@ npx expo start --clear --android   # o --ios / --web
 Env vars clave:
 - `.env` (raíz) contiene Supabase local + backend.
 - `mobile/.env` define `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_BACKEND_URL`. En simulador Android usar `10.0.2.2`; en dispositivo físico usar IP LAN.
+- `admin-portal/.env.local` define `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL` (ver admin-portal/SETUP.md).
 
 ### Scripts útiles
 
@@ -51,13 +59,14 @@ Env vars clave:
 | `supabase start` | Levanta Postgres, Auth, Studio, etc. |
 | `cd backend && poetry run pytest` | Tests de FastAPI. |
 | `cd backend && poetry run uvicorn app.main:app --reload` | API local. |
+| `cd admin-portal && npm run dev` | Portal admin Next.js (http://localhost:3000). |
 | `cd mobile && npx expo start` | Expo bundler. |
 | `cd mobile && npm run lint` | ESLint (auto-config Expo) — corrige antes de subir. |
 
 ### Estructura del repo
 
 ```
-├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0008)
+├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0011)
 ├─ docs/
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
@@ -67,7 +76,15 @@ Env vars clave:
 │  ├─ BGAI-0006_games-endpoints.md
 │  ├─ BGAI-0007_mobile-games-integration.md
 │  ├─ BGAI-0008_mobile-localization.md
-│  └─ BGAI-0009_mobile-chat-history.md
+│  ├─ BGAI-0009_mobile-chat-history.md
+│  ├─ BGAI-0010_admin-portal-backend.md
+│  └─ BGAI-0011_admin-portal-frontend.md
+├─ admin-portal/               # Portal admin Next.js (ver README propio)
+│  ├─ app/                     # Next.js App Router
+│  ├─ components/              # React components
+│  ├─ lib/                     # API client, types, utils
+│  ├─ SETUP.md                 # Guía rápida (3 pasos)
+│  └─ README.md                # Documentación completa
 ├─ mobile/                     # App Expo (ver README propio)
 │  └─ src/
 │     ├─ components/
@@ -83,13 +100,16 @@ Env vars clave:
 
 ### Estado actual (nov-2025)
 
-- ✅ Supabase schema + seeds con roles, feature flags, FAQs ES/EN y vectores (BGAI-0001).
+- ✅ Supabase schema + seeds con roles, feature flags, FAQs ES/EN, game_documents y knowledge_documents (BGAI-0001).
 - ✅ Backend bootstrap + auth + juegos/FAQs con control de acceso (BGAI-0002/3/6).
 - ✅ Mobile shell + auth real + consumo de juegos reales (BGAI-0004/5/7).
 - ✅ Localización completa con selector de idioma persistente; FAQs y UI cambian en caliente (BGAI-0008).
-- ✅ Tab global renombrado a “Historial/History” y documentado como hub de sesiones previas (BGAI-0009).
+- ✅ Tab global renombrado a "Historial/History" y documentado como hub de sesiones previas (BGAI-0009).
+- ✅ Portal Admin completo: backend admin API con integración BGG (BGAI-0010) + frontend Next.js con gestión de juegos, FAQs y documentos (BGAI-0011).
 - 🔄 En progreso: pipeline RAG + GenAI Adapter, endpoints de chat IA.
-- 📋 Pendiente: ingestión masiva de documentos, script BGG, assets finales, pruebas end-to-end completas.
+- 📋 Pendiente: ingestión masiva de documentos, script BGG automatizado, assets finales, pruebas end-to-end completas.
+
+**MVP: ~70% completado** (ver `MVP.md` para detalles)
 
 ### Guías adicionales
 

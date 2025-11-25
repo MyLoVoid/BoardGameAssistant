@@ -9,15 +9,15 @@
 
 ## Summary
 - Scope: Stand up the full Supabase schema, auth profile extension, and supporting tooling for BGAI.
-- Expected outcome: Local environments can run `supabase db reset` to obtain the canonical tables, enums, RLS, and feature flag baselines required by the Expo app and FastAPI backend.
+- Expected outcome: Local environments can run `supabase db reset` to obtain the canonical tables, enums, RLS, and feature flag baselines required by the Expo app, FastAPI backend, and Admin Portal (Next.js).
 - Risk/Impact: Medium - schema touches every core table, so future migrations must be coordinated and backups kept before applying in prod.
-- Adds seed content for app sections, marquee games, FAQs (ES/EN), feature flags per role/environment, and placeholder RAG chunks to unblock client integration tests.
-- Provides scripted creation of role-scoped test accounts plus config tuning for local auth, storage, realtime, analytics, and embedding extensions.
+- Adds seed content for app sections, marquee games, FAQs (ES/EN), feature flags per role/environment, placeholder RAG chunks, and pre-seeded role-scoped test accounts to unblock client + portal integration flows.
+- Provides centralized seeding of role-scoped test accounts (`admin@bgai.test`, `developer@bgai.test`, etc.) plus config tuning for local auth, storage, realtime, analytics, and embedding extensions—no manual SQL scripts required.
 - Extends `game_docs_vectors` into `game_documents` plus a companion `knowledge_documents` table so the Admin Portal can track document ingestion workflows end-to-end.
 
 ## Modified Files (Paths)
 - `supabase/migrations/20241122000000_initial_schema.sql` - Module: `supabase/migrations` - add full initial database schema, enums, triggers, and RLS policies.
-- `supabase/seed.sql` - Module: `supabase/seeds` - seed BGC section, flagship games, bilingual FAQs, feature flags, and sample vector chunks.
+- `supabase/seed.sql` - Module: `supabase/seeds` - seed BGC section, flagship games, bilingual FAQs, feature flags, sample RAG documents, and all role-scoped test users (admin/developer/tester/premium/basic).
 - `supabase/create_test_users.sql` - Module: `supabase/tooling` - helper script to create admin/developer/tester/premium/basic accounts with hashed passwords for local testing.
 - `supabase/config.toml` - Module: `supabase/config` - set project id, port map, auth, storage, analytics, and edge runtime defaults for the dev CLI stack.
 - `supabase/migrations/20241124000000_migrate_to_game_documents.sql` - Module: `supabase/migrations` - rename `game_docs_vectors` and add provider metadata columns for delegated RAG.
@@ -41,15 +41,14 @@
 - Supplies sample `game_documents` and `knowledge_documents` rows (without embeddings) to validate the RAG pipeline contract while backend ingestion jobs remain in progress.
 
 ### Tooling & Local Dev Experience
-- **Test Users**: Now automatically created in `seed.sql` (integrated from `create_test_users.sql`). Running `npx supabase db reset` will create 5 test users:
-  - `admin@bgai.test` / `Admin123!` (role: admin)
-  - `developer@bgai.test` / `Dev123!` (role: developer)
-  - `tester@bgai.test` / `Test123!` (role: tester)
-  - `premium@bgai.test` / `Premium123!` (role: premium)
-  - `basic@bgai.test` / `Basic123!` (role: basic)
-- Users are inserted into `auth.users` with encrypted passwords using `crypt()` and `gen_salt('bf')` from pgcrypto extension.
-- The `handle_new_user` trigger automatically creates corresponding `profiles` entries, with roles explicitly updated after creation.
-- No manual user creation needed - all test accounts are ready for development/testing after database reset.
+
+- **Test Users (`seed.sql`)**: Running `npx supabase db reset` provisions all required roles automatically:
+  - `admin@bgai.test` / `Admin123!`
+  - `developer@bgai.test` / `Dev123!`
+  - `tester@bgai.test` / `Test123!`
+  - `premium@bgai.test` / `Premium123!`
+  - `basic@bgai.test` / `Basic123!`
+  Each user is inserted into `auth.users` with encrypted passwords via pgcrypto’s `crypt()`/`gen_salt('bf')`, and the `handle_new_user` trigger backfills the corresponding `profiles` role entry. These accounts power the backend integration tests, the mobile client, and the Admin Portal, eliminating the need for manual SQL scripts.
 - `config.toml` aligns CLI services on stable ports (API 54321, DB 54322, Studio 54323) and switches on API, storage, realtime, analytics, edge functions, and seeding (`seed.sql`) so `supabase start` mirrors the target stack.
 - Auth config allows local email/password sign-ups with short OTP throttles, HTTPS redirect allow-list, optional OpenAI key for Studio AI, and placeholders for future OAuth/Twilio hookups.
 - Keeps storage/file limits conservative (50MiB) and enables experimental S3 knobs for future OrioleDB/backups without activating them by default.
@@ -58,6 +57,7 @@
 - Before promoting to prod, capture snapshots of the managed Supabase database and replay this migration in staging to confirm enum compatibility and vector index behavior.
 - Build automated ingestion to populate `embedding` vectors and align chunk dimensions with the chosen model (currently sized for `text-embedding-ada-002`).
 - Wire backend feature-flag resolver and analytics emitters against the new schema; add integration tests covering RLS access paths for each role.
+- **Admin Portal Setup**: After `supabase db reset`, sign in with the seeded credentials (e.g., `admin@bgai.test` / `Admin123!`) to access the Next.js admin interface at http://localhost:3000. See BGAI-0011 for full Admin Portal documentation.
 
 ## END
 End of Technical Documentation for BGA-0001 - GitHub Copilot
