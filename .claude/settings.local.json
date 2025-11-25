@@ -15,7 +15,6 @@
       "Bash(python -m venv:*)",
       "Bash(./venv/Scripts/python.exe run.py)",
       "Bash(dir C:UserscaramirezsDocuments_PYTHONBoardGameAssistant)"
-
     ],
     "deny": [],
     "ask": []
