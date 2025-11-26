@@ -463,6 +463,7 @@ Para el MVP:
 
 - Basta con un proceso manual/semi-automático para los 10–50 juegos iniciales.
 - No hace falta automatizar actualizaciones periódicas todavía.
+- Gracias a **BGAI-0012** el portal admin ya cuenta con creación manual de juegos, selector dinámico de secciones (`/sections`) y modalidades de importación que funcionan aun cuando la licencia de BGG no esté aprobada.
 - **Pendiente**: Obtener licencia/aprobación oficial de BoardGameGeek antes de uso en producción.
 
 ---
@@ -508,7 +509,7 @@ Para el MVP:
 | Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
 | Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
-| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011, BGAI-0012 |
+| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011, BGAI-0012, BGAI-0013 |
 | **TOTAL MVP**                           | 🔄 En progreso | ~72%    | 2025-11-25           |
 
 **Leyenda:**
@@ -811,6 +812,37 @@ Para el MVP:
    * ✅ `admin-portal/SETUP.md` - Guía rápida (3 pasos)
    * ✅ `docs/BGAI-0011_admin-portal-frontend.md` - Documentación técnica oficial
 
+#### **Portal de Administración - Creación manual de juegos y mejoras BGG (BGAI-0012) (100%)**
+
+1. **Flujo de creación manual completo**
+   * ✅ Nuevo modal `CreateGameModal` que permite capturar todos los metadatos (jugadores, duración, rating, imágenes) sin depender de BGG.
+   * ✅ Endpoints existentes (`POST /admin/games`) ahora reciben los campos opcionales y los validan correctamente.
+
+2. **Endpoint y servicio de secciones**
+   * ✅ Servicio `app/services/sections.py` y endpoint público `GET /sections` alimentan los dropdowns del portal.
+   * ✅ Tipos compartidos (`AppSection`) alineados entre backend y frontend; script SQL `insert_bgc_section.sql` garantiza la sección BGC.
+
+3. **Hardening de la integración BGG**
+   * ✅ Cliente httpx ahora usa `follow_redirects=True`, User-Agent descriptivo y manejo explícito de 401/errores.
+   * ✅ Importador desde el portal muestra mensajes más claros cuando la licencia aún no existe.
+
+4. **Documentación y avisos**
+   * ✅ `MVP.md`, `README.md` y `docs/BGAI-0010` incluyen la advertencia de licencia pendiente y los pasos de fallback.
+
+#### **Portal de Administración - Dark Mode y theming (BGAI-0013) (100%)**
+
+1. **Infraestructura de temas**
+   * ✅ `ThemeProvider` + `ThemeToggle` permiten elegir `light`, `dark` o `system`, persisten en `localStorage` y respetan `prefers-color-scheme`.
+   * ✅ Layout (`app/layout.tsx`) envuelve toda la app y evita hydration warnings al cambiar clases `dark`.
+
+2. **Tokens y componentes**
+   * ✅ `app/globals.css` y `tailwind.config.ts` definen variables CSS para background/foreground y tokens semánticos (`success`, `warning`).
+   * ✅ Componentes compartidos (badges, alerts, tabs, header, game tabs) migraron a los nuevos tokens evitando colores hardcodeados.
+
+3. **Documentación actualizada**
+   * ✅ README raíz, `admin-portal/README.md` y `docs/BGAI-0011` documentan el toggle, paleta y riesgos de regresiones visuales.
+   * ⚠️ `next lint` sigue fallando en Windows por bug del wrapper; se recomienda correr ESLint directo o desde WSL/macOS hasta aplicar el workaround.
+
 ### 🔄 En progreso
 
 #### **Backend API REST - RAG + GenAI Adapter (20%)**
@@ -889,6 +921,14 @@ Para el MVP:
    * CRUD completo de FAQs con soporte multi-idioma (ES/EN).
    * Gestión de documentos con botón "Process Knowledge" para RAG.
    * Documentación completa en `admin-portal/` y `docs/BGAI-0011_admin-portal-frontend.md`.
+5. **BGAI-0012 — Creación manual de juegos + endpoint `/sections`**
+   * Modal nuevo para crear juegos sin depender de BGG, con todos los metadatos disponibles.
+   * Servicio/endpoint público `/sections` alimenta los formularios del portal y asegura consistencia con `app_sections`.
+   * Cliente BGG endurecido (redirects, User-Agent, manejo de errores) y documentación con la advertencia de licencia pendiente.
+6. **BGAI-0013 — Dark Mode en el portal admin**
+   * `ThemeProvider` + `ThemeToggle` persistente habilitan light/dark/system en todo el portal.
+   * Tailwind + CSS variables definen tokens semánticos para fondos, texto y estados; badges/alerts/tabs usan las nuevas clases.
+   * README y documentos técnicos actualizados con guía de uso y riesgos conocidos (ej. bug de `next lint` en Windows).
 
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
