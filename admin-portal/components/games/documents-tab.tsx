@@ -164,7 +164,7 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
           className={`px-4 py-3 rounded-md flex items-start gap-2 ${
             error
               ? 'bg-destructive/10 text-destructive'
-              : 'bg-green-50 text-green-800'
+              : 'bg-success/10 text-success'
           }`}
         >
           <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
@@ -239,7 +239,7 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-md text-sm">
+            <div className="bg-primary/10 text-primary px-4 py-3 rounded-md text-sm">
               <p className="font-medium mb-1">Note:</p>
               <p>
                 This creates a document reference. You'll need to manually upload the

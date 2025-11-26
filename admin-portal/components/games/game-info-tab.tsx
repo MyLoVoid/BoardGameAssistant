@@ -95,7 +95,7 @@ export function GameInfoTab({ game, onUpdate }: GameInfoTabProps) {
           className={`px-4 py-3 rounded-md flex items-start gap-2 ${
             error
               ? 'bg-destructive/10 text-destructive'
-              : 'bg-green-50 text-green-800'
+              : 'bg-success/10 text-success'
           }`}
         >
           <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
