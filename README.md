@@ -27,18 +27,23 @@ App móvil + portal admin + backend para asistir partidas de juegos de mesa con 
 
 ```bash
 # 1) Supabase local + seeds
+# scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+# scoop install supabase
 supabase start
+# or > npx supabase@latest start
 # (opcional) supabase db reset && supabase db seed
 
 # 2) Backend FastAPI
 cd backend
 poetry install
 poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# cd backend && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # 3) Admin Portal (Next.js) - OPCIONAL
 cd admin-portal
 npm install
 npm run dev  # http://localhost:3000
+# cd admin-portal && npm run dev
 # Login: admin@bgai.test / Admin123! (auto-creado con supabase db reset)
 
 # 4) App móvil Expo
@@ -156,7 +161,7 @@ Env vars clave:
 ### Estructura del repo
 
 ```
-├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0011)
+├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0012)
 ├─ docs/
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
@@ -168,7 +173,8 @@ Env vars clave:
 │  ├─ BGAI-0008_mobile-localization.md
 │  ├─ BGAI-0009_mobile-chat-history.md
 │  ├─ BGAI-0010_admin-portal-backend.md
-│  └─ BGAI-0011_admin-portal-frontend.md
+│  ├─ BGAI-0011_admin-portal-frontend.md
+│  └─ BGAI-0012_BGG_manual_import.md
 ├─ admin-portal/               # Portal admin Next.js (ver README propio)
 │  ├─ app/                     # Next.js App Router
 │  ├─ components/              # React components
@@ -196,8 +202,9 @@ Env vars clave:
 - ✅ Localización completa con selector de idioma persistente; FAQs y UI cambian en caliente (BGAI-0008).
 - ✅ Tab global renombrado a "Historial/History" y documentado como hub de sesiones previas (BGAI-0009).
 - ✅ Portal Admin completo: backend admin API con integración BGG (BGAI-0010) + frontend Next.js con gestión de juegos, FAQs y documentos (BGAI-0011).
+- ✅ Creación manual de juegos + fix BGG API redirects + endpoint /sections (BGAI-0012).
 - 🔄 En progreso: pipeline RAG + GenAI Adapter, endpoints de chat IA.
-- 📋 Pendiente: ingestión masiva de documentos, script BGG automatizado, assets finales, pruebas end-to-end completas.
+- 📋 Pendiente: licencia oficial BGG, ingestión masiva de documentos, assets finales, pruebas end-to-end completas.
 
 **MVP: ~70% completado** (ver `MVP.md` para detalles)
 

@@ -508,8 +508,8 @@ Para el MVP:
 | Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
 | Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
-| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011 |
-| **TOTAL MVP**                           | 🔄 En progreso | ~70%    | 2025-11-24           |
+| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011, BGAI-0012 |
+| **TOTAL MVP**                           | 🔄 En progreso | ~72%    | 2025-11-25           |
 
 **Leyenda:**
 

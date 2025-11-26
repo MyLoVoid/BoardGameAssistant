@@ -23,6 +23,16 @@ const nextConfig = {
         hostname: 'm.media-amazon.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'boardgamechamps.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn11.bigcommerce.com',
+        pathname: '/**',
+      },
     ],
   },
 }
