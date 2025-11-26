@@ -19,10 +19,11 @@ export interface User {
 // App Section
 export interface AppSection {
   id: string;
-  name_key: string;
-  description_key: string;
-  is_active: boolean;
-  order_index: number;
+  key: string;
+  name: string;
+  description?: string;
+  display_order: number;
+  enabled: boolean;
   created_at: string;
   updated_at: string;
 }

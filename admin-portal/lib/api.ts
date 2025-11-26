@@ -143,9 +143,19 @@ class APIClient {
   }
 
   private formatError(error: AxiosError<APIError>): Error {
+    // If server returned a structured API error, prefer that detail
     if (error.response?.data?.detail) {
       return new Error(error.response.data.detail);
     }
+
+    // Network errors (no response) are common during local dev - provide actionable hint
+    if (!error.response) {
+      const code = (error as any).code ?? 'UNKNOWN';
+      return new Error(
+        `Network Error: could not reach API at ${API_BASE_URL} (${code}).`
+      );
+    }
+
     return new Error(error.message || 'An unexpected error occurred');
   }
 
@@ -302,8 +312,27 @@ class APIClient {
   // ============================================
 
   async getSections(): Promise<AppSection[]> {
-    const response = await this.client.get<AppSection[]>('/sections');
-    return response.data;
+    type SectionsResponse = { sections: ApiSection[]; total: number };
+    type ApiSection = {
+      id: string;
+      key: string;
+      name: string;
+      description?: string | null;
+      display_order: number;
+      enabled: boolean;
+    };
+
+    const response = await this.client.get<SectionsResponse>('/sections');
+    return response.data.sections.map((s) => ({
+      id: s.id,
+      key: s.key,
+      name: s.name,
+      description: s.description ?? undefined,
+      display_order: s.display_order,
+      enabled: s.enabled,
+      created_at: '',
+      updated_at: '',
+    } as AppSection));
   }
 }
 

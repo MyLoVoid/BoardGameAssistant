@@ -39,13 +39,80 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 cd admin-portal
 npm install
 npm run dev  # http://localhost:3000
-# Login: admin@bgai.com / Admin123! (crear usuario: ver admin-portal/SETUP.md)
+# Login: admin@bgai.test / Admin123! (auto-creado con supabase db reset)
 
 # 4) App móvil Expo
 cd mobile
 npm install
 npx expo start --clear --android   # o --ios / --web
 ```
+
+#### 🔧 Configuración Inicial de Supabase (Primera Vez)
+
+Para que la aplicación funcione correctamente, Supabase necesita datos iniciales (seed data). El comando `supabase db reset` crea automáticamente:
+
+##### ✅ Datos Creados Automáticamente
+
+**1. Usuarios de Prueba** (`auth.users` + `profiles`)
+- `admin@bgai.test` / `Admin123!` - Acceso total al Admin Portal
+- `developer@bgai.test` / `Dev123!` - Desarrollo y testing
+- `tester@bgai.test` / `Test123!` - Testing con features beta
+- `premium@bgai.test` / `Premium123!` - Usuario premium (200 chats/día)
+- `basic@bgai.test` / `Basic123!` - Usuario básico (20 chats/día)
+
+**2. Sección BGC** (`app_sections`)
+- Board Game Companion - Sección principal del MVP (requerida para "Import from BGG")
+
+**3. Juegos de Ejemplo** (`games`)
+- Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne
+- Cada juego incluye BGG ID, rango de jugadores, tiempo de juego y rating
+
+**4. FAQs Multilenguaje** (`game_faqs`)
+- FAQs en español e inglés para cada juego
+- Sistema de fallback ES → EN funcionando
+
+**5. Feature Flags** (`feature_flags`)
+- Control de acceso por rol (`basic`, `premium`, `tester`, `developer`, `admin`)
+- Límites de chat configurados (20-200 consultas/día según rol)
+- Features beta solo para testers y developers
+- Configuración separada para entornos `dev` y `prod`
+
+**6. Documentos de Muestra** (`game_documents`, `knowledge_documents`)
+- Referencias de ejemplo para el pipeline RAG (sin embeddings aún)
+
+##### 🚀 Comando Recomendado (Reset Completo)
+
+```bash
+supabase db reset
+```
+
+Este comando:
+- ✅ Aplica todas las migraciones (`supabase/migrations/*.sql`)
+- ✅ Ejecuta el seed completo (`supabase/seed.sql`)
+- ✅ Crea esquema, tablas, índices, RLS policies y triggers
+- ✅ Inserta todos los datos de prueba listados arriba
+
+##### 🔧 Configuración Manual (Solo si NO usas `db reset`)
+
+Si prefieres no hacer reset completo, al menos crea la **sección BGC** (requerida para Admin Portal):
+
+```sql
+-- Ejecutar en Supabase Dashboard → SQL Editor
+INSERT INTO public.app_sections (key, name, description, display_order, enabled)
+SELECT 'BGC', 'Board Game Companion', 'Your intelligent assistant for board games', 1, true
+WHERE NOT EXISTS (SELECT 1 FROM public.app_sections WHERE key = 'BGC');
+```
+
+**Alternativa**: Script Python
+```bash
+cd backend && python scripts/create_bgc_section.py
+```
+
+##### 📚 Documentación Adicional
+
+- **Esquema completo**: `docs/BGAI-0001_supabase.md`
+- **Script BGC**: `backend/scripts/README_CREATE_BGC_SECTION.md`
+- **Seed SQL**: `supabase/seed.sql` (532 líneas con todos los datos iniciales)
 
 Env vars clave:
 - `.env` (raíz) contiene Supabase local + backend.

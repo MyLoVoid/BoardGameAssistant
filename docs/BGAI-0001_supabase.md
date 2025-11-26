@@ -59,5 +59,32 @@
 - Wire backend feature-flag resolver and analytics emitters against the new schema; add integration tests covering RLS access paths for each role.
 - **Admin Portal Setup**: After `supabase db reset`, sign in with the seeded credentials (e.g., `admin@bgai.test` / `Admin123!`) to access the Next.js admin interface at http://localhost:3000. See BGAI-0011 for full Admin Portal documentation.
 
+### Creating the BGC Section (Required for Admin Portal)
+
+The **Board Game Companion (BGC)** section must exist in the `app_sections` table for the "Import from BGG" feature in the Admin Portal to work correctly. This section is automatically created when running `supabase db reset` with the seed data.
+
+**If the section is missing**, execute the following SQL in the Supabase Dashboard (SQL Editor):
+
+```sql
+-- Insert BGC section if it doesn't exist
+INSERT INTO public.app_sections (key, name, description, display_order, enabled)
+SELECT 'BGC', 'Board Game Companion', 'Your intelligent assistant for board games', 1, true
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.app_sections WHERE key = 'BGC'
+);
+
+-- Verify the section was created
+SELECT id, key, name, description, display_order, enabled, created_at
+FROM public.app_sections
+WHERE key = 'BGC';
+```
+
+**Alternative methods**:
+- **Recommended**: Run `supabase db reset` to reset the database and apply all seeds (includes BGC section)
+- **SQL Script**: Execute `backend/scripts/insert_bgc_section.sql` in Supabase SQL Editor
+- **Python Script**: Run `python backend/scripts/create_bgc_section.py` (requires backend dependencies)
+
+**Verification**: After creating the section, the "Import from BGG" modal in the Admin Portal should display "Board Game Companion" in the Section dropdown, and the "Import Game" button should be enabled.
+
 ## END
 End of Technical Documentation for BGA-0001 - GitHub Copilot
