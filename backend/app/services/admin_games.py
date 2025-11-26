@@ -77,6 +77,27 @@ async def _ensure_faq_exists(faq_id: str) -> SupabaseRecord:
     return record
 
 
+async def _ensure_document_exists(document_id: str) -> SupabaseRecord:
+    supabase = await get_supabase_admin_client()
+    response = await (
+        supabase.table("game_documents")
+        .select("*")
+        .eq("id", document_id)
+        .maybe_single()
+        .execute()
+    )
+    if response is None:
+        raise AdminPortalError(
+            f"Document {document_id} not found", status_code=status.HTTP_404_NOT_FOUND
+        )
+    record = _extract_single(cast(SupabaseRecord | None, response.data))
+    if not record:
+        raise AdminPortalError(
+            f"Document {document_id} not found", status_code=status.HTTP_404_NOT_FOUND
+        )
+    return record
+
+
 def _build_bgg_payload(bgg_data: bgg_service.BGGGameData, synced_at: datetime) -> dict[str, Any]:
     """Convert BGG metadata into the fields stored in Supabase."""
 
@@ -290,6 +311,42 @@ async def create_game_document(game_id: str, payload: dict[str, Any]) -> GameDoc
         raise AdminPortalError("Supabase returned an empty response while creating the document")
 
     return GameDocument(**record)
+
+
+async def list_game_documents(game_id: str, *, language: str | None = None) -> list[GameDocument]:
+    """Return document references for a game filtered by language."""
+
+    await _ensure_game_exists(game_id)
+    supabase = await get_supabase_admin_client()
+
+    query = supabase.table("game_documents").select("*").eq("game_id", game_id)
+    if language:
+        query = query.eq("language", language)
+
+    try:
+        response = await query.order("created_at", desc=True).execute()
+    except Exception as exc:  # pragma: no cover - network/service errors
+        raise AdminPortalError(f"Failed to list documents for game {game_id}: {exc}") from exc
+
+    data = cast(list[SupabaseRecord], response.data or [])
+    return [GameDocument(**record) for record in data]
+
+
+async def delete_game_document(game_id: str, document_id: str) -> None:
+    """Delete a document reference ensuring it belongs to the game."""
+
+    document = await _ensure_document_exists(document_id)
+    if document["game_id"] != game_id:
+        raise AdminPortalError(
+            f"Document {document_id} does not belong to game {game_id}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    supabase = await get_supabase_admin_client()
+    try:
+        await supabase.table("game_documents").delete().eq("id", document_id).execute()
+    except Exception as exc:  # pragma: no cover - network/service errors
+        raise AdminPortalError(f"Failed to delete document {document_id}: {exc}") from exc
 
 
 async def _list_documents_for_processing(

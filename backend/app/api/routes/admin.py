@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import AuthenticatedUser, require_role
 from app.models.schemas import (
@@ -30,8 +30,10 @@ from app.services.admin_games import (
     create_game,
     create_game_document,
     create_game_faq,
+    delete_game_document,
     delete_game_faq,
     import_game_from_bgg,
+    list_game_documents,
     process_game_knowledge,
     sync_game_from_bgg,
     update_game,
@@ -188,6 +190,43 @@ async def create_game_document_endpoint(
         return await create_game_document(game_id, request.model_dump())
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
+
+
+@router.get(
+    "/games/{game_id}/documents",
+    response_model=list[GameDocument],
+    summary="List game document references",
+)
+async def list_game_documents_endpoint(
+    game_id: str,
+    current_user: CurrentAdmin,
+    lang: str | None = Query(default=None, alias="lang"),
+) -> list[GameDocument]:
+    try:
+        return await list_game_documents(game_id, language=lang)
+    except AdminPortalError as exc:
+        raise _handle_admin_error(exc) from exc
+
+
+@router.delete(
+    "/games/{game_id}/documents/{document_id}",
+    response_model=SuccessResponse,
+    summary="Delete game document reference",
+)
+async def delete_game_document_endpoint(
+    game_id: str,
+    document_id: str,
+    current_user: CurrentAdmin,
+) -> SuccessResponse:
+    try:
+        await delete_game_document(game_id, document_id)
+    except AdminPortalError as exc:
+        raise _handle_admin_error(exc) from exc
+
+    return SuccessResponse(
+        message="Document deleted successfully",
+        data={"document_id": document_id},
+    )
 
 
 @router.post(
