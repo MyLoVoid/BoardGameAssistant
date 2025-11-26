@@ -24,7 +24,7 @@ class KnowledgeTableStub:
         self._payload = payload
         return self
 
-    def execute(self):
+    async def execute(self):
         record: dict = dict(self._payload) if self._payload else {}
         record.setdefault("id", f"knowledge-{len(self.recorder['knowledge'])+1}")
         record.setdefault("created_at", datetime.now(tz=UTC))
@@ -46,7 +46,7 @@ class GameDocumentTableStub:
         self._filter = (column, value)
         return self
 
-    def execute(self):
+    async def execute(self):
         self.recorder["doc_updates"].append({"payload": self._payload, "filter": self._filter})
         return FakeResponse(None)
 
@@ -91,18 +91,27 @@ def _fake_document(**overrides) -> GameDocument:
 @pytest.fixture(autouse=True)
 def stub_supabase(monkeypatch: pytest.MonkeyPatch):
     client = FakeSupabaseClient()
-    monkeypatch.setattr(admin_games, "get_supabase_admin_client", lambda: client)
+
+    async def fake_client():
+        return client
+
+    monkeypatch.setattr(admin_games, "get_supabase_admin_client", fake_client)
     return client
 
 
-def test_process_game_knowledge_marks_documents_processing(
+@pytest.mark.asyncio
+async def test_process_game_knowledge_marks_documents_processing(
     monkeypatch: pytest.MonkeyPatch, stub_supabase
 ):
     """Documents default to processing status unless mark_as_ready=True."""
 
     document = _fake_document()
+
+    async def fake_list(*args, **kwargs):
+        return [document]
+
     monkeypatch.setattr(
-        admin_games, "_list_documents_for_processing", lambda *args, **kwargs: [document]
+        admin_games, "_list_documents_for_processing", fake_list
     )
 
     request = KnowledgeProcessRequest(
@@ -114,7 +123,7 @@ def test_process_game_knowledge_marks_documents_processing(
         notes="Seed",
         mark_as_ready=False,
     )
-    processed_ids, knowledge_docs = admin_games.process_game_knowledge(
+    processed_ids, knowledge_docs = await admin_games.process_game_knowledge(
         document.game_id,
         request,
         triggered_by="user-1",
@@ -128,12 +137,17 @@ def test_process_game_knowledge_marks_documents_processing(
     assert stub_supabase.storage["doc_updates"][0]["payload"]["status"] == "processing"
 
 
-def test_process_game_knowledge_can_mark_ready(monkeypatch: pytest.MonkeyPatch, stub_supabase):
+@pytest.mark.asyncio
+async def test_process_game_knowledge_can_mark_ready(monkeypatch: pytest.MonkeyPatch, stub_supabase):
     """mark_as_ready should set ready status and propagate provider overrides."""
 
     document = _fake_document()
+
+    async def fake_list(*args, **kwargs):
+        return [document]
+
     monkeypatch.setattr(
-        admin_games, "_list_documents_for_processing", lambda *args, **kwargs: [document]
+        admin_games, "_list_documents_for_processing", fake_list
     )
 
     request = KnowledgeProcessRequest(
@@ -146,7 +160,7 @@ def test_process_game_knowledge_can_mark_ready(monkeypatch: pytest.MonkeyPatch, 
         notes="Finished",
     )
 
-    processed_ids, knowledge_docs = admin_games.process_game_knowledge(
+    processed_ids, knowledge_docs = await admin_games.process_game_knowledge(
         document.game_id,
         request,
         triggered_by=None,

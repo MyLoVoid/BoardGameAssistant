@@ -19,10 +19,11 @@ export interface User {
 // App Section
 export interface AppSection {
   id: string;
-  name_key: string;
-  description_key: string;
-  is_active: boolean;
-  order_index: number;
+  key: string;
+  name: string;
+  description?: string;
+  display_order: number;
+  enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -70,8 +71,8 @@ export interface FAQ {
   language: Language;
   question: string;
   answer: string;
-  order_index: number;
-  is_visible: boolean;
+  display_order: number;
+  visible: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -114,9 +115,14 @@ export interface AuthResponse {
 export interface CreateGameRequest {
   section_id: string;
   name: string;
-  description?: string;
   status?: GameStatus;
   bgg_id?: number;
+  min_players?: number;
+  max_players?: number;
+  playing_time?: number;
+  rating?: number;
+  thumbnail_url?: string;
+  image_url?: string;
 }
 
 export interface UpdateGameRequest {
@@ -141,15 +147,15 @@ export interface CreateFAQRequest {
   language: Language;
   question: string;
   answer: string;
-  order_index?: number;
-  is_visible?: boolean;
+  display_order?: number;
+  visible?: boolean;
 }
 
 export interface UpdateFAQRequest {
   question?: string;
   answer?: string;
-  order_index?: number;
-  is_visible?: boolean;
+  display_order?: number;
+  visible?: boolean;
 }
 
 export interface CreateDocumentRequest {

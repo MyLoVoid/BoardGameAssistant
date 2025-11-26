@@ -14,10 +14,12 @@ from app.models.schemas import (
     GameDetailResponse,
     GameFAQsResponse,
     GamesListResponse,
+    SectionsListResponse,
 )
 from app.services.feature_flags import check_faq_access
 from app.services.game_faqs import get_game_faqs
 from app.services.games import get_game_by_id, get_game_feature_access, get_games_list
+from app.services.sections import get_sections_list
 
 router = APIRouter()
 
@@ -53,7 +55,7 @@ async def list_games(
     Returns:
         GamesListResponse with list of games and total count
     """
-    games = get_games_list(
+    games = await get_games_list(
         user_id=current_user.user_id,
         user_role=current_user.role,
         status_filter=status_filter,
@@ -90,7 +92,7 @@ async def get_game(
     Returns:
         GameDetailResponse with game details and feature access flags
     """
-    game = get_game_by_id(
+    game = await get_game_by_id(
         game_id=game_id,
         user_id=current_user.user_id,
         user_role=current_user.role,
@@ -103,7 +105,7 @@ async def get_game(
         )
 
     # Get feature access flags for this game
-    feature_access = get_game_feature_access(
+    feature_access = await get_game_feature_access(
         game_id=game_id,
         user_id=current_user.user_id,
         user_role=current_user.role,
@@ -157,7 +159,7 @@ async def get_game_faqs_endpoint(
         GameFAQsResponse with list of FAQs in the requested (or fallback) language
     """
     # Check if user has access to this game
-    game = get_game_by_id(
+    game = await get_game_by_id(
         game_id=game_id,
         user_id=current_user.user_id,
         user_role=current_user.role,
@@ -170,7 +172,7 @@ async def get_game_faqs_endpoint(
         )
 
     # Check if user has FAQ access for this game
-    faq_access = check_faq_access(
+    faq_access = await check_faq_access(
         user_id=current_user.user_id,
         user_role=current_user.role,
         game_id=game_id,
@@ -183,7 +185,7 @@ async def get_game_faqs_endpoint(
         )
 
     # Get FAQs with language fallback
-    faqs, actual_language = get_game_faqs(
+    faqs, actual_language = await get_game_faqs(
         game_id=game_id,
         language=lang,
         fallback_to_en=True,
@@ -195,3 +197,34 @@ async def get_game_faqs_endpoint(
         language=actual_language,
         total=len(faqs),
     )
+
+
+@router.get(
+    "/sections",
+    response_model=SectionsListResponse,
+    summary="Get list of app sections",
+    description="Get list of all app sections available in the system",
+    responses={
+        200: {"description": "List of app sections"},
+    },
+)
+async def list_sections(
+    enabled_only: Annotated[
+        bool,
+        Query(
+            description="Filter to only enabled sections",
+        ),
+    ] = True,
+) -> SectionsListResponse:
+    """
+    Get list of all app sections
+
+    This endpoint does not require authentication and returns all sections
+    ordered by display_order. By default, only enabled sections are returned.
+
+    Returns:
+        SectionsListResponse with list of sections and total count
+    """
+    sections = await get_sections_list(enabled_only=enabled_only)
+
+    return SectionsListResponse(sections=sections, total=len(sections))

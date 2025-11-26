@@ -101,6 +101,33 @@ class ReadinessCheckResponse(BaseModel):
 
 
 # ============================================
+# App Section Models
+# ============================================
+
+
+class AppSection(BaseModel):
+    """App section information"""
+
+    id: str = Field(..., description="Section UUID")
+    key: str = Field(..., description="Section key (unique identifier)")
+    name: str = Field(..., description="Section display name")
+    description: str | None = Field(None, description="Section description")
+    display_order: int = Field(..., description="Display order (lower first)")
+    enabled: bool = Field(..., description="Whether section is enabled")
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SectionsListResponse(BaseModel):
+    """Response for GET /sections"""
+
+    sections: list[AppSection] = Field(..., description="List of sections")
+    total: int = Field(..., description="Total number of sections")
+
+
+# ============================================
 # Game Models
 # ============================================
 

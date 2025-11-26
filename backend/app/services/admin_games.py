@@ -22,7 +22,7 @@ from app.models.schemas import (
     KnowledgeDocument,
     KnowledgeProcessRequest,
 )
-from app.services.bgg import BGGServiceError, fetch_bgg_game
+from app.services import bgg as bgg_service
 from app.services.supabase import SupabaseRecord, get_supabase_admin_client
 
 
@@ -51,9 +51,11 @@ def _extract_single(
         return None
 
 
-def _ensure_game_exists(game_id: str) -> SupabaseRecord:
-    supabase = get_supabase_admin_client()
-    response = supabase.table("games").select("*").eq("id", game_id).maybe_single().execute()
+async def _ensure_game_exists(game_id: str) -> SupabaseRecord:
+    supabase = await get_supabase_admin_client()
+    response = await (
+        supabase.table("games").select("*").eq("id", game_id).maybe_single().execute()
+    )
     if response is None:
         raise AdminPortalError(f"Game {game_id} not found", status_code=status.HTTP_404_NOT_FOUND)
     record = _extract_single(cast(SupabaseRecord | None, response.data))
@@ -62,9 +64,11 @@ def _ensure_game_exists(game_id: str) -> SupabaseRecord:
     return record
 
 
-def _ensure_faq_exists(faq_id: str) -> SupabaseRecord:
-    supabase = get_supabase_admin_client()
-    response = supabase.table("game_faqs").select("*").eq("id", faq_id).maybe_single().execute()
+async def _ensure_faq_exists(faq_id: str) -> SupabaseRecord:
+    supabase = await get_supabase_admin_client()
+    response = await (
+        supabase.table("game_faqs").select("*").eq("id", faq_id).maybe_single().execute()
+    )
     if response is None:
         raise AdminPortalError(f"FAQ {faq_id} not found", status_code=status.HTTP_404_NOT_FOUND)
     record = _extract_single(cast(SupabaseRecord | None, response.data))
@@ -73,15 +77,52 @@ def _ensure_faq_exists(faq_id: str) -> SupabaseRecord:
     return record
 
 
-def create_game(payload: GameCreateRequest) -> Game:
+async def _ensure_document_exists(document_id: str) -> SupabaseRecord:
+    supabase = await get_supabase_admin_client()
+    response = await (
+        supabase.table("game_documents")
+        .select("*")
+        .eq("id", document_id)
+        .maybe_single()
+        .execute()
+    )
+    if response is None:
+        raise AdminPortalError(
+            f"Document {document_id} not found", status_code=status.HTTP_404_NOT_FOUND
+        )
+    record = _extract_single(cast(SupabaseRecord | None, response.data))
+    if not record:
+        raise AdminPortalError(
+            f"Document {document_id} not found", status_code=status.HTTP_404_NOT_FOUND
+        )
+    return record
+
+
+def _build_bgg_payload(bgg_data: bgg_service.BGGGameData, synced_at: datetime) -> dict[str, Any]:
+    """Convert BGG metadata into the fields stored in Supabase."""
+
+    return {
+        "name_base": bgg_data.name,
+        "min_players": bgg_data.min_players,
+        "max_players": bgg_data.max_players,
+        "playing_time": bgg_data.playing_time,
+        "rating": bgg_data.rating,
+        "thumbnail_url": bgg_data.thumbnail_url,
+        "image_url": bgg_data.image_url,
+        # Supabase client expects ISO strings for timestamptz fields
+        "last_synced_from_bgg_at": synced_at.isoformat(),
+    }
+
+
+async def create_game(payload: GameCreateRequest) -> Game:
     """Create a new game record."""
 
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
     insert_data = payload.model_dump()
     insert_data["last_synced_from_bgg_at"] = None
 
     try:
-        response = supabase.table("games").insert(insert_data).execute()
+        response = await supabase.table("games").insert(insert_data).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to create game: {exc}") from exc
 
@@ -92,50 +133,43 @@ def create_game(payload: GameCreateRequest) -> Game:
     return Game(**record)
 
 
-def update_game(game_id: str, payload: GameUpdateRequest) -> Game:
+async def update_game(game_id: str, payload: GameUpdateRequest) -> Game:
     """Update fields for an existing game."""
 
     updates = payload.model_dump(exclude_unset=True)
     if not updates:
         raise AdminPortalError("No fields provided to update")
 
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
 
     try:
-        supabase.table("games").update(updates).eq("id", game_id).execute()
+        await supabase.table("games").update(updates).eq("id", game_id).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to update game {game_id}: {exc}") from exc
 
-    record = _ensure_game_exists(game_id)
+    record = await _ensure_game_exists(game_id)
     return Game(**record)
 
 
-def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
+async def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
     """Import or refresh a game using the BGG XML API."""
 
     try:
-        bgg_data = fetch_bgg_game(request.bgg_id)
-    except BGGServiceError as exc:
+        bgg_data = await bgg_service.fetch_bgg_game(request.bgg_id)
+    except bgg_service.BGGServiceError as exc:
         raise AdminPortalError(str(exc), status_code=status.HTTP_502_BAD_GATEWAY) from exc
 
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
     synced_at = _now()
     payload: dict[str, Any] = {
         "section_id": request.section_id,
-        "name_base": bgg_data.name,
         "bgg_id": request.bgg_id,
-        "min_players": bgg_data.min_players,
-        "max_players": bgg_data.max_players,
-        "playing_time": bgg_data.playing_time,
-        "rating": bgg_data.rating,
-        "thumbnail_url": bgg_data.thumbnail_url,
-        "image_url": bgg_data.image_url,
-        "last_synced_from_bgg_at": synced_at,
+        **_build_bgg_payload(bgg_data, synced_at),
     }
     if request.status:
         payload["status"] = request.status
 
-    existing = (
+    existing = await (
         supabase.table("games").select("*").eq("bgg_id", request.bgg_id).maybe_single().execute()
     )
     existing_record = _extract_single(
@@ -150,11 +184,11 @@ def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
 
     try:
         if existing_record:
-            supabase.table("games").update(payload).eq("id", existing_record["id"]).execute()
+            await supabase.table("games").update(payload).eq("id", existing_record["id"]).execute()
             action = "updated"
-            record = _ensure_game_exists(existing_record["id"])
+            record = await _ensure_game_exists(existing_record["id"])
         else:
-            response = supabase.table("games").insert(payload).execute()
+            response = await supabase.table("games").insert(payload).execute()
             record = _extract_single(cast(list[SupabaseRecord] | None, response.data))
             if not record:
                 raise AdminPortalError("BGG import failed: Supabase returned no data")
@@ -165,15 +199,51 @@ def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
     return Game(**record), action
 
 
-def create_game_faq(game_id: str, payload: dict[str, Any]) -> GameFAQ:
+async def sync_game_from_bgg(game_id: str) -> Game:
+    """Refresh an existing game using its stored BGG ID."""
+
+    record = await _ensure_game_exists(game_id)
+    bgg_id = record.get("bgg_id")
+    if not bgg_id:
+        raise AdminPortalError(
+            "Game does not have a BGG ID configured, cannot sync",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        bgg_id_int = int(bgg_id)
+    except (TypeError, ValueError):
+        raise AdminPortalError(
+            f"Game has invalid BGG ID: {bgg_id}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        ) from None
+
+    try:
+        bgg_data = await bgg_service.fetch_bgg_game(bgg_id_int)
+    except bgg_service.BGGServiceError as exc:
+        raise AdminPortalError(str(exc), status_code=status.HTTP_502_BAD_GATEWAY) from exc
+
+    supabase = await get_supabase_admin_client()
+    payload = _build_bgg_payload(bgg_data, _now())
+
+    try:
+        await supabase.table("games").update(payload).eq("id", game_id).execute()
+    except Exception as exc:  # pragma: no cover - network/service errors
+        raise AdminPortalError(f"Failed to sync game {game_id} from BGG: {exc}") from exc
+
+    updated = await _ensure_game_exists(game_id)
+    return Game(**updated)
+
+
+async def create_game_faq(game_id: str, payload: dict[str, Any]) -> GameFAQ:
     """Create FAQ for a game."""
 
-    _ensure_game_exists(game_id)
-    supabase = get_supabase_admin_client()
+    await _ensure_game_exists(game_id)
+    supabase = await get_supabase_admin_client()
 
     insert_data = {"game_id": game_id, **payload}
     try:
-        response = supabase.table("game_faqs").insert(insert_data).execute()
+        response = await supabase.table("game_faqs").insert(insert_data).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to create FAQ: {exc}") from exc
 
@@ -184,55 +254,55 @@ def create_game_faq(game_id: str, payload: dict[str, Any]) -> GameFAQ:
     return GameFAQ(**record)
 
 
-def update_game_faq(game_id: str, faq_id: str, payload: dict[str, Any]) -> GameFAQ:
+async def update_game_faq(game_id: str, faq_id: str, payload: dict[str, Any]) -> GameFAQ:
     """Update an existing FAQ."""
 
     if not payload:
         raise AdminPortalError("No FAQ fields provided to update")
 
-    faq = _ensure_faq_exists(faq_id)
+    faq = await _ensure_faq_exists(faq_id)
     if faq["game_id"] != game_id:
         raise AdminPortalError(
             f"FAQ {faq_id} does not belong to game {game_id}",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
     try:
-        supabase.table("game_faqs").update(payload).eq("id", faq_id).execute()
+        await supabase.table("game_faqs").update(payload).eq("id", faq_id).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to update FAQ {faq_id}: {exc}") from exc
 
-    updated = _ensure_faq_exists(faq_id)
+    updated = await _ensure_faq_exists(faq_id)
     return GameFAQ(**updated)
 
 
-def delete_game_faq(game_id: str, faq_id: str) -> None:
+async def delete_game_faq(game_id: str, faq_id: str) -> None:
     """Delete FAQ belonging to a game."""
 
-    faq = _ensure_faq_exists(faq_id)
+    faq = await _ensure_faq_exists(faq_id)
     if faq["game_id"] != game_id:
         raise AdminPortalError(
             f"FAQ {faq_id} does not belong to game {game_id}",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
     try:
-        supabase.table("game_faqs").delete().eq("id", faq_id).execute()
+        await supabase.table("game_faqs").delete().eq("id", faq_id).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to delete FAQ {faq_id}: {exc}") from exc
 
 
-def create_game_document(game_id: str, payload: dict[str, Any]) -> GameDocument:
+async def create_game_document(game_id: str, payload: dict[str, Any]) -> GameDocument:
     """Register a new document reference."""
 
-    _ensure_game_exists(game_id)
-    supabase = get_supabase_admin_client()
+    await _ensure_game_exists(game_id)
+    supabase = await get_supabase_admin_client()
 
     insert_data = {"game_id": game_id, **payload}
     try:
-        response = supabase.table("game_documents").insert(insert_data).execute()
+        response = await supabase.table("game_documents").insert(insert_data).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to create document: {exc}") from exc
 
@@ -243,13 +313,49 @@ def create_game_document(game_id: str, payload: dict[str, Any]) -> GameDocument:
     return GameDocument(**record)
 
 
-def _list_documents_for_processing(
+async def list_game_documents(game_id: str, *, language: str | None = None) -> list[GameDocument]:
+    """Return document references for a game filtered by language."""
+
+    await _ensure_game_exists(game_id)
+    supabase = await get_supabase_admin_client()
+
+    query = supabase.table("game_documents").select("*").eq("game_id", game_id)
+    if language:
+        query = query.eq("language", language)
+
+    try:
+        response = await query.order("created_at", desc=True).execute()
+    except Exception as exc:  # pragma: no cover - network/service errors
+        raise AdminPortalError(f"Failed to list documents for game {game_id}: {exc}") from exc
+
+    data = cast(list[SupabaseRecord], response.data or [])
+    return [GameDocument(**record) for record in data]
+
+
+async def delete_game_document(game_id: str, document_id: str) -> None:
+    """Delete a document reference ensuring it belongs to the game."""
+
+    document = await _ensure_document_exists(document_id)
+    if document["game_id"] != game_id:
+        raise AdminPortalError(
+            f"Document {document_id} does not belong to game {game_id}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    supabase = await get_supabase_admin_client()
+    try:
+        await supabase.table("game_documents").delete().eq("id", document_id).execute()
+    except Exception as exc:  # pragma: no cover - network/service errors
+        raise AdminPortalError(f"Failed to delete document {document_id}: {exc}") from exc
+
+
+async def _list_documents_for_processing(
     game_id: str,
     *,
     document_ids: Iterable[str] | None,
     language: str | None,
 ) -> list[GameDocument]:
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
     query = supabase.table("game_documents").select("*").eq("game_id", game_id)
 
     if document_ids:
@@ -260,12 +366,12 @@ def _list_documents_for_processing(
     if language:
         query = query.eq("language", language)
 
-    response = query.execute()
+    response = await query.execute()
     data = cast(list[SupabaseRecord], response.data or [])
     return [GameDocument(**record) for record in data]
 
 
-def process_game_knowledge(
+async def process_game_knowledge(
     game_id: str,
     request: KnowledgeProcessRequest,
     *,
@@ -273,7 +379,7 @@ def process_game_knowledge(
 ) -> tuple[list[str], list[KnowledgeDocument]]:
     """Mark documents for knowledge processing and create processing records."""
 
-    documents = _list_documents_for_processing(
+    documents = await _list_documents_for_processing(
         game_id,
         document_ids=request.document_ids,
         language=request.language,
@@ -284,7 +390,7 @@ def process_game_knowledge(
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
-    supabase = get_supabase_admin_client()
+    supabase = await get_supabase_admin_client()
     processed_ids: list[str] = []
     knowledge_records: list[KnowledgeDocument] = []
     final_status = "ready" if request.mark_as_ready else "processing"
@@ -315,7 +421,7 @@ def process_game_knowledge(
         }
 
         try:
-            knowledge_resp = (
+            knowledge_resp = await (
                 supabase.table("knowledge_documents").insert(knowledge_payload).execute()
             )
             knowledge_record = _extract_single(
@@ -324,7 +430,7 @@ def process_game_knowledge(
             if not knowledge_record:
                 raise AdminPortalError("Failed to insert knowledge record")
 
-            supabase.table("game_documents").update(
+            await supabase.table("game_documents").update(
                 {
                     "status": final_status if document.status != "ready" else document.status,
                     "provider_name": updated_provider,

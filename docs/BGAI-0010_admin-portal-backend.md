@@ -15,6 +15,8 @@
 - Introduces `knowledge_documents` storage and seeds so RAG processing runs are tracked independently from file uploads.
 - Provides unit coverage for BGG parsing and knowledge job orchestration to limit regressions.
 
+> ⚠️ **IMPORTANTE - Estado de la API de BGG (2025-11-25)**: La integración con BoardGameGeek XML API v2 (`https://www.boardgamegeek.com/xmlapi2/thing`) está **en proceso de aplicación**. Actualmente **NO tenemos licencia oficial** de BGG y la funcionalidad de importación **NO debe usarse en producción**. El código implementado en `backend/app/services/bgg.py` está disponible únicamente para desarrollo y testing local. Se requiere aprobación formal de BoardGameGeek antes del uso productivo.
+
 ## Modified Files (Paths)
 - `backend/app/api/routes/admin.py` – Module: `backend/api` – add admin router and endpoints.
 - `backend/app/main.py` – Module: `backend/app` – register admin router with FastAPI app.

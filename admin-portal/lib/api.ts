@@ -16,6 +16,7 @@ import type {
   ProcessKnowledgeResponse,
   APIError,
   GameStatus,
+  Language,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -63,6 +64,25 @@ type ImportFromBGGApiResponse = {
   action: string;
   synced_at: string;
   source: string;
+};
+
+type ApiFAQ = {
+  id: string;
+  game_id: string;
+  language: Language;
+  question: string;
+  answer: string;
+  display_order: number;
+  visible: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type GameFAQsApiResponse = {
+  faqs: ApiFAQ[];
+  game_id: string;
+  language: Language;
+  total: number;
 };
 
 class APIClient {
@@ -143,9 +163,19 @@ class APIClient {
   }
 
   private formatError(error: AxiosError<APIError>): Error {
+    // If server returned a structured API error, prefer that detail
     if (error.response?.data?.detail) {
       return new Error(error.response.data.detail);
     }
+
+    // Network errors (no response) are common during local dev - provide actionable hint
+    if (!error.response) {
+      const code = (error as any).code ?? 'UNKNOWN';
+      return new Error(
+        `Network Error: could not reach API at ${API_BASE_URL} (${code}).`
+      );
+    }
+
     return new Error(error.message || 'An unexpected error occurred');
   }
 
@@ -171,16 +201,30 @@ class APIClient {
   async createGame(data: CreateGameRequest): Promise<Game> {
     const payload: Record<string, unknown> = {
       section_id: data.section_id,
+      name_base: data.name,
+      status: data.status || 'active',
     };
 
-    if (data.name !== undefined) {
-      payload.name_base = data.name;
-    }
-    if (data.status) {
-      payload.status = data.status;
-    }
     if (data.bgg_id !== undefined) {
       payload.bgg_id = data.bgg_id;
+    }
+    if (data.min_players !== undefined) {
+      payload.min_players = data.min_players;
+    }
+    if (data.max_players !== undefined) {
+      payload.max_players = data.max_players;
+    }
+    if (data.playing_time !== undefined) {
+      payload.playing_time = data.playing_time;
+    }
+    if (data.rating !== undefined) {
+      payload.rating = data.rating;
+    }
+    if (data.thumbnail_url !== undefined) {
+      payload.thumbnail_url = data.thumbnail_url;
+    }
+    if (data.image_url !== undefined) {
+      payload.image_url = data.image_url;
     }
 
     const response = await this.client.post<ApiGame>('/admin/games', payload);
@@ -238,10 +282,22 @@ class APIClient {
   // FAQs API
   // ============================================
 
-  async getGameFAQs(gameId: string, language?: string): Promise<FAQ[]> {
+  async getGameFAQs(gameId: string, language?: Language): Promise<FAQ[]> {
     const params = language ? { lang: language } : {};
-    const response = await this.client.get<FAQ[]>(`/games/${gameId}/faqs`, { params });
-    return response.data;
+    const response = await this.client.get<GameFAQsApiResponse>(`/games/${gameId}/faqs`, {
+      params,
+    });
+    return response.data.faqs.map((faq) => ({
+      id: faq.id,
+      game_id: faq.game_id,
+      language: faq.language,
+      question: faq.question,
+      answer: faq.answer,
+      display_order: faq.display_order,
+      visible: faq.visible,
+      created_at: faq.created_at ?? '',
+      updated_at: faq.updated_at ?? '',
+    }));
   }
 
   async createFAQ(gameId: string, data: CreateFAQRequest): Promise<FAQ> {
@@ -302,8 +358,27 @@ class APIClient {
   // ============================================
 
   async getSections(): Promise<AppSection[]> {
-    const response = await this.client.get<AppSection[]>('/sections');
-    return response.data;
+    type SectionsResponse = { sections: ApiSection[]; total: number };
+    type ApiSection = {
+      id: string;
+      key: string;
+      name: string;
+      description?: string | null;
+      display_order: number;
+      enabled: boolean;
+    };
+
+    const response = await this.client.get<SectionsResponse>('/sections');
+    return response.data.sections.map((s) => ({
+      id: s.id,
+      key: s.key,
+      name: s.name,
+      description: s.description ?? undefined,
+      display_order: s.display_order,
+      enabled: s.enabled,
+      created_at: '',
+      updated_at: '',
+    } as AppSection));
   }
 }
 

@@ -167,7 +167,7 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
   - Storage para PDFs (reglamentos, ayudas, expansiones).
 
 - **Backend fino propio (API REST + GenAI Adapter)**
-  - **Stack:** Python 3.13+ con FastAPI.
+  - **Stack:** Python 3.13+ con FastAPI (completamente async en todas las rutas y servicios).
   - Gestiona dependencias con Poetry.
   - Expuesto como API REST.
   - Faz de la app hacia:
@@ -443,6 +443,8 @@ Quieres analítica desde el inicio, así que se define:
 
 ## 8. BGG como fuente de datos
 
+> ⚠️ **ESTADO ACTUAL (2025-11-25)**: La integración con la API de BoardGameGeek (`https://www.boardgamegeek.com/xmlapi2/thing`) está **en proceso de aplicación**. Actualmente **NO tenemos licencia oficial** y la funcionalidad **NO está en funcionamiento productivo**. El código está implementado para desarrollo y testing, pero requiere aprobación formal de BGG antes de ser utilizado en producción.
+
 Flujo para BGG (desde backend / portal admin):
 
 1. El admin identifica el juego y su `bgg_id`.
@@ -461,6 +463,7 @@ Para el MVP:
 
 - Basta con un proceso manual/semi-automático para los 10–50 juegos iniciales.
 - No hace falta automatizar actualizaciones periódicas todavía.
+- **Pendiente**: Obtener licencia/aprobación oficial de BoardGameGeek antes de uso en producción.
 
 ---
 
@@ -505,8 +508,8 @@ Para el MVP:
 | Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
 | Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
-| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011 |
-| **TOTAL MVP**                           | 🔄 En progreso | ~70%    | 2025-11-24           |
+| Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011, BGAI-0012 |
+| **TOTAL MVP**                           | 🔄 En progreso | ~72%    | 2025-11-25           |
 
 **Leyenda:**
 

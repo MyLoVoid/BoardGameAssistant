@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ImportBGGModal } from '@/components/games/import-bgg-modal';
+import { CreateGameModal } from '@/components/games/create-game-modal';
 import { apiClient } from '@/lib/api';
-import { Plus, Search, RefreshCw, Eye, AlertCircle } from 'lucide-react';
+import { Plus, Search, RefreshCw, Eye, AlertCircle, FileText } from 'lucide-react';
 import type { GameListItem, GameStatus } from '@/lib/types';
 
 export default function GamesPage() {
@@ -20,6 +21,7 @@ export default function GamesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<GameStatus | 'all'>('all');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     loadGames();
@@ -92,10 +94,16 @@ export default function GamesPage() {
             Manage board games and their content
           </p>
         </div>
-        <Button onClick={() => setIsImportModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Import from BGG
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsCreateModalOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" />
+            Create Game
+          </Button>
+          <Button onClick={() => setIsImportModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Import from BGG
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -240,6 +248,12 @@ export default function GamesPage() {
           )}
         </CardContent>
       </Card>
+
+      <CreateGameModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={loadGames}
+      />
 
       <ImportBGGModal
         isOpen={isImportModalOpen}

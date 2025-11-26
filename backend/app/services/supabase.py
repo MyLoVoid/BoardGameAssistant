@@ -1,80 +1,92 @@
 """Supabase helpers for backend services."""
 
-from functools import lru_cache
+import asyncio
 from typing import Any, cast
 
 import httpx
-from supabase import Client, create_client
-from supabase.lib.client_options import SyncClientOptions
+from weakref import WeakKeyDictionary
+from supabase._async.client import AsyncClient, create_client
+from supabase.lib.client_options import AsyncClientOptions
 
 from app.config import settings
 
-_HTTPX_CLIENT: httpx.Client | None = None
+_HTTPX_CLIENT: httpx.AsyncClient | None = None
+_LOOP_CLIENTS: WeakKeyDictionary[asyncio.AbstractEventLoop, AsyncClient] | None = None
+_LOOP_ADMIN_CLIENTS: WeakKeyDictionary[asyncio.AbstractEventLoop, AsyncClient] | None = None
 
 
-def _get_httpx_client() -> httpx.Client:
+def _loop_clients() -> WeakKeyDictionary[asyncio.AbstractEventLoop, AsyncClient]:
+    global _LOOP_CLIENTS
+    if _LOOP_CLIENTS is None:
+        _LOOP_CLIENTS = WeakKeyDictionary()
+    return _LOOP_CLIENTS
+
+
+def _loop_admin_clients() -> WeakKeyDictionary[asyncio.AbstractEventLoop, AsyncClient]:
+    global _LOOP_ADMIN_CLIENTS
+    if _LOOP_ADMIN_CLIENTS is None:
+        _LOOP_ADMIN_CLIENTS = WeakKeyDictionary()
+    return _LOOP_ADMIN_CLIENTS
+
+
+def _get_httpx_client() -> httpx.AsyncClient:
     """Return a cached httpx client used by Supabase sub-clients."""
     global _HTTPX_CLIENT
     if _HTTPX_CLIENT is None:
-        _HTTPX_CLIENT = httpx.Client(timeout=10.0)
+        _HTTPX_CLIENT = httpx.AsyncClient(
+            timeout=10.0, limits=httpx.Limits(max_connections=100, max_keepalive_connections=20)
+        )
     return _HTTPX_CLIENT
 
 
-@lru_cache
-def get_supabase_client() -> Client:
-    """
-    Get Supabase client instance (singleton pattern with caching)
-
-    Returns:
-        Supabase client configured with service role key for backend operations
-    """
-    options = SyncClientOptions(httpx_client=_get_httpx_client())
-    return create_client(
-        supabase_url=settings.supabase_url,
-        supabase_key=settings.supabase_service_role_key,
-        options=options,
-    )
-
-
-@lru_cache
-def get_supabase_admin_client() -> Client:
-    """
-    Get Supabase admin client with elevated privileges
-    Same as get_supabase_client but with explicit admin context
-
-    Returns:
-        Supabase client with admin privileges
-    """
-    return get_supabase_client()
+async def get_supabase_client() -> AsyncClient:
+    """Get Supabase client instance (loop-scoped singleton)."""
+    loop = asyncio.get_running_loop()
+    clients = _loop_clients()
+    client = clients.get(loop)
+    if client is None:
+        options = AsyncClientOptions(httpx_client=_get_httpx_client())
+        client = await create_client(
+            supabase_url=settings.supabase_url,
+            supabase_key=settings.supabase_service_role_key,
+            options=options,
+        )
+        clients[loop] = client
+    return client
 
 
-def close_supabase_clients() -> None:
+async def get_supabase_admin_client() -> AsyncClient:
+    """Get Supabase admin client with elevated privileges."""
+    loop = asyncio.get_running_loop()
+    clients = _loop_admin_clients()
+    admin_client = clients.get(loop)
+    if admin_client is None:
+        admin_client = await get_supabase_client()
+        clients[loop] = admin_client
+    return admin_client
+
+
+async def close_supabase_clients() -> None:
     """Close shared httpx client and reset cached Supabase clients."""
-    global _HTTPX_CLIENT
-    get_supabase_client.cache_clear()
-    get_supabase_admin_client.cache_clear()
+    global _HTTPX_CLIENT, _LOOP_CLIENTS, _LOOP_ADMIN_CLIENTS
+    _LOOP_CLIENTS = None
+    _LOOP_ADMIN_CLIENTS = None
     if _HTTPX_CLIENT is not None:
-        _HTTPX_CLIENT.close()
+        await _HTTPX_CLIENT.aclose()
         _HTTPX_CLIENT = None
 
 
 SupabaseRecord = dict[str, Any]
 
 
-def get_user_by_id(user_id: str) -> SupabaseRecord | None:
-    """
-    Get user profile by user ID
-
-    Args:
-        user_id: User UUID
-
-    Returns:
-        User profile dict or None if not found
-    """
-    supabase = get_supabase_client()
+async def get_user_by_id(user_id: str) -> SupabaseRecord | None:
+    """Get user profile by user ID."""
+    supabase = await get_supabase_client()
 
     try:
-        response = supabase.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
+        response = (
+            await supabase.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
+        )
         if response is None:
             return None
         data = cast(SupabaseRecord | None, response.data)
@@ -86,14 +98,6 @@ def get_user_by_id(user_id: str) -> SupabaseRecord | None:
         return None
 
 
-async def get_user_profile(user_id: str) -> dict | None:
-    """
-    Async wrapper for getting user profile
-
-    Args:
-        user_id: User UUID
-
-    Returns:
-        User profile dict or None if not found
-    """
-    return get_user_by_id(user_id)
+async def get_user_profile(user_id: str) -> SupabaseRecord | None:
+    """Backward-compatible alias for fetching a profile by ID."""
+    return await get_user_by_id(user_id)

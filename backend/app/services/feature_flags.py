@@ -3,6 +3,7 @@ Feature flags service for access control and feature management
 Validates user access to features based on scope, role, and environment
 """
 
+import asyncio
 from typing import cast
 
 from app.config import settings
@@ -10,7 +11,7 @@ from app.models.schemas import FeatureAccess, FeatureFlag
 from app.services.supabase import SupabaseRecord, get_supabase_client
 
 
-def get_feature_flags(
+async def get_feature_flags(
     feature_key: str,
     scope_type: str | None = None,
     scope_id: str | None = None,
@@ -28,7 +29,7 @@ def get_feature_flags(
     Returns:
         List of matching feature flags
     """
-    supabase = get_supabase_client()
+    supabase = await get_supabase_client()
 
     # Build query
     query = (
@@ -47,7 +48,7 @@ def get_feature_flags(
         query = query.eq("role", role)
 
     try:
-        response = query.execute()
+        response = await query.execute()
         data = cast(list[SupabaseRecord], response.data)
         return [FeatureFlag(**flag) for flag in data]
     except Exception as exc:
@@ -55,7 +56,7 @@ def get_feature_flags(
         return []
 
 
-def check_feature_access(
+async def check_feature_access(
     user_id: str,
     user_role: str,
     feature_key: str,
@@ -101,7 +102,7 @@ def check_feature_access(
             metadata=None,
         )
 
-    # Collect all relevant flags in order of specificity
+    # Collect all relevant flags to check in order of specificity
     flags_to_check: list[tuple[str, str | None, str | None]] = []
 
     # 1. User-specific flags
@@ -117,14 +118,29 @@ def check_feature_access(
     flags_to_check.append(("global", None, user_role))
     flags_to_check.append(("global", None, None))
 
-    # Check flags in order of specificity
-    for check_scope_type, check_scope_id, check_role in flags_to_check:
-        flags = get_feature_flags(
+    # OPTIMIZATION: Execute all queries in parallel
+    tasks = [
+        get_feature_flags(
             feature_key=feature_key,
             scope_type=check_scope_type,
             scope_id=check_scope_id,
             role=check_role,
         )
+        for check_scope_type, check_scope_id, check_role in flags_to_check
+    ]
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Evaluate results in order of specificity
+    for i, (check_scope_type, _check_scope_id, check_role) in enumerate(flags_to_check):
+        result = results[i]
+
+        # Skip if query failed or not a list
+        if isinstance(result, Exception) or not isinstance(result, list):
+            continue
+
+        # Type narrowing: at this point, result is list[FeatureFlag]
+        flags = result
 
         # If we found a matching flag, use it
         if flags:
@@ -155,7 +171,7 @@ def check_feature_access(
     )
 
 
-def check_game_access(user_id: str, user_role: str, game_id: str) -> FeatureAccess:
+async def check_game_access(user_id: str, user_role: str, game_id: str) -> FeatureAccess:
     """
     Check if a user has access to a specific game
 
@@ -167,7 +183,7 @@ def check_game_access(user_id: str, user_role: str, game_id: str) -> FeatureAcce
     Returns:
         FeatureAccess object indicating if user can access the game
     """
-    return check_feature_access(
+    return await check_feature_access(
         user_id=user_id,
         user_role=user_role,
         feature_key="game_access",
@@ -176,7 +192,7 @@ def check_game_access(user_id: str, user_role: str, game_id: str) -> FeatureAcce
     )
 
 
-def check_faq_access(user_id: str, user_role: str, game_id: str) -> FeatureAccess:
+async def check_faq_access(user_id: str, user_role: str, game_id: str) -> FeatureAccess:
     """
     Check if a user has access to FAQs for a specific game
 
@@ -188,7 +204,7 @@ def check_faq_access(user_id: str, user_role: str, game_id: str) -> FeatureAcces
     Returns:
         FeatureAccess object indicating if user can access FAQs
     """
-    return check_feature_access(
+    return await check_feature_access(
         user_id=user_id,
         user_role=user_role,
         feature_key="faq",
@@ -197,7 +213,7 @@ def check_faq_access(user_id: str, user_role: str, game_id: str) -> FeatureAcces
     )
 
 
-def check_chat_access(user_id: str, user_role: str, game_id: str) -> FeatureAccess:
+async def check_chat_access(user_id: str, user_role: str, game_id: str) -> FeatureAccess:
     """
     Check if a user has access to chat for a specific game
 
@@ -209,7 +225,7 @@ def check_chat_access(user_id: str, user_role: str, game_id: str) -> FeatureAcce
     Returns:
         FeatureAccess object indicating if user can access chat
     """
-    return check_feature_access(
+    return await check_feature_access(
         user_id=user_id,
         user_role=user_role,
         feature_key="chat",
@@ -218,7 +234,7 @@ def check_chat_access(user_id: str, user_role: str, game_id: str) -> FeatureAcce
     )
 
 
-def get_user_accessible_games(user_id: str, user_role: str) -> list[str]:
+async def get_user_accessible_games(user_id: str, user_role: str) -> list[str]:
     """
     Get list of game IDs that a user has access to
 
@@ -231,9 +247,9 @@ def get_user_accessible_games(user_id: str, user_role: str) -> list[str]:
     """
     # Admin and developer in dev have access to all games
     if user_role in ["admin", "developer"] and settings.is_development:
-        supabase = get_supabase_client()
+        supabase = await get_supabase_client()
         try:
-            response = supabase.table("games").select("id").execute()
+            response = await supabase.table("games").select("id").execute()
             data = cast(list[SupabaseRecord], response.data)
             return [game["id"] for game in data]
         except Exception as exc:
@@ -241,33 +257,32 @@ def get_user_accessible_games(user_id: str, user_role: str) -> list[str]:
             return []
 
     # For other users, check game_access flags
-    supabase = get_supabase_client()
+    supabase = await get_supabase_client()
 
-    # Get game-specific access flags for this user's role
-    flags = get_feature_flags(
+    # OPTIMIZATION: Fetch game-specific and global flags in parallel
+    flags_task = get_feature_flags(
         feature_key="game_access",
         scope_type="game",
         role=user_role,
     )
-
-    # Filter enabled flags
-    accessible_game_ids = [flag.scope_id for flag in flags if flag.enabled and flag.scope_id]
-
-    # Also check for global game_access flag
-    global_flags = get_feature_flags(
+    global_flags_task = get_feature_flags(
         feature_key="game_access",
         scope_type="global",
         role=user_role,
     )
 
+    flags, global_flags = await asyncio.gather(flags_task, global_flags_task)
+
     # If there's a global flag enabling access, return all games
     if any(flag.enabled for flag in global_flags):
         try:
-            response = supabase.table("games").select("id").execute()
+            response = await supabase.table("games").select("id").execute()
             data = cast(list[SupabaseRecord], response.data)
             return [game["id"] for game in data]
         except Exception as exc:
             print(f"Error fetching all games: {exc}")
             return []
 
+    # Filter enabled flags
+    accessible_game_ids = [flag.scope_id for flag in flags if flag.enabled and flag.scope_id]
     return accessible_game_ids

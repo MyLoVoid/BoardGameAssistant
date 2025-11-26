@@ -236,12 +236,78 @@ BEGIN
   SELECT id INTO bgc_section_id FROM public.app_sections WHERE key = 'BGC';
 
   -- Insert test games
-  INSERT INTO public.games (section_id, bgg_id, name_base, min_players, max_players, playing_time, rating, status) VALUES
-    (bgc_section_id, 174430, 'Gloomhaven', 1, 4, 120, 8.70, 'active'),
-    (bgc_section_id, 167791, 'Terraforming Mars', 1, 5, 120, 8.38, 'active'),
-    (bgc_section_id, 266192, 'Wingspan', 1, 5, 70, 8.05, 'active'),
-    (bgc_section_id, 312484, 'Lost Ruins of Arnak', 1, 4, 120, 8.15, 'active'),
-    (bgc_section_id, 822, 'Carcassonne', 2, 5, 45, 7.41, 'active');
+  INSERT INTO public.games (
+    section_id,
+    bgg_id,
+    name_base,
+    min_players,
+    max_players,
+    playing_time,
+    rating,
+    status,
+    thumbnail_url,
+    image_url
+  ) VALUES
+    (
+      bgc_section_id,
+      174430,
+      'Gloomhaven',
+      1,
+      4,
+      120,
+      8.70,
+      'active',
+      'https://boardgamechamps.com/wp-content/uploads/2025/02/Gloomhaven-box-500-sp-300x300.png',
+      'https://boardgamechamps.com/wp-content/uploads/2025/02/Gloomhaven-box-500-sp-300x300.png'
+    ),
+    (
+      bgc_section_id,
+      167791,
+      'Terraforming Mars',
+      1,
+      5,
+      120,
+      8.38,
+      'active',
+      'https://boardgamechamps.com/wp-content/uploads/2025/02/Terraforming-Mars-box-500-sp-300x300.png',
+      'https://boardgamechamps.com/wp-content/uploads/2025/02/Terraforming-Mars-box-500-sp-300x300.png'
+    ),
+    (
+      bgc_section_id,
+      266192,
+      'Wingspan',
+      1,
+      5,
+      70,
+      8.05,
+      'active',
+      'https://boardgamechamps.com/wp-content/uploads/2025/02/Wingspan-box-500-sp-300x300.png',
+      'https://boardgamechamps.com/wp-content/uploads/2025/02/Wingspan-box-500-sp-300x300.png'
+    ),
+    (
+      bgc_section_id,
+      312484,
+      'Lost Ruins of Arnak',
+      1,
+      4,
+      120,
+      8.15,
+      'active',
+      'https://cdn11.bigcommerce.com/s-285hkc2e8r/images/stencil/1280x1280/products/13163/15120/image__40577.1655083076.png?c=2',
+      'https://cdn11.bigcommerce.com/s-285hkc2e8r/images/stencil/1280x1280/products/13163/15120/image__40577.1655083076.png?c=2'
+    ),
+    (
+      bgc_section_id,
+      822,
+      'Carcassonne',
+      2,
+      5,
+      45,
+      7.41,
+      'active',
+      'https://m.media-amazon.com/images/I/81Eo1BkSTGL._AC_SX300_SY300_QL70_ML2_.jpg',
+      'https://m.media-amazon.com/images/I/81Eo1BkSTGL._AC_SX300_SY300_QL70_ML2_.jpg'
+    );
 END $$;
 
 -- =====================================================

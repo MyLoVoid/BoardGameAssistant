@@ -34,9 +34,12 @@ export function ImportBGGModal({ isOpen, onClose, onSuccess }: ImportBGGModalPro
       setSections(data);
       if (data.length > 0) {
         setSectionId(data[0].id);
+      } else {
+        setError('No sections available. Please create the BGC section first.');
       }
     } catch (err: any) {
       console.error('Error loading sections:', err);
+      setError('Failed to load sections. Please try again.');
     }
   };
 
@@ -122,13 +125,17 @@ export function ImportBGGModal({ isOpen, onClose, onSuccess }: ImportBGGModalPro
                 onChange={(e) => setSectionId(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
-                disabled={loading}
+                disabled={loading || sections.length === 0}
               >
-                {sections.map((section) => (
-                  <option key={section.id} value={section.id}>
-                    {section.name_key}
-                  </option>
-                ))}
+                {sections.length === 0 ? (
+                  <option value="">No sections available</option>
+                ) : (
+                  sections.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -159,7 +166,7 @@ export function ImportBGGModal({ isOpen, onClose, onSuccess }: ImportBGGModalPro
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
+              <Button type="submit" disabled={loading || sections.length === 0} className="flex-1">
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
