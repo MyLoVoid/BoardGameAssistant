@@ -19,7 +19,6 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [languageFilter, setLanguageFilter] = useState<Language | 'all'>('all');
   const [isCreating, setIsCreating] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
@@ -144,11 +143,6 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
     }
   };
 
-  const filteredDocuments =
-    languageFilter === 'all'
-      ? documents
-      : documents.filter((doc) => doc.language === languageFilter);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -172,31 +166,7 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <Button
-            variant={languageFilter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setLanguageFilter('all')}
-          >
-            All
-          </Button>
-          <Button
-            variant={languageFilter === 'es' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setLanguageFilter('es')}
-          >
-            Spanish
-          </Button>
-          <Button
-            variant={languageFilter === 'en' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setLanguageFilter('en')}
-          >
-            English
-          </Button>
-        </div>
-
+      <div className="flex items-center justify-end">
         <div className="flex gap-2">
           {selectedDocs.size > 0 && (
             <Button onClick={handleProcessKnowledge} disabled={processing}>
@@ -343,7 +313,7 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
         </Card>
       )}
 
-      {filteredDocuments.length === 0 ? (
+      {documents.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
@@ -353,7 +323,7 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredDocuments.map((doc) => (
+          {documents.map((doc) => (
             <Card key={doc.id}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">

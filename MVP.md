@@ -1,7 +1,7 @@
 # MVP – Board Game Assistant Intelligence (BGAI)
 
-> Versión: 2025-11-24  
-> Estado: **MVP en desarrollo** (incluye Portal de Administración de Juegos y estado de proyecto actualizado)
+> Versión: 2025-11-26  
+> Estado: **MVP en desarrollo** (Portal admin backend/frontend completado BGAI-0010–BGAI-0013)
 
 ## 0. Resumen ejecutivo del MVP
 
