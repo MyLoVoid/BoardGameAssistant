@@ -181,16 +181,30 @@ class APIClient {
   async createGame(data: CreateGameRequest): Promise<Game> {
     const payload: Record<string, unknown> = {
       section_id: data.section_id,
+      name_base: data.name,
+      status: data.status || 'active',
     };
 
-    if (data.name !== undefined) {
-      payload.name_base = data.name;
-    }
-    if (data.status) {
-      payload.status = data.status;
-    }
     if (data.bgg_id !== undefined) {
       payload.bgg_id = data.bgg_id;
+    }
+    if (data.min_players !== undefined) {
+      payload.min_players = data.min_players;
+    }
+    if (data.max_players !== undefined) {
+      payload.max_players = data.max_players;
+    }
+    if (data.playing_time !== undefined) {
+      payload.playing_time = data.playing_time;
+    }
+    if (data.rating !== undefined) {
+      payload.rating = data.rating;
+    }
+    if (data.thumbnail_url !== undefined) {
+      payload.thumbnail_url = data.thumbnail_url;
+    }
+    if (data.image_url !== undefined) {
+      payload.image_url = data.image_url;
     }
 
     const response = await this.client.post<ApiGame>('/admin/games', payload);
