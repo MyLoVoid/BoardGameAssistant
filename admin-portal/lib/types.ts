@@ -71,8 +71,8 @@ export interface FAQ {
   language: Language;
   question: string;
   answer: string;
-  order_index: number;
-  is_visible: boolean;
+  display_order: number;
+  visible: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -147,15 +147,15 @@ export interface CreateFAQRequest {
   language: Language;
   question: string;
   answer: string;
-  order_index?: number;
-  is_visible?: boolean;
+  display_order?: number;
+  visible?: boolean;
 }
 
 export interface UpdateFAQRequest {
   question?: string;
   answer?: string;
-  order_index?: number;
-  is_visible?: boolean;
+  display_order?: number;
+  visible?: boolean;
 }
 
 export interface CreateDocumentRequest {

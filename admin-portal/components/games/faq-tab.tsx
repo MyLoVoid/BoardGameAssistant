@@ -25,8 +25,8 @@ export function FAQTab({ gameId }: FAQTabProps) {
     language: 'es',
     question: '',
     answer: '',
-    order_index: 0,
-    is_visible: true,
+    display_order: 0,
+    visible: true,
   });
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function FAQTab({ gameId }: FAQTabProps) {
     setError('');
     try {
       const data = await apiClient.getGameFAQs(gameId);
-      setFaqs(data.sort((a, b) => a.order_index - b.order_index));
+      setFaqs([...data].sort((a, b) => a.display_order - b.display_order));
     } catch (err: any) {
       setError(err.message || 'Failed to load FAQs');
     } finally {
@@ -65,8 +65,8 @@ export function FAQTab({ gameId }: FAQTabProps) {
       const updateData: UpdateFAQRequest = {
         question: formData.question,
         answer: formData.answer,
-        order_index: formData.order_index,
-        is_visible: formData.is_visible,
+        display_order: formData.display_order,
+        visible: formData.visible,
       };
       await apiClient.updateFAQ(gameId, editingFaq.id, updateData);
       resetForm();
@@ -94,8 +94,8 @@ export function FAQTab({ gameId }: FAQTabProps) {
       language: faq.language,
       question: faq.question,
       answer: faq.answer,
-      order_index: faq.order_index,
-      is_visible: faq.is_visible,
+      display_order: faq.display_order,
+      visible: faq.visible,
     });
     setIsCreating(false);
   };
@@ -105,8 +105,8 @@ export function FAQTab({ gameId }: FAQTabProps) {
       language: 'es',
       question: '',
       answer: '',
-      order_index: 0,
-      is_visible: true,
+      display_order: 0,
+      visible: true,
     });
   };
 
@@ -203,9 +203,12 @@ export function FAQTab({ gameId }: FAQTabProps) {
                 <label className="text-sm font-medium">Order</label>
                 <Input
                   type="number"
-                  value={formData.order_index}
+                  value={formData.display_order}
                   onChange={(e) =>
-                    setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })
+                    setFormData({
+                      ...formData,
+                      display_order: Number.parseInt(e.target.value, 10) || 0,
+                    })
                   }
                   className="mt-1"
                 />
@@ -241,14 +244,14 @@ export function FAQTab({ gameId }: FAQTabProps) {
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="is_visible"
-                checked={formData.is_visible}
+                id="visible"
+                checked={formData.visible}
                 onChange={(e) =>
-                  setFormData({ ...formData, is_visible: e.target.checked })
+                  setFormData({ ...formData, visible: e.target.checked })
                 }
                 className="h-4 w-4"
               />
-              <label htmlFor="is_visible" className="text-sm font-medium">
+              <label htmlFor="visible" className="text-sm font-medium">
                 Visible to users
               </label>
             </div>
@@ -290,8 +293,8 @@ export function FAQTab({ gameId }: FAQTabProps) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline">{faq.language.toUpperCase()}</Badge>
-                      <Badge variant="secondary">Order: {faq.order_index}</Badge>
-                      {faq.is_visible ? (
+                      <Badge variant="secondary">Order: {faq.display_order}</Badge>
+                      {faq.visible ? (
                         <Badge variant="success">
                           <Eye className="h-3 w-3 mr-1" />
                           Visible

@@ -16,6 +16,7 @@ import type {
   ProcessKnowledgeResponse,
   APIError,
   GameStatus,
+  Language,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -63,6 +64,25 @@ type ImportFromBGGApiResponse = {
   action: string;
   synced_at: string;
   source: string;
+};
+
+type ApiFAQ = {
+  id: string;
+  game_id: string;
+  language: Language;
+  question: string;
+  answer: string;
+  display_order: number;
+  visible: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type GameFAQsApiResponse = {
+  faqs: ApiFAQ[];
+  game_id: string;
+  language: Language;
+  total: number;
 };
 
 class APIClient {
@@ -262,10 +282,22 @@ class APIClient {
   // FAQs API
   // ============================================
 
-  async getGameFAQs(gameId: string, language?: string): Promise<FAQ[]> {
+  async getGameFAQs(gameId: string, language?: Language): Promise<FAQ[]> {
     const params = language ? { lang: language } : {};
-    const response = await this.client.get<FAQ[]>(`/games/${gameId}/faqs`, { params });
-    return response.data;
+    const response = await this.client.get<GameFAQsApiResponse>(`/games/${gameId}/faqs`, {
+      params,
+    });
+    return response.data.faqs.map((faq) => ({
+      id: faq.id,
+      game_id: faq.game_id,
+      language: faq.language,
+      question: faq.question,
+      answer: faq.answer,
+      display_order: faq.display_order,
+      visible: faq.visible,
+      created_at: faq.created_at ?? '',
+      updated_at: faq.updated_at ?? '',
+    }));
   }
 
   async createFAQ(gameId: string, data: CreateFAQRequest): Promise<FAQ> {
