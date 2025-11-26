@@ -158,7 +158,9 @@ class GameListItem(BaseModel):
 
     id: str = Field(..., description="Game UUID")
     name_base: str = Field(..., description="Base name of the game")
+    bgg_id: int | None = Field(None, description="BoardGameGeek ID")
     thumbnail_url: str | None = Field(None, description="Thumbnail image URL")
+    image_url: str | None = Field(None, description="Full image URL")
     min_players: int | None = Field(None, description="Minimum number of players")
     max_players: int | None = Field(None, description="Maximum number of players")
     playing_time: int | None = Field(None, description="Playing time in minutes")

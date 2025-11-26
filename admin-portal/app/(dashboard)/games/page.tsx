@@ -206,7 +206,15 @@ export default function GamesPage() {
                       </td>
                       <td className="py-3 px-4">
                         {game.bgg_id ? (
-                          <span className="text-sm">{game.bgg_id}</span>
+                          <a
+                            href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            {game.bgg_id}
+                          </a>
                         ) : (
                           <span className="text-sm text-muted-foreground">-</span>
                         )}

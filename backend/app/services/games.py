@@ -42,7 +42,7 @@ async def get_games_list(
 
     # Build query
     query = supabase.table("games").select(
-        "id, name_base, thumbnail_url, min_players, max_players, playing_time, rating, status"
+        "id, name_base, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
     )
 
     # Filter by accessible game IDs
