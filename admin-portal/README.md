@@ -7,6 +7,7 @@ A Next.js-based web portal for managing games, FAQs, and knowledge documents for
 ## Features
 
 - **Authentication**: Secure login with Supabase Auth (admin/developer roles only)
+- **Dark Mode**: Toggle between light, dark, and system preference themes with persistent selection
 - **Game Management**:
   - Import games from BoardGameGeek (BGG)
   - Edit game metadata and information
@@ -24,7 +25,7 @@ A Next.js-based web portal for managing games, FAQs, and knowledge documents for
 
 - **Framework**: Next.js 16 (App Router + `proxy.ts`)
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS (with dark mode support)
 - **Authentication**: Supabase Auth
 - **API Client**: Axios
 - **Form Management**: React Hook Form
@@ -250,6 +251,33 @@ npm run start
 # Run linting
 npm run lint
 ```
+
+## Dark Mode
+
+The admin portal supports three theme modes:
+
+1. **Light Mode**: Traditional light theme optimized for bright environments
+2. **Dark Mode**: WCAG AA compliant dark theme for reduced eye strain during long sessions
+3. **System**: Automatically follows the operating system's theme preference
+
+### Using Dark Mode
+
+- Click the theme toggle button in the header (next to the user info)
+- The button cycles through: Light → Dark → System
+- Your preference is saved in localStorage and persists across sessions
+- System mode responds to OS-level theme changes in real-time
+
+### Theme Tokens
+
+All UI components use CSS custom properties for theming:
+
+- Background colors: `--background`, `--card`, `--popover`
+- Foreground colors: `--foreground`, `--card-foreground`
+- Accent colors: `--primary`, `--secondary`, `--muted`, `--accent`
+- Semantic colors: `--destructive`, `--success`, `--warning`
+- UI elements: `--border`, `--input`, `--ring`
+
+These tokens are defined in `app/globals.css` and automatically adjust based on the active theme.
 
 ## Troubleshooting
 

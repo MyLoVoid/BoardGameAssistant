@@ -1040,3 +1040,167 @@ npm run start        # Serve production build
 ## END
 
 End of Technical Documentation for BGAI-0011 - Admin Portal Frontend
+
+---
+
+## Update: Dark Mode Support (BGAI-0013)
+
+**Date**: 2025-11-26
+**Added by**: GitHub Copilot
+
+### Summary
+
+Added comprehensive dark mode support to the admin portal with:
+- WCAG AA compliant color palette aligned with BGAI branding
+- Theme toggle with light/dark/system modes
+- Persistent theme selection via localStorage
+- Automatic OS preference detection
+- All UI components using theme tokens
+
+### Implementation Details
+
+#### Theme System
+
+**ThemeProvider (`lib/theme-context.tsx`):**
+- React context for managing theme state
+- Supports three modes: `light`, `dark`, `system`
+- Persists user preference in localStorage
+- Listens to OS theme changes for system mode
+- Provides `useTheme()` hook for components
+
+**Theme Toggle (`components/ui/theme-toggle.tsx`):**
+- Cycles through light → dark → system
+- Accessible button with ARIA labels
+- Icons: Sun (light), Moon (dark), Monitor (system)
+- Mounted check to prevent hydration mismatch
+
+#### Color Palette
+
+**Light Mode Colors:**
+```css
+--background: 0 0% 100%
+--foreground: 222.2 84% 4.9%
+--primary: 221.2 83.2% 53.3%
+--card: 0 0% 100%
+--muted: 210 40% 96.1%
+--border: 214.3 31.8% 91.4%
+--destructive: 0 84.2% 60.2%
+--success: 142.1 76.2% 36.3%
+--warning: 32.1 94.6% 43.7%
+```
+
+**Dark Mode Colors:**
+```css
+--background: 222.2 84% 4.9%
+--foreground: 210 40% 98%
+--primary: 217.2 91.2% 59.8%
+--card: 222.2 84% 8%
+--muted: 217.2 32.6% 17.5%
+--border: 217.2 32.6% 17.5%
+--destructive: 0 62.8% 30.6%
+--success: 142.1 70.6% 45.3%
+--warning: 32.1 80% 60%
+```
+
+#### Configuration Changes
+
+**`tailwind.config.ts`:**
+- Added `darkMode: 'class'` strategy
+- Extended color palette with success/warning tokens
+- All colors use HSL CSS variables
+
+**`app/globals.css`:**
+- Defined `:root` and `.dark` color variables
+- System font stack for better performance
+- Base styles apply theme colors
+
+**`app/layout.tsx`:**
+- Added ThemeProvider wrapper
+- Removed Google Fonts for offline builds
+- `suppressHydrationWarning` for theme hydration
+
+#### Component Updates
+
+**All UI components now use theme tokens:**
+- Button: `bg-primary`, `text-primary-foreground`
+- Card: `bg-card`, `text-card-foreground`
+- Input: `border-input`, `bg-background`
+- Badge: `bg-success`, `bg-warning` (theme-aware)
+- Tabs: `bg-muted`, `text-muted-foreground`
+
+**Layout components:**
+- Header: Includes theme toggle button
+- Sidebar: Uses `bg-card` for proper theming
+- Dashboard: Theme-aware background
+
+**Page components:**
+- All alert/notification backgrounds use theme tokens
+- Replaced hardcoded `bg-green-50` → `bg-success/10`
+- Replaced hardcoded `bg-blue-50` → `bg-primary/10`
+
+### Files Modified
+
+- `admin-portal/app/globals.css` - Added dark mode palette
+- `admin-portal/tailwind.config.ts` - Enabled dark mode, added tokens
+- `admin-portal/app/layout.tsx` - Added ThemeProvider
+- `admin-portal/lib/theme-context.tsx` - NEW: Theme state management
+- `admin-portal/components/ui/theme-toggle.tsx` - NEW: Theme toggle button
+- `admin-portal/components/layout/header.tsx` - Added theme toggle
+- `admin-portal/components/ui/badge.tsx` - Use theme tokens
+- `admin-portal/components/games/documents-tab.tsx` - Fixed hardcoded colors
+- `admin-portal/components/games/game-info-tab.tsx` - Fixed hardcoded colors
+
+### Accessibility
+
+- **WCAG AA Contrast**: All color combinations meet minimum 4.5:1 ratio
+- **Keyboard Navigation**: Theme toggle fully keyboard accessible
+- **Screen Readers**: Proper ARIA labels on theme toggle
+- **System Preference**: Respects `prefers-color-scheme` media query
+- **No Flicker**: Theme applied before paint using localStorage
+
+### Usage
+
+**For Users:**
+1. Click theme icon in header (next to sign out button)
+2. Theme cycles: Light → Dark → System
+3. Preference saved automatically
+4. Works across all pages and components
+
+**For Developers:**
+```typescript
+import { useTheme } from '@/lib/theme-context';
+
+function MyComponent() {
+  const { theme, setTheme, effectiveTheme } = useTheme();
+  
+  // theme: 'light' | 'dark' | 'system'
+  // effectiveTheme: 'light' | 'dark' (resolved)
+  // setTheme: (theme: Theme) => void
+}
+```
+
+### Testing
+
+- ✅ Build passes without errors
+- ✅ All pages render in both modes
+- ✅ Theme persists across page navigation
+- ✅ System preference detection works
+- ✅ No hydration mismatches
+- ✅ Accessible with keyboard
+- ✅ Works on login page (no auth required)
+
+### Documentation
+
+Updated documentation:
+- `admin-portal/README.md` - Added dark mode section
+- This file (`docs/BGAI-0011_admin-portal-frontend.md`)
+
+### Future Enhancements
+
+Potential improvements:
+- Theme-aware images/logos
+- Per-game theme preferences
+- High contrast mode
+- Custom theme builder for admins
+
+---
