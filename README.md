@@ -161,7 +161,7 @@ Env vars clave:
 ### Estructura del repo
 
 ```
-├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0012)
+├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0013)
 ├─ docs/
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
@@ -174,7 +174,8 @@ Env vars clave:
 │  ├─ BGAI-0009_mobile-chat-history.md
 │  ├─ BGAI-0010_admin-portal-backend.md
 │  ├─ BGAI-0011_admin-portal-frontend.md
-│  └─ BGAI-0012_BGG_manual_import.md
+│  ├─ BGAI-0012_BGG_manual_import.md
+│  └─ BGAI-0013_dark-mode.md
 ├─ admin-portal/               # Portal admin Next.js (ver README propio)
 │  ├─ app/                     # Next.js App Router
 │  ├─ components/              # React components
@@ -203,6 +204,7 @@ Env vars clave:
 - ✅ Tab global renombrado a "Historial/History" y documentado como hub de sesiones previas (BGAI-0009).
 - ✅ Portal Admin completo: backend admin API con integración BGG (BGAI-0010) + frontend Next.js con gestión de juegos, FAQs y documentos (BGAI-0011).
 - ✅ Creación manual de juegos + fix BGG API redirects + endpoint /sections (BGAI-0012).
+- ✅ Dark mode con soporte light/dark/system en Admin Portal, toggle persistente en header, tokens CSS y componentes actualizados (BGAI-0013).
 - 🔄 En progreso: pipeline RAG + GenAI Adapter, endpoints de chat IA.
 - 📋 Pendiente: licencia oficial BGG, ingestión masiva de documentos, assets finales, pruebas end-to-end completas.
 
