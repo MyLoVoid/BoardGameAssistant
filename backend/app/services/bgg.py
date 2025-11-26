@@ -23,9 +23,18 @@ def _get_bgg_client() -> httpx.AsyncClient:
     """Return a cached httpx client for BGG API calls."""
     global _BGG_CLIENT
     if _BGG_CLIENT is None:
+        # Use a descriptive User-Agent so BGG doesn't reject automated requests.
+        # Include contact info or project name to comply with good practice.
+        default_headers = {
+            "User-Agent": "BGAI-Admin/1.0 (+https://example.com; dev@your-org.example)",
+            "Accept": "application/xml",
+        }
+
         _BGG_CLIENT = httpx.AsyncClient(
             timeout=httpx.Timeout(15.0, connect=5.0),
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+            follow_redirects=True,
+            headers=default_headers,
         )
     return _BGG_CLIENT
 
@@ -123,6 +132,14 @@ async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
                 response = await client.get(
                     BGG_API_URL, params={"id": bgg_id, "stats": 1}, timeout=timeout
                 )
+
+                # If BGG rejects the request due to missing/invalid headers or auth,
+                # surface a clearer error message for developers.
+                if response.status_code == 401:
+                    raise BGGServiceError(
+                        "BGG API returned 401 Unauthorized. Ensure the client sends a valid User-Agent header and that BGG is not rate-limiting/blocking your requests."
+                    )
+
                 response.raise_for_status()
     except httpx.HTTPError as exc:
         raise BGGServiceError(f"BGG request failed: {exc}") from exc
@@ -169,3 +186,30 @@ async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
         thumbnail_url=thumbnail,
         image_url=image,
     )
+
+
+if __name__ == "__main__":
+    # Quick manual test to run when executing this module directly.
+    # Usage (from repo root):
+    #   poetry run python backend\app\services\bgg.py
+    # or
+    #   python backend\app\services\bgg.py
+    import asyncio
+
+    async def _main():
+        test_id = 174430  # example: Gloomhaven
+        print(f"Fetching BGG data for id={test_id}...")
+        try:
+            data = await fetch_bgg_game(test_id)
+            print("Fetched:")
+            print(data)
+        except BGGGameNotFound as e:
+            print(f"Not found: {e}")
+        except BGGServiceError as e:
+            print(f"BGG service error: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+        finally:
+            await close_bgg_client()
+
+    asyncio.run(_main())

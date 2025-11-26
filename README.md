@@ -114,6 +114,29 @@ cd backend && python scripts/create_bgc_section.py
 - **Script BGC**: `backend/scripts/README_CREATE_BGC_SECTION.md`
 - **Seed SQL**: `supabase/seed.sql` (532 líneas con todos los datos iniciales)
 
+---
+
+#### ⚠️ Estado de la Integración con BoardGameGeek (BGG)
+
+La funcionalidad "Import from BGG" en el Admin Portal utiliza la API XML v2 de BoardGameGeek:
+```
+https://www.boardgamegeek.com/xmlapi2/thing
+```
+
+**ESTADO ACTUAL (2025-11-25)**:
+- ❌ **NO tenemos licencia oficial** de BoardGameGeek
+- ❌ **La integración está en proceso de aplicación**
+- ⚠️ **NO usar en producción** hasta obtener aprobación formal
+- ✅ Código implementado y funcional para **desarrollo/testing local únicamente**
+
+**Archivos relacionados**:
+- `backend/app/services/bgg.py` - Cliente XML de BGG
+- `backend/app/api/routes/admin.py` - Endpoint `/admin/games/import-bgg`
+
+**Documentación**: Ver sección "8. BGG como fuente de datos" en `MVP.md` y `docs/BGAI-0010_admin-portal-backend.md`
+
+---
+
 Env vars clave:
 - `.env` (raíz) contiene Supabase local + backend.
 - `mobile/.env` define `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_BACKEND_URL`. En simulador Android usar `10.0.2.2`; en dispositivo físico usar IP LAN.
