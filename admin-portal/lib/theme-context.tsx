@@ -16,29 +16,48 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('system');
   const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light');
 
-  // Initialize theme from localStorage and system preference
+  // Initialize theme from localStorage and apply immediately
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
     const stored = localStorage.getItem('bgai-admin-theme') as Theme | null;
-    if (stored && ['light', 'dark', 'system'].includes(stored)) {
-      setThemeState(stored);
-    }
+    const initialTheme = stored && ['light', 'dark', 'system'].includes(stored) ? stored : 'system';
+    setThemeState(initialTheme);
 
-    // Listen for system theme changes
+    // Apply theme immediately
+    const root = document.documentElement;
+    if (initialTheme === 'system') {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setEffectiveTheme(isDark ? 'dark' : 'light');
+      root.classList.toggle('dark', isDark);
+    } else {
+      const isDark = initialTheme === 'dark';
+      setEffectiveTheme(isDark ? 'dark' : 'light');
+      root.classList.toggle('dark', isDark);
+    }
+  }, []);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (theme === 'system') {
-        const isDark = mediaQuery.matches;
-        setEffectiveTheme(isDark ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', isDark);
-      }
+    const handleChange = (e: MediaQueryListEvent) => {
+      // Only update if currently in system mode
+      setThemeState(currentTheme => {
+        if (currentTheme === 'system') {
+          const isDark = e.matches;
+          setEffectiveTheme(isDark ? 'dark' : 'light');
+          document.documentElement.classList.toggle('dark', isDark);
+        }
+        return currentTheme;
+      });
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+  }, []);
 
   // Apply theme when it changes
   useEffect(() => {
