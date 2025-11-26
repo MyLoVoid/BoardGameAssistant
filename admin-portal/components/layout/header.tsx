@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LogOut, User } from 'lucide-react';
 import { signOut, getUserWithRole } from '@/lib/supabase';
 import type { User as UserType } from '@/lib/types';
@@ -55,6 +56,8 @@ export function Header() {
             </span>
           </div>
         )}
+
+        <ThemeToggle />
 
         <Button variant="ghost" size="sm" onClick={handleSignOut}>
           <LogOut className="h-4 w-4 mr-2" />
