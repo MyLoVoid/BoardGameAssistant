@@ -338,12 +338,8 @@ class DocumentCreateRequest(BaseModel):
     language: str = Field(..., description="Language code")
     source_type: str = Field(..., description="Source type (rulebook, faq, etc.)")
     file_name: str = Field(..., description="Original file name")
-    file_path: str = Field(..., description="Path in Supabase Storage")
-    file_size: int = Field(..., description="File size in bytes")
-    file_type: str = Field(..., description="MIME type")
-    provider_name: str | None = Field(None, description="AI provider handling the document")
-    provider_file_id: str | None = Field(None, description="Provider file identifier")
-    vector_store_id: str | None = Field(None, description="Provider vector store identifier")
+    file_size: int = Field(0, description="File size in bytes")
+    file_type: str = Field("application/pdf", description="MIME type")
     metadata: dict[str, Any] | None = Field(None, description="Extra metadata (JSON)")
 
     model_config = ConfigDict(extra="forbid")
@@ -360,7 +356,6 @@ class GameDocument(BaseModel):
     file_path: str = Field(..., description="Supabase storage path")
     file_size: int = Field(..., description="File size in bytes")
     file_type: str = Field(..., description="MIME type")
-    provider_name: str | None = Field(None, description="AI provider")
     provider_file_id: str | None = Field(None, description="Provider file identifier")
     vector_store_id: str | None = Field(None, description="Provider vector store identifier")
     status: str = Field(..., description="Processing status")
@@ -374,25 +369,7 @@ class GameDocument(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class KnowledgeDocument(BaseModel):
-    """Knowledge processing record linked to a game document"""
-
-    id: str = Field(..., description="Knowledge record UUID")
-    game_id: str = Field(..., description="Associated game UUID")
-    game_document_id: str | None = Field(None, description="Source document UUID")
-    language: str = Field(..., description="Language code")
-    source_type: str = Field(..., description="Document type (rulebook, faq, etc.)")
-    provider_name: str | None = Field(None, description="AI provider name")
-    provider_file_id: str | None = Field(None, description="Provider file ID")
-    vector_store_id: str | None = Field(None, description="Provider vector store ID")
-    status: str = Field(..., description="Processing status")
-    metadata: dict[str, Any] | None = Field(None, description="Processing metadata JSON")
-    error_message: str | None = Field(None, description="Error message if failed")
-    created_at: datetime | None = Field(None, description="Creation timestamp")
-    updated_at: datetime | None = Field(None, description="Last update timestamp")
-    processed_at: datetime | None = Field(None, description="Completion timestamp")
-
-    model_config = ConfigDict(from_attributes=True)
+# KnowledgeDocument model removed - knowledge tracking now handled directly in game_documents table
 
 
 class KnowledgeProcessRequest(BaseModel):
@@ -420,6 +397,5 @@ class KnowledgeProcessResponse(BaseModel):
 
     game_id: str = Field(..., description="Game UUID")
     processed_document_ids: list[str] = Field(..., description="Document IDs affected")
-    knowledge_documents: list[KnowledgeDocument] = Field(
-        ..., description="Knowledge records created for this request"
-    )
+    success_count: int = Field(..., description="Number of successfully processed documents")
+    error_count: int = Field(default=0, description="Number of documents that failed processing")

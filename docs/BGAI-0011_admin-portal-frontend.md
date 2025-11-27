@@ -481,7 +481,8 @@ export interface ProcessKnowledgeRequest {
 export interface ProcessKnowledgeResponse {
   game_id: string;
   processed_document_ids: string[];
-  knowledge_documents: any[];
+  success_count: number;
+  error_count: number;
 }
 ```
 
@@ -547,8 +548,7 @@ export interface ProcessKnowledgeResponse {
 - `public.users` - User profiles with roles
 - `games` - Game catalog (read/write via API)
 - `game_faqs` - FAQ entries (CRUD via API)
-- `game_documents` - Document references (CRUD via API)
-- `knowledge_documents` - RAG processing records (created via process-knowledge)
+- `game_documents` - Document references with processing metadata (CRUD via API)
 
 **Authentication Flow:**
 1. User enters email/password
@@ -851,9 +851,8 @@ npm run dev
 ### From BGAI-0010 to BGAI-0011
 
 **Database Schema:**
-- No new migrations required
+- No new migrations required (Nov 2024: `knowledge_documents` table later removed in migration 20241127)
 - Uses existing tables from BGAI-0010
-- `knowledge_documents` table already created
 
 **Environment Variables:**
 - Added `NEXT_PUBLIC_API_URL` for backend

@@ -19,7 +19,6 @@ from app.models.schemas import (
     GameDocument,
     GameFAQ,
     GameUpdateRequest,
-    KnowledgeDocument,
     KnowledgeProcessRequest,
 )
 from app.services import bgg as bgg_service
@@ -296,11 +295,23 @@ async def delete_game_faq(game_id: str, faq_id: str) -> None:
 
 async def create_game_document(game_id: str, payload: dict[str, Any]) -> GameDocument:
     """Register a new document reference."""
+    import uuid
 
     await _ensure_game_exists(game_id)
     supabase = await get_supabase_admin_client()
 
-    insert_data = {"game_id": game_id, **payload}
+    # Generate UUID for the document
+    document_id = str(uuid.uuid4())
+
+    # Auto-generate file_path using the UUID
+    file_path = f"game_documents/{game_id}/{document_id}"
+
+    insert_data = {
+        "id": document_id,
+        "game_id": game_id,
+        "file_path": file_path,
+        **payload
+    }
     try:
         response = await supabase.table("game_documents").insert(insert_data).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
@@ -376,8 +387,8 @@ async def process_game_knowledge(
     request: KnowledgeProcessRequest,
     *,
     triggered_by: str | None = None,
-) -> tuple[list[str], list[KnowledgeDocument]]:
-    """Mark documents for knowledge processing and create processing records."""
+) -> tuple[list[str], int, int]:
+    """Mark documents for knowledge processing. Returns (processed_ids, success_count, error_count)."""
 
     documents = await _list_documents_for_processing(
         game_id,
@@ -392,12 +403,12 @@ async def process_game_knowledge(
 
     supabase = await get_supabase_admin_client()
     processed_ids: list[str] = []
-    knowledge_records: list[KnowledgeDocument] = []
+    success_count = 0
+    error_count = 0
     final_status = "ready" if request.mark_as_ready else "processing"
     processed_at = _now() if request.mark_as_ready else None
 
     for document in documents:
-        updated_provider = request.provider_name or document.provider_name
         updated_file_id = request.provider_file_id or document.provider_file_id
         updated_vector_store = request.vector_store_id or document.vector_store_id
 
@@ -407,45 +418,24 @@ async def process_game_knowledge(
         if triggered_by:
             doc_metadata["triggered_by"] = triggered_by
 
-        knowledge_payload = {
-            "game_id": game_id,
-            "game_document_id": document.id,
-            "language": document.language,
-            "source_type": document.source_type,
-            "provider_name": updated_provider,
-            "provider_file_id": updated_file_id,
-            "vector_store_id": updated_vector_store,
-            "status": final_status,
-            "metadata": doc_metadata,
-            "processed_at": processed_at.isoformat() if processed_at else None,
-        }
-
         try:
-            knowledge_resp = await (
-                supabase.table("knowledge_documents").insert(knowledge_payload).execute()
-            )
-            knowledge_record = _extract_single(
-                cast(list[SupabaseRecord] | None, knowledge_resp.data)
-            )
-            if not knowledge_record:
-                raise AdminPortalError("Failed to insert knowledge record")
-
             await supabase.table("game_documents").update(
                 {
                     "status": final_status if document.status != "ready" else document.status,
-                    "provider_name": updated_provider,
                     "provider_file_id": updated_file_id,
                     "vector_store_id": updated_vector_store,
                     "processed_at": processed_at.isoformat() if processed_at else None,
                     "metadata": doc_metadata,
                 }
             ).eq("id", document.id).execute()
+
+            processed_ids.append(document.id)
+            success_count += 1
         except AdminPortalError:
+            error_count += 1
             raise
         except Exception as exc:  # pragma: no cover - network/service errors
+            error_count += 1
             raise AdminPortalError(f"Failed to process document {document.id}: {exc}") from exc
 
-        knowledge_records.append(KnowledgeDocument(**knowledge_record))
-        processed_ids.append(document.id)
-
-    return processed_ids, knowledge_records
+    return processed_ids, success_count, error_count

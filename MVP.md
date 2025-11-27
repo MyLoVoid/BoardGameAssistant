@@ -203,6 +203,7 @@ La activación efectiva de features se modela con **feature flags**, no con lóg
   - El GenAI Adapter se implementa contra una interfaz común para poder cambiar el proveedor sin tocar la app ni el portal.
   - Los documentos se suben directamente a los vector stores de cada proveedor.
   - La tabla `game_documents` almacena referencias (file IDs, vector store IDs) para tracking y gestión.
+  - **Actualización Nov 2024**: El campo `provider_name` fue eliminado de `game_documents`. El proveedor ahora se selecciona durante el procesamiento de conocimiento. El `file_path` se auto-genera con el patrón `game_documents/{game_id}/{document_uuid}`.
 
 ### 4.2. Entornos
 
@@ -307,12 +308,11 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
    * language          → `es` / `en`
    * source_type       → `rulebook`, `faq`, `bgg`, `house_rules`, `expansion`, etc.
    * file_name         → nombre original del archivo
-   * file_path         → ruta en Supabase Storage
+   * file_path         → ruta auto-generada en Supabase Storage: `game_documents/{game_id}/{document_uuid}`
    * file_size         → tamaño en bytes
    * file_type         → mime type (`application/pdf`, `text/markdown`, etc.)
-   * provider_name     → `openai`, `gemini`, `claude`, o null
-   * provider_file_id  → ID del archivo en el proveedor (ej: OpenAI File ID)
-   * vector_store_id   → ID del vector store en el proveedor (si aplica)
+   * provider_file_id  → ID del archivo en el proveedor (ej: OpenAI File ID), asignado durante procesamiento
+   * vector_store_id   → ID del vector store en el proveedor (si aplica), asignado durante procesamiento
    * status            → `pending`, `uploading`, `processing`, `ready`, `error`
    * error_message     → mensaje de error si `status = error`
    * processed_at      → timestamp de procesamiento exitoso
@@ -537,7 +537,7 @@ Para el MVP:
    * ✅ Triggers automáticos (updated_at, creación de perfiles)
    * ✅ Tipos ENUM definidos (roles, idiomas, estados, etc.)
    * ✅ Índices optimizados para búsquedas por juego, idioma, estado
-   * 🔄 **Migración pendiente**: Renombrar `game_docs_vectors` → `game_documents` y depreciar campos `chunk_text`, `embedding`
+   * ✅ Tabla `game_documents` con rutas auto-generadas (migración 20241126)
 
 2. **Datos semilla** (`supabase/seed.sql`)
    * ✅ Sección "Board Game Companion" configurada
@@ -545,7 +545,7 @@ Para el MVP:
      * Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne
    * ✅ FAQs multi-idioma de prueba (ES/EN)
    * ✅ Feature flags configurados por rol y entorno (dev/prod)
-   * 🔄 **Migración pendiente**: Actualizar seed de `game_docs_vectors` a `game_documents` con estructura de referencias a proveedores
+   * ✅ Documentos de muestra con estructura simplificada (sin `provider_name`, rutas auto-generadas)
 
 3. **Entorno de desarrollo local**
    * ✅ Supabase local configurado (`boardgameassistant-dev`)
@@ -749,10 +749,10 @@ Para el MVP:
    * ✅ Manejo de errores para juegos no encontrados
    * ✅ Tests unitarios completos
 
-4. **Esquema de conocimiento** (`supabase/migrations/20241125000000_add_knowledge_documents.sql`)
-   * ✅ Tabla `knowledge_documents` para tracking de procesamiento RAG
-   * ✅ Índices y RLS policies configurados
-   * ✅ Seeds actualizados con datos de ejemplo
+4. **Esquema de conocimiento** [DEPRECATED]
+   * ~~`supabase/migrations/20241125000000_add_knowledge_documents.sql`~~ - Tabla removida en migración 20241127
+   * ✅ **Nov 2024**: Migración `20241127000000_drop_knowledge_documents.sql` elimina tabla `knowledge_documents`
+   * ✅ Metadata de procesamiento ahora se almacena directamente en `game_documents`
 
 **BGAI-0011 — Frontend Next.js**
 
@@ -852,12 +852,10 @@ Para el MVP:
   - Implementar adaptadores para cada proveedor (OpenAI, Gemini, Claude).
   - Servicio de subida de documentos a proveedores.
   - Endpoint `POST /genai/query` completo con delegación a proveedores.
-  - Migración de tabla `game_docs_vectors` → `game_documents` con nueva estructura.
 
 ### 📋 Pendiente
 
 1. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Migración de BD: Renombrar `game_docs_vectors` → `game_documents` con nueva estructura.
    * ⏳ Servicio de subida de documentos a proveedores (OpenAI Files API, Gemini File API).
    * ⏳ Adaptadores específicos por proveedor:
      - OpenAI: Files API + Vector Stores + Assistants API
@@ -913,7 +911,7 @@ Para el MVP:
 3. **BGAI-0010 — Portal de Administración - Backend API**
    * Endpoints `/admin/...` completos para gestión de juegos, FAQs, documentos y procesamiento de conocimiento.
    * Integración BGG API para importar juegos automáticamente.
-   * Tabla `knowledge_documents` para tracking de procesamiento RAG.
+   * Tracking de procesamiento RAG almacenado directamente en `game_documents` (tabla `knowledge_documents` removida en Nov 2024).
 4. **BGAI-0011 — Portal de Administración - Frontend Next.js**
    * Portal web completo con Next.js 16, React 19, TypeScript y Tailwind CSS (2,213+ líneas de código).
    * Autenticación con Supabase Auth y validación de roles (admin/developer).
@@ -929,6 +927,21 @@ Para el MVP:
    * `ThemeProvider` + `ThemeToggle` persistente habilitan light/dark/system en todo el portal.
    * Tailwind + CSS variables definen tokens semánticos para fondos, texto y estados; badges/alerts/tabs usan las nuevas clases.
    * README y documentos técnicos actualizados con guía de uso y riesgos conocidos (ej. bug de `next lint` en Windows).
+7. **Nov 2024 — Simplificación de gestión de documentos**
+   * Eliminado campo `provider_name` de la UI y tabla `game_documents` (migración 20241126).
+   * Auto-generación de `file_path` usando UUID del documento: `game_documents/{game_id}/{document_uuid}`.
+   * Proveedor IA ahora se selecciona solo durante el procesamiento de conocimiento (no al crear documento).
+   * Frontend: Actualizados types, formularios y visualización en Admin Portal.
+   * Backend: Actualizados schemas y lógica de creación de documentos con generación automática de rutas.
+   * Documentación actualizada: README, MVP y BGAI-0001.
+8. **Nov 2024 — Eliminación de tabla knowledge_documents**
+   * Removida tabla `knowledge_documents` (migración 20241127).
+   * Metadata de procesamiento RAG ahora se almacena directamente en `game_documents`.
+   * Backend: Actualizado servicio `process_game_knowledge` para eliminar creación de registros en tabla eliminada.
+   * Backend: Actualizado schema `KnowledgeProcessResponse` para retornar contadores en lugar de registros.
+   * Frontend: Admin Portal actualizado para manejar nueva estructura de respuesta del endpoint de procesamiento.
+   * Seed data actualizado para eliminar inserts a tabla eliminada.
+   * Documentación actualizada: README, MVP, BGAI-0001.
 
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
@@ -950,7 +963,6 @@ Para el MVP:
 4. **Scripts de utilidad y pipeline de documentos**
    * ⏳ Procesar al menos 5–10 juegos reales (PDFs → subida a proveedores → referencias en BD).
    * ⏳ Job/botón para sincronizar juegos desde BGG.
-   * ⏳ Script de migración para convertir datos existentes de `game_docs_vectors` a `game_documents`.
 
 6. Afinar analítica y logging en backend:
    * ⏳ Servicio de `usage_events` y dashboards básicos.

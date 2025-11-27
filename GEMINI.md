@@ -1,80 +1,65 @@
 # GEMINI.md - Board Game Assistant Project
 
-This document provides a comprehensive overview of the "Board Game Assistant Inteligent" (BGAI) project. It is intended as a guide for developers and AI assistants to understand the project's goals, architecture, and development conventions.
+This document provides a technical overview of the "Board Game Assistant Inteligent" (BGAI) project. It is intended as a concise guide for developers and AI assistants. For the most detailed specifications and live progress, refer to `MVP.md`. For setup and quick start, see `README.md`.
 
 ## Project Overview
 
 This is a **Code Project** in active development. The goal is to build a modular, multi-platform mobile application that serves as an intelligent assistant for board game players, complemented by a web-based administration portal for content management.
 
-The application provides per-game assistance, including rule clarifications via a GenAI-powered chat, FAQs, and general game information. The entire system is designed to be highly modular, with features, games, and user access controlled by a feature flag system. The content for the games (FAQs, documents for RAG, etc.) is managed through the **Admin Portal**.
+- **Mobile App (React Native/Expo):** Provides per-game assistance, including rule clarifications via a GenAI-powered chat, FAQs, and general game information. Supports ES/EN localization.
+- **Admin Portal (Next.js):** A full-featured internal web app for admins to manage all content, including importing games from BoardGameGeek (BGG), editing metadata, managing FAQs, and uploading documents for the AI's knowledge base.
+- **System Architecture:** The system is designed to be highly modular. Features, games, and user access are controlled by a feature flag system. The mobile and admin clients are "thin," with all complex business logic, authorization, and AI processing handled by the FastAPI backend.
 
-**Documentation**
-Use `/docs` for technical documentation. The `MVP.md` file contains the detailed project specification and progress checklist.
-
-### Core Technologies:
-*   **Mobile App:** React Native with Expo
-*   **Admin Portal:** Next.js
-*   **Primary Backend (BaaS):** Supabase (handling Authentication, Postgres Database, Storage)
-*   **Custom Backend:** A lightweight FastAPI server acting as a facade to encapsulate business logic, serve the mobile and admin APIs, and integrate with third-party services.
+## Core Architecture & Technologies:
+*   **Mobile App:** React Native with Expo (SDK 51), TypeScript.
+*   **Admin Portal:** Next.js 16 with React 19, TypeScript, Tailwind CSS.
+*   **Primary Backend (BaaS):** Supabase (Postgres, Auth, Storage).
+*   **Custom Backend (Facade):** Python 3.13 with FastAPI and Poetry. Acts as a single gateway for all clients.
 *   **GenAI Integration:** A "GenAI Adapter" within the custom backend to manage RAG pipelines.
-*   **RAG Strategy:** **Provider-Delegated Vectorization**. The system uploads documents to the native file search/vector services of AI providers (e.g., OpenAI File Search API, Gemini File API) instead of managing embeddings in its own database.
-*   **Data Source:** BoardGameGeek (BGG) for syncing and caching game metadata.
+*   **RAG Strategy:** **File Search Delegated to Providers**. The system uploads documents to the native file search/vector services of AI providers (e.g., OpenAI File API, Gemini File API) instead of managing embeddings. The backend orchestrates this process.
+*   **Data Source:** BoardGameGeek (BGG) for syncing and caching game metadata (requires an official license for production use).
 
 ## Building and Running
 
-This project is divided into four main components: a React Native mobile app, a Next.js admin portal, a Python backend, and a Supabase instance.
+This project is divided into four main components: a React Native mobile app, a Next.js admin portal, a Python backend, and a Supabase instance. For a fresh start, resetting the database is recommended to apply all migrations and seed test data.
 
 ### 1. Supabase
-The local development environment is managed by the Supabase CLI.
+The local development environment is managed by the Supabase CLI. Requires Docker Desktop.
 - **Start:** `supabase start`
-- **Stop:** `supabase stop`
-- **Reset Database:** `supabase db reset` (This will re-apply migrations and seed data)
-
-*Note: You must have the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and running.*
+- **Reset Database (Recommended First Time):** `supabase db reset`
 
 ### 2. Backend (FastAPI)
 The backend is a FastAPI server managed with Poetry.
 1.  Navigate to the backend directory: `cd backend`
 2.  Install dependencies: `poetry install`
-3.  Run the development server: `poetry run python run.py`
+3.  Run the development server: `poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
 
-The API will be available at `http://localhost:8000`.
-
-### 3. Mobile App (React Native + Expo)
-The mobile app is built with React Native and Expo.
-1.  Navigate to the mobile directory: `cd mobile`
-2.  Install dependencies: `npm install`
-3.  Start the development server: `npx expo start`
-
-### 4. Admin Portal (Next.js)
+### 3. Admin Portal (Next.js)
 The admin portal is a Next.js web application.
-1.  Navigate to the portal directory: `cd admin-portal` (Note: This directory may need to be created)
+1.  Navigate to the portal directory: `cd admin-portal`
 2.  Install dependencies: `npm install`
 3.  Start the development server: `npm run dev`
 
-## Development Conventions
+### 4. Mobile App (React Native + Expo)
+The mobile app is built with React Native and Expo.
+1.  Navigate to the mobile directory: `cd mobile`
+2.  Install dependencies: `npm install`
+3.  Start the development server: `npx expo start --clear`
 
-The project's guiding principles are laid out in the `MVP.md` document.
-
-### Key Architectural Principles:
-*   **Modular Design:** Features, sections, and games are independent modules controlled by feature flags.
-*   **Thin Client:** The mobile app and admin portal are "thin" presentation layers. Complex business logic, authorization, and AI processing are handled by the backend.
-*   **Facade Backend:** The custom FastAPI backend acts as a single, controlled gateway for all clients, abstracting away Supabase, GenAI models, and other services. It exposes dedicated APIs for the mobile app and the admin portal.
-*   **Content-Driven:** All game-specific content is managed via the Admin Portal, not hardcoded.
-*   **Delegated RAG per Game:** The GenAI assistant uses a Retrieval-Augmented Generation (RAG) approach where each game's knowledge base is managed by a third-party AI provider, orchestrated by our backend.
-
-### Data Model:
-The conceptual data model is defined in `MVP.md` and includes tables for:
-*   `users`, `roles`
+## Data Model Summary
+The conceptual data model is defined in `MVP.md` and implemented via Supabase migrations. Core tables include:
+*   `profiles`, `app_sections`
 *   `games`, `game_faqs`
 *   `feature_flags`
 *   `chat_sessions`, `chat_messages`
-*   `game_documents` (replaces `game_docs_vectors`): Stores references to documents uploaded to AI providers (e.g., `provider_file_id`, `vector_store_id`) for the RAG process.
-*   `usage_events` (for analytics)
+*   `game_documents`: Stores references to documents for the RAG process (e.g., `provider_file_id`). `file_path` is auto-generated, and the AI provider is selected during knowledge processing, not on creation. Processing metadata is stored directly in this table.
+*   `usage_events`: For basic analytics.
 
 ## Key Files
+*   **`MVP.md`**: The core technical specification and living backlog. It contains the executive summary, functional scope, technical architecture, data model, and a detailed development checklist. **This is the primary source of truth for project scope.**
+*   **`README.md`**: The main entry point for developers. Contains up-to-date setup instructions, run commands, project status, and a high-level overview.
+*   **`admin-portal/README.md`**: The sole source of documentation for the Admin Portal.
+*   **`/docs`**: Contains historical, point-in-time design documents for major features (`BGAI-XXXX_*.md`).
+*   **`supabase/seed.sql`**: Contains all the initial data (test users, games, flags) required to run the application.
 
-*   **`MVP.md`**: The core technical specification document. It contains the executive summary, functional scope, technical architecture, data model, and a detailed development checklist for the Minimum Viable Product. This is the most important file in the directory.
-*   **`AGENTS.md` / `CLAUDE.md`**: These files contain supplementary guidelines and up-to-date architectural context for AI agents working on the project, ensuring they align with the latest development patterns.
-*   **`README.md`**: Currently empty, but will likely hold the public-facing project description.
-*   **`admin-portal/`**: (To be created) The directory for the Next.js web application for managing game content.
+This document is based on the project state as of late November 2025, reflecting the completion of BGAI-0001 through BGAI-0013.

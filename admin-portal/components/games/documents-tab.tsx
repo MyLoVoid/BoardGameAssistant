@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
 import { Plus, Trash2, AlertCircle, Loader2, X, Play } from 'lucide-react';
-import type { GameDocument, Language, DocumentSourceType, AIProvider, CreateDocumentRequest } from '@/lib/types';
+import type { GameDocument, Language, DocumentSourceType, CreateDocumentRequest } from '@/lib/types';
 import { formatFileSize, formatDate } from '@/lib/utils';
 
 interface DocumentsTabProps {
@@ -27,8 +27,6 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
     language: 'es',
     source_type: 'rulebook',
     file_name: '',
-    file_path: '',
-    provider_name: 'openai',
   });
 
   useEffect(() => {
@@ -55,7 +53,7 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
       await apiClient.createDocument(gameId, formData);
       resetForm();
       setIsCreating(false);
-      setSuccess('Document created successfully! Remember to upload the file to Supabase Storage and process knowledge.');
+      setSuccess('Document created successfully! Upload the file to the generated path in Supabase Storage and then process knowledge.');
       loadDocuments();
     } catch (err: any) {
       setError(err.message || 'Failed to create document');
@@ -115,8 +113,6 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
       language: 'es',
       source_type: 'rulebook',
       file_name: '',
-      file_path: '',
-      provider_name: 'openai',
     });
   };
 
@@ -212,9 +208,9 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
             <div className="bg-primary/10 text-primary px-4 py-3 rounded-md text-sm">
               <p className="font-medium mb-1">Note:</p>
               <p>
-                This creates a document reference. You'll need to manually upload the
-                actual file to Supabase Storage and then use "Process Knowledge" to
-                index it with the AI provider.
+                This creates a document reference with an auto-generated storage path.
+                After creation, upload the file to the generated path in Supabase Storage,
+                then use "Process Knowledge" to index it with the AI provider.
               </p>
             </div>
 
@@ -267,35 +263,6 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">
-                File Path (optional, Supabase Storage path)
-              </label>
-              <Input
-                value={formData.file_path}
-                onChange={(e) =>
-                  setFormData({ ...formData, file_path: e.target.value })
-                }
-                placeholder="e.g., game_documents/gloomhaven/rulebook_es.pdf"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">AI Provider</label>
-              <select
-                value={formData.provider_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, provider_name: e.target.value as AIProvider })
-                }
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-              >
-                <option value="openai">OpenAI</option>
-                <option value="gemini">Gemini</option>
-                <option value="claude">Claude</option>
-              </select>
-            </div>
-
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -340,12 +307,11 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
                       <Badge variant={getStatusBadgeVariant(doc.status)}>
                         {doc.status}
                       </Badge>
-                      <Badge variant="outline">{doc.provider_name}</Badge>
                     </div>
                     <h3 className="font-semibold text-lg mb-1">{doc.file_name}</h3>
                     {doc.file_path && (
                       <p className="text-sm text-muted-foreground mb-1">
-                        Path: {doc.file_path}
+                        Storage Path: {doc.file_path}
                       </p>
                     )}
                     {doc.file_size_bytes && (

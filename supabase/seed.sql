@@ -540,31 +540,7 @@ BEGIN
     ORDER BY created_at DESC
     LIMIT 1;
 
-  INSERT INTO public.knowledge_documents (
-    game_id, game_document_id, language, source_type,
-    provider_name, provider_file_id, vector_store_id,
-    status, metadata, processed_at
-  ) VALUES
-    (
-      gloomhaven_id, gloomhaven_rulebook_es_id, 'es', 'rulebook',
-      'openai', 'file-abc123def456', 'vs_xyz789',
-      'ready', '{"chunks": 120, "seed": true}'::jsonb, NOW()
-    ),
-    (
-      gloomhaven_id, gloomhaven_rulebook_en_id, 'en', 'rulebook',
-      'openai', 'file-en123xyz789', 'vs_en456abc',
-      'ready', '{"chunks": 118, "seed": true}'::jsonb, NOW()
-    ),
-    (
-      wingspan_id, wingspan_rulebook_en_id, 'en', 'rulebook',
-      'gemini', 'gemini-file-abc123xyz', NULL,
-      'ready', '{"chunks": 42, "seed": true}'::jsonb, NOW()
-    ),
-    (
-      terraforming_id, terraforming_pending_id, 'es', 'rulebook',
-      NULL, NULL, NULL,
-      'pending', '{"note": "Awaiting ingestion"}'::jsonb, NULL
-    );
+  -- knowledge_documents table removed - processing metadata now tracked in game_documents
 
 END $$;
 

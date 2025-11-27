@@ -15,23 +15,6 @@ class FakeResponse:
         self.data = data
 
 
-class KnowledgeTableStub:
-    def __init__(self, recorder):
-        self.recorder = recorder
-        self._payload = None
-
-    def insert(self, payload):
-        self._payload = payload
-        return self
-
-    async def execute(self):
-        record: dict = dict(self._payload) if self._payload else {}
-        record.setdefault("id", f"knowledge-{len(self.recorder['knowledge'])+1}")
-        record.setdefault("created_at", datetime.now(tz=UTC))
-        self.recorder["knowledge"].append(record)
-        return FakeResponse([record])
-
-
 class GameDocumentTableStub:
     def __init__(self, recorder):
         self.recorder = recorder
@@ -53,11 +36,9 @@ class GameDocumentTableStub:
 
 class FakeSupabaseClient:
     def __init__(self):
-        self.storage = {"knowledge": [], "doc_updates": []}
+        self.storage = {"doc_updates": []}
 
     def table(self, name):
-        if name == "knowledge_documents":
-            return KnowledgeTableStub(self.storage)
         if name == "game_documents":
             return GameDocumentTableStub(self.storage)
         raise AssertionError(f"Unexpected table {name}")
@@ -73,7 +54,6 @@ def _fake_document(**overrides) -> GameDocument:
         "file_path": "documents/rulebook.pdf",
         "file_size": 1234,
         "file_type": "application/pdf",
-        "provider_name": None,
         "provider_file_id": None,
         "vector_store_id": None,
         "status": "pending",
@@ -123,18 +103,21 @@ async def test_process_game_knowledge_marks_documents_processing(
         notes="Seed",
         mark_as_ready=False,
     )
-    processed_ids, knowledge_docs = await admin_games.process_game_knowledge(
+    processed_ids, success_count, error_count = await admin_games.process_game_knowledge(
         document.game_id,
         request,
         triggered_by="user-1",
     )
 
     assert processed_ids == [document.id]
-    assert knowledge_docs[0].status == "processing"
-    assert knowledge_docs[0].metadata is not None
-    assert knowledge_docs[0].metadata.get("notes") == "Seed"
-    assert knowledge_docs[0].metadata.get("triggered_by") == "user-1"
-    assert stub_supabase.storage["doc_updates"][0]["payload"]["status"] == "processing"
+    assert success_count == 1
+    assert error_count == 0
+
+    # Verify game_documents was updated with processing status and metadata
+    doc_update = stub_supabase.storage["doc_updates"][0]
+    assert doc_update["payload"]["status"] == "processing"
+    assert doc_update["payload"]["metadata"]["notes"] == "Seed"
+    assert doc_update["payload"]["metadata"]["triggered_by"] == "user-1"
 
 
 @pytest.mark.asyncio
@@ -160,16 +143,19 @@ async def test_process_game_knowledge_can_mark_ready(monkeypatch: pytest.MonkeyP
         notes="Finished",
     )
 
-    processed_ids, knowledge_docs = await admin_games.process_game_knowledge(
+    processed_ids, success_count, error_count = await admin_games.process_game_knowledge(
         document.game_id,
         request,
         triggered_by=None,
     )
 
     assert processed_ids == [document.id]
-    inserted = knowledge_docs[0]
-    assert inserted.status == "ready"
-    assert inserted.provider_name == "openai"
-    assert inserted.metadata is not None
-    assert inserted.metadata.get("notes") == "Finished"
-    assert stub_supabase.storage["doc_updates"][0]["payload"]["status"] == "ready"
+    assert success_count == 1
+    assert error_count == 0
+
+    # Verify game_documents was updated with ready status and provider metadata
+    doc_update = stub_supabase.storage["doc_updates"][0]
+    assert doc_update["payload"]["status"] == "ready"
+    assert doc_update["payload"]["provider_file_id"] == "file-123"
+    assert doc_update["payload"]["vector_store_id"] == "vs-456"
+    assert doc_update["payload"]["metadata"]["notes"] == "Finished"

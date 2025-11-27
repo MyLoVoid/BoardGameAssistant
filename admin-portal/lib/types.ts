@@ -5,8 +5,6 @@ export type GameStatus = 'active' | 'beta' | 'hidden';
 export type Language = 'es' | 'en';
 export type DocumentStatus = 'pending' | 'uploading' | 'processing' | 'ready' | 'error';
 export type DocumentSourceType = 'rulebook' | 'faq' | 'expansion' | 'quickstart' | 'reference' | 'other';
-export type AIProvider = 'openai' | 'gemini' | 'claude';
-
 // User
 export interface User {
   id: string;
@@ -86,7 +84,6 @@ export interface GameDocument {
   file_name: string;
   file_path?: string;
   file_size_bytes?: number;
-  provider_name: AIProvider;
   provider_file_id?: string;
   vector_store_id?: string;
   status: DocumentStatus;
@@ -162,8 +159,6 @@ export interface CreateDocumentRequest {
   language: Language;
   source_type: DocumentSourceType;
   file_name: string;
-  file_path?: string;
-  provider_name: AIProvider;
   metadata?: Record<string, any>;
 }
 

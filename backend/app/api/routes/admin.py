@@ -240,7 +240,7 @@ async def process_game_knowledge_endpoint(
     current_user: CurrentAdmin,
 ) -> KnowledgeProcessResponse:
     try:
-        processed_ids, knowledge_docs = await process_game_knowledge(
+        processed_ids, success_count, error_count = await process_game_knowledge(
             game_id,
             request,
             triggered_by=current_user.user_id,
@@ -251,5 +251,6 @@ async def process_game_knowledge_endpoint(
     return KnowledgeProcessResponse(
         game_id=game_id,
         processed_document_ids=processed_ids,
-        knowledge_documents=knowledge_docs,
+        success_count=success_count,
+        error_count=error_count,
     )
