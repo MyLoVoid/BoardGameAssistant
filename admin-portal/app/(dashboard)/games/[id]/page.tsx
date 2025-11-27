@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -19,6 +19,7 @@ export default function GameDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('home');
+  const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!gameId) {
@@ -46,6 +47,10 @@ export default function GameDetailPage() {
     }
     void loadGame(gameId);
   };
+
+  const handleDocumentsReload = useCallback(() => {
+    setDocumentsRefreshKey((prev) => prev + 1);
+  }, []);
 
   if (loading) {
     return (
@@ -106,7 +111,11 @@ export default function GameDetailPage() {
         </TabsContent>
 
         <TabsContent value="documents">
-          <DocumentsTab gameId={game.id} />
+          <DocumentsTab
+            key={documentsRefreshKey}
+            gameId={game.id}
+            onRefreshRequested={handleDocumentsReload}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,6 +1,6 @@
 # MVP – Board Game Assistant Intelligence (BGAI)
 
-> Versión: 2025-11-26  
+> Versión: 2025-11-27  
 > Estado: **MVP en desarrollo** (Portal admin backend/frontend completado BGAI-0010–BGAI-0013)
 
 ## 0. Resumen ejecutivo del MVP
@@ -880,13 +880,12 @@ Para el MVP:
    * ⏳ Actualizar assets definitivos antes de publicar builds
 
 4. **Pipeline de procesamiento de documentos**
-   * ⏳ Endpoint admin para subir documentos a Supabase Storage.
    * ⏳ Job/servicio para procesar documentos:
      - Subir PDF a proveedor de IA (OpenAI Files API, Gemini File API).
      - Crear/actualizar vector store (si aplica).
      - Guardar referencias (`provider_file_id`, `vector_store_id`) en `game_documents`.
-     - Actualizar estado (`pending` → `uploading` → `processing` → `ready`).
-   * ⏳ Endpoint admin `POST /admin/games/{id}/process-knowledge` para disparar procesamiento.
+     - Actualizar estado (`uploaded` → `processing` → `ready`) y manejar errores.
+   * ⏳ Integrar el botón/endpoint `POST /admin/games/{id}/process-knowledge` con dicho job (hoy solo marca estados).
 
 5. **Mejoras adicionales de app móvil**
    - Assets definitivos (iconos, splash, ilustraciones).
@@ -962,6 +961,7 @@ Para el MVP:
 
 4. **Scripts de utilidad y pipeline de documentos**
    * ⏳ Procesar al menos 5–10 juegos reales (PDFs → subida a proveedores → referencias en BD).
+   * ⏳ Automatizar el botón “Process Knowledge” para subir a OpenAI/Gemini/Claude y marcar `ready`.
    * ⏳ Job/botón para sincronizar juegos desde BGG.
 
 6. Afinar analítica y logging en backend:

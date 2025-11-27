@@ -7,7 +7,10 @@ records via Supabase using the service role credentials.
 
 from __future__ import annotations
 
+import re
+import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Iterable, Sequence, cast
 
 from fastapi import status
@@ -22,7 +25,30 @@ from app.models.schemas import (
     KnowledgeProcessRequest,
 )
 from app.services import bgg as bgg_service
+from app.services.storage import (
+    StorageServiceError,
+    delete_file_from_bucket,
+    upload_file_to_bucket,
+)
 from app.services.supabase import SupabaseRecord, get_supabase_admin_client
+
+_GAME_DOCUMENTS_BUCKET = "game_documents"
+_MAX_DOCUMENT_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+_ALLOWED_LANGUAGES = {"es", "en"}
+_ALLOWED_SOURCE_TYPES = {
+    "rulebook",
+    "faq",
+    "expansion",
+    "quickstart",
+    "reference",
+    "other",
+}
+_ALLOWED_EXTENSIONS_TO_MIME = {
+    ".pdf": "application/pdf",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+_ALLOWED_MIME_TYPES = set(_ALLOWED_EXTENSIONS_TO_MIME.values()) | {"application/octet-stream"}
 
 
 class AdminPortalError(Exception):
@@ -52,9 +78,7 @@ def _extract_single(
 
 async def _ensure_game_exists(game_id: str) -> SupabaseRecord:
     supabase = await get_supabase_admin_client()
-    response = await (
-        supabase.table("games").select("*").eq("id", game_id).maybe_single().execute()
-    )
+    response = await supabase.table("games").select("*").eq("id", game_id).maybe_single().execute()
     if response is None:
         raise AdminPortalError(f"Game {game_id} not found", status_code=status.HTTP_404_NOT_FOUND)
     record = _extract_single(cast(SupabaseRecord | None, response.data))
@@ -79,11 +103,7 @@ async def _ensure_faq_exists(faq_id: str) -> SupabaseRecord:
 async def _ensure_document_exists(document_id: str) -> SupabaseRecord:
     supabase = await get_supabase_admin_client()
     response = await (
-        supabase.table("game_documents")
-        .select("*")
-        .eq("id", document_id)
-        .maybe_single()
-        .execute()
+        supabase.table("game_documents").select("*").eq("id", document_id).maybe_single().execute()
     )
     if response is None:
         raise AdminPortalError(
@@ -95,6 +115,86 @@ async def _ensure_document_exists(document_id: str) -> SupabaseRecord:
             f"Document {document_id} not found", status_code=status.HTTP_404_NOT_FOUND
         )
     return record
+
+
+def _clean_title(title: str) -> str:
+    cleaned = " ".join(title.strip().split())
+    if not cleaned:
+        raise AdminPortalError(
+            "Document title is required",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    return cleaned
+
+
+def _normalize_language(language: str) -> str:
+    normalized = language.lower()
+    if normalized not in _ALLOWED_LANGUAGES:
+        raise AdminPortalError(
+            f"Invalid language '{language}'. Allowed values: {', '.join(sorted(_ALLOWED_LANGUAGES))}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    return normalized
+
+
+def _normalize_source_type(source_type: str) -> str:
+    normalized = source_type.lower()
+    if normalized not in _ALLOWED_SOURCE_TYPES:
+        raise AdminPortalError(
+            "Invalid source_type. Allowed values: " + ", ".join(sorted(_ALLOWED_SOURCE_TYPES)),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    return normalized
+
+
+def _normalize_display_filename(filename: str | None) -> str:
+    raw_name = (filename or "").strip()
+    if not raw_name:
+        raw_name = "document"
+    base = Path(raw_name).name or "document"
+    return base
+
+
+def _sanitize_storage_filename(filename: str) -> str:
+    sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", filename).strip("._")
+    if not sanitized:
+        sanitized = "document"
+    return sanitized.lower()
+
+
+def _prepare_file_payload(
+    file_name: str | None,
+    file_bytes: bytes,
+    provided_mime: str | None,
+) -> tuple[str, str, str, int]:
+    size = len(file_bytes)
+    if size == 0:
+        raise AdminPortalError("Uploaded file is empty", status_code=status.HTTP_400_BAD_REQUEST)
+    if size > _MAX_DOCUMENT_FILE_SIZE_BYTES:
+        raise AdminPortalError(
+            "The uploaded file exceeds the 10 MB limit",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    display_name = _normalize_display_filename(file_name)
+    extension = Path(display_name).suffix.lower()
+    expected_mime = _ALLOWED_EXTENSIONS_TO_MIME.get(extension)
+    if not expected_mime:
+        raise AdminPortalError(
+            "Unsupported file type. Allowed extensions: .pdf, .doc, .docx",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    provided = (provided_mime or "").lower()
+    if provided and provided not in _ALLOWED_MIME_TYPES and provided != expected_mime:
+        raise AdminPortalError(
+            f"Unsupported MIME type '{provided_mime}'. Allowed types: application/pdf, "
+            "application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    storage_name = _sanitize_storage_filename(display_name)
+    return display_name, storage_name, expected_mime, size
 
 
 def _build_bgg_payload(bgg_data: bgg_service.BGGGameData, synced_at: datetime) -> dict[str, Any]:
@@ -293,32 +393,81 @@ async def delete_game_faq(game_id: str, faq_id: str) -> None:
         raise AdminPortalError(f"Failed to delete FAQ {faq_id}: {exc}") from exc
 
 
-async def create_game_document(game_id: str, payload: dict[str, Any]) -> GameDocument:
-    """Register a new document reference."""
-    import uuid
+async def upload_game_document(
+    game_id: str,
+    *,
+    title: str,
+    language: str,
+    source_type: str,
+    file_name: str | None,
+    file_bytes: bytes,
+    content_type: str | None,
+) -> GameDocument:
+    """Upload a document to Supabase Storage and register it in game_documents."""
 
     await _ensure_game_exists(game_id)
     supabase = await get_supabase_admin_client()
 
-    # Generate UUID for the document
-    document_id = str(uuid.uuid4())
+    cleaned_title = _clean_title(title)
+    normalized_language = _normalize_language(language)
+    normalized_source = _normalize_source_type(source_type)
+    (
+        display_name,
+        storage_name,
+        canonical_mime,
+        file_size,
+    ) = _prepare_file_payload(file_name, file_bytes, content_type)
 
-    # Auto-generate file_path using the UUID
-    file_path = f"game_documents/{game_id}/{document_id}"
+    document_id = str(uuid.uuid4())
+    file_path = f"{_GAME_DOCUMENTS_BUCKET}/{game_id}/{document_id}_{storage_name}"
+
+    existing = await (
+        supabase.table("game_documents")
+        .select("id")
+        .eq("game_id", game_id)
+        .eq("file_path", file_path)
+        .limit(1)
+        .execute()
+    )
+    existing_records = cast(list[SupabaseRecord] | None, existing.data)
+    if existing_records:
+        raise AdminPortalError(
+            "This document already exists for the selected game",
+            status_code=status.HTTP_409_CONFLICT,
+        )
+
+    try:
+        await upload_file_to_bucket(
+            _GAME_DOCUMENTS_BUCKET,
+            file_path,
+            data=file_bytes,
+            content_type=canonical_mime,
+        )
+    except StorageServiceError as exc:
+        raise AdminPortalError(str(exc), status_code=exc.status_code) from exc
 
     insert_data = {
         "id": document_id,
         "game_id": game_id,
+        "title": cleaned_title,
+        "language": normalized_language,
+        "source_type": normalized_source,
+        "file_name": display_name,
         "file_path": file_path,
-        **payload
+        "file_size": file_size,
+        "file_type": canonical_mime,
+        "status": "uploaded",
+        "uploaded_at": _now().isoformat(),
     }
     try:
         response = await supabase.table("game_documents").insert(insert_data).execute()
     except Exception as exc:  # pragma: no cover - network/service errors
+        await delete_file_from_bucket(_GAME_DOCUMENTS_BUCKET, file_path)
         raise AdminPortalError(f"Failed to create document: {exc}") from exc
 
     record = _extract_single(cast(list[SupabaseRecord] | None, response.data))
     if not record:
+        await delete_file_from_bucket(_GAME_DOCUMENTS_BUCKET, file_path)
         raise AdminPortalError("Supabase returned an empty response while creating the document")
 
     return GameDocument(**record)
@@ -419,15 +568,20 @@ async def process_game_knowledge(
             doc_metadata["triggered_by"] = triggered_by
 
         try:
-            await supabase.table("game_documents").update(
-                {
-                    "status": final_status if document.status != "ready" else document.status,
-                    "provider_file_id": updated_file_id,
-                    "vector_store_id": updated_vector_store,
-                    "processed_at": processed_at.isoformat() if processed_at else None,
-                    "metadata": doc_metadata,
-                }
-            ).eq("id", document.id).execute()
+            await (
+                supabase.table("game_documents")
+                .update(
+                    {
+                        "status": final_status if document.status != "ready" else document.status,
+                        "provider_file_id": updated_file_id,
+                        "vector_store_id": updated_vector_store,
+                        "processed_at": processed_at.isoformat() if processed_at else None,
+                        "metadata": doc_metadata,
+                    }
+                )
+                .eq("id", document.id)
+                .execute()
+            )
 
             processed_ids.append(document.id)
             success_count += 1

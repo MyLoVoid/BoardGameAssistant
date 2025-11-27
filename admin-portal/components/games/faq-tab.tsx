@@ -29,11 +29,7 @@ export function FAQTab({ gameId }: FAQTabProps) {
     visible: true,
   });
 
-  useEffect(() => {
-    loadFAQs();
-  }, []);
-
-  const loadFAQs = async () => {
+  const loadFAQs = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -44,7 +40,11 @@ export function FAQTab({ gameId }: FAQTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [gameId]); // Add gameId as a dependency since it's used inside loadFAQs
+
+  useEffect(() => {
+    loadFAQs();
+  }, [loadFAQs]);
 
   const handleCreate = async () => {
     setError('');

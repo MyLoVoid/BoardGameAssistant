@@ -48,6 +48,7 @@ def _fake_document(**overrides) -> GameDocument:
     base = {
         "id": "doc-1",
         "game_id": "game-1",
+        "title": "Rulebook",
         "language": "es",
         "source_type": "rulebook",
         "file_name": "rulebook.pdf",
@@ -56,7 +57,7 @@ def _fake_document(**overrides) -> GameDocument:
         "file_type": "application/pdf",
         "provider_file_id": None,
         "vector_store_id": None,
-        "status": "pending",
+        "status": "uploaded",
         "metadata": {},
         "error_message": None,
         "created_at": datetime.now(tz=UTC),
@@ -90,9 +91,7 @@ async def test_process_game_knowledge_marks_documents_processing(
     async def fake_list(*args, **kwargs):
         return [document]
 
-    monkeypatch.setattr(
-        admin_games, "_list_documents_for_processing", fake_list
-    )
+    monkeypatch.setattr(admin_games, "_list_documents_for_processing", fake_list)
 
     request = KnowledgeProcessRequest(
         document_ids=[document.id],
@@ -121,7 +120,9 @@ async def test_process_game_knowledge_marks_documents_processing(
 
 
 @pytest.mark.asyncio
-async def test_process_game_knowledge_can_mark_ready(monkeypatch: pytest.MonkeyPatch, stub_supabase):
+async def test_process_game_knowledge_can_mark_ready(
+    monkeypatch: pytest.MonkeyPatch, stub_supabase
+):
     """mark_as_ready should set ready status and propagate provider overrides."""
 
     document = _fake_document()
@@ -129,9 +130,7 @@ async def test_process_game_knowledge_can_mark_ready(monkeypatch: pytest.MonkeyP
     async def fake_list(*args, **kwargs):
         return [document]
 
-    monkeypatch.setattr(
-        admin_games, "_list_documents_for_processing", fake_list
-    )
+    monkeypatch.setattr(admin_games, "_list_documents_for_processing", fake_list)
 
     request = KnowledgeProcessRequest(
         document_ids=[document.id],

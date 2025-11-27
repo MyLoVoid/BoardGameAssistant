@@ -332,24 +332,12 @@ class FAQUpdateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class DocumentCreateRequest(BaseModel):
-    """Payload for creating a new game document reference"""
-
-    language: str = Field(..., description="Language code")
-    source_type: str = Field(..., description="Source type (rulebook, faq, etc.)")
-    file_name: str = Field(..., description="Original file name")
-    file_size: int = Field(0, description="File size in bytes")
-    file_type: str = Field("application/pdf", description="MIME type")
-    metadata: dict[str, Any] | None = Field(None, description="Extra metadata (JSON)")
-
-    model_config = ConfigDict(extra="forbid")
-
-
 class GameDocument(BaseModel):
     """Game document metadata record"""
 
     id: str = Field(..., description="Document UUID")
     game_id: str = Field(..., description="Game UUID")
+    title: str = Field(..., description="Document title")
     language: str = Field(..., description="Document language")
     source_type: str = Field(..., description="Source type (rulebook, faq, etc.)")
     file_name: str = Field(..., description="Original file name")

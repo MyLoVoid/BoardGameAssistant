@@ -17,7 +17,7 @@ CREATE TABLE public.knowledge_documents (
   provider_name TEXT,
   provider_file_id TEXT,
   vector_store_id TEXT,
-  status document_status NOT NULL DEFAULT 'pending',
+  status document_status NOT NULL DEFAULT 'uploaded',
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   error_message TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

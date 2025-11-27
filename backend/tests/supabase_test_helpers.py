@@ -8,7 +8,7 @@ import httpx
 
 from app.config import settings
 
-_BASE_URL = settings.supabase_url.rstrip('/')
+_BASE_URL = settings.supabase_url.rstrip("/")
 _AUTH_URL = f"{_BASE_URL}/auth/v1/admin/users"
 _REST_URL = f"{_BASE_URL}/rest/v1"
 _HEADERS = {
@@ -90,4 +90,13 @@ def delete_game(game_id: str) -> None:
         "DELETE",
         f"{_REST_URL}/games",
         params={"id": f"eq.{game_id}"},
+    )
+
+
+def delete_game_document_record(document_id: str) -> None:
+    """Remove a game document by ID using the REST API."""
+    _request(
+        "DELETE",
+        f"{_REST_URL}/game_documents",
+        params={"id": f"eq.{document_id}"},
     )

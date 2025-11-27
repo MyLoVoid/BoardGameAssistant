@@ -11,7 +11,7 @@ App móvil + portal admin + backend para asistir partidas de juegos de mesa con 
 ### Arquitectura resumida
 
 - **Mobile (Expo / React Native / TypeScript)**: cliente principal con login Supabase, sección BGC, selector de idioma ES/EN y consumo de los endpoints reales (`/auth`, `/games`, `/games/{id}`, `/games/{id}/faqs`). Todo el copy pasa por `LanguageProvider` (`mobile/src/context/LanguageContext.tsx`).
-- **Admin Portal (Next.js 16 / React 19 / TypeScript / Tailwind)**: portal web interno con soporte dark mode para importar juegos desde BGG, editar metadatos, administrar FAQs ES/EN y disparar el pipeline RAG sobre documentos. El cliente usa el backend real (`/games`, `/admin/*`), normaliza el `GamesListResponse` para la tabla y protege rutas vía `proxy.ts`. Solo roles `admin` y `developer`. Dark mode con toggle persistente (light/dark/system). Ver [admin-portal/README.md](admin-portal/README.md) (única fuente de documentación del portal).
+- **Admin Portal (Next.js 16 / React 19 / TypeScript / Tailwind)**: portal web interno con soporte dark mode para importar juegos desde BGG, editar metadatos, administrar FAQs ES/EN y gestionar documentos (subidas directas de PDF/DOC/DOCX de hasta 10 MB, descarga firmada y disparo del pipeline RAG). El cliente usa el backend real (`/games`, `/admin/*`), normaliza el `GamesListResponse` para la tabla y protege rutas vía `proxy.ts`. Solo roles `admin` y `developer`. Dark mode con toggle persistente (light/dark/system). Ver [admin-portal/README.md](admin-portal/README.md) (única fuente de documentación del portal).
 - **Backend (Python 3.13 + FastAPI + Poetry)**: expone autenticación, endpoints de juegos/FAQs, endpoints admin (`/admin/games`, `/admin/games/{id}/faqs`, `/admin/games/{id}/documents`, `/admin/games/{id}/process-knowledge`), feature flags y en progreso RAG + GenAI Adapter.
 - **Supabase (Postgres + Auth + Storage)**: esquema completo con usuarios, juegos, FAQs multi-idioma, feature flags, chat sessions/messages, game_documents (con rutas auto-generadas) y usage events.
 - **Docs**: cada feature mayor queda registrado en `/docs/BGAI-XXXX_*.md` (ver lista abajo) y el alcance vivo está en `MVP.md`.
@@ -84,8 +84,9 @@ Para que la aplicación funcione correctamente, Supabase necesita datos iniciale
 
 **6. Documentos de Muestra** (`game_documents`)
 - Referencias de ejemplo para el pipeline RAG
-- **Rutas auto-generadas**: `file_path` se genera automáticamente usando el UUID del documento
-- Selección de proveedor IA (OpenAI/Gemini/Claude) durante el procesamiento de conocimiento
+- **Rutas auto-generadas**: `file_path = game_documents/{game_id}/{document_uuid}_filename`
+- Estado inicial `uploaded`; `ready` y `error` indican el progreso del pipeline
+- IDs de proveedor/vector store se setean durante el procesamiento de conocimiento
 - Metadata de procesamiento almacenado directamente en `game_documents`
 
 ##### 🚀 Comando Recomendado (Reset Completo)
@@ -160,11 +161,12 @@ Env vars clave:
 | `cd admin-portal && npm run dev` | Portal admin Next.js (http://localhost:3000). |
 | `cd mobile && npx expo start` | Expo bundler. |
 | `cd mobile && npm run lint` | ESLint (auto-config Expo) — corrige antes de subir. |
+| `cd admin-portal && npm run lint` | Ejecuta el linter de Next.js (ESLint). |
 
 ### Estructura del repo
 
 ```
-├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0013)
+├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0014)
 ├─ docs/
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
@@ -178,7 +180,8 @@ Env vars clave:
 │  ├─ BGAI-0010_admin-portal-backend.md
 │  ├─ BGAI-0011_admin-portal-frontend.md
 │  ├─ BGAI-0012_BGG_manual_import.md
-│  └─ BGAI-0013_dark-mode.md
+│  ├─ BGAI-0013_dark-mode.md
+│  └─ BGAI-0014_upload-documents.md
 ├─ admin-portal/               # Portal admin Next.js (ver README propio)
 │  ├─ app/                     # Next.js App Router
 │  ├─ components/              # React components
@@ -208,6 +211,7 @@ Env vars clave:
 - ✅ Portal Admin completo: backend admin API con integración BGG (BGAI-0010) + frontend Next.js con gestión de juegos, FAQs y documentos (BGAI-0011).
 - ✅ Creación manual de juegos + fix BGG API redirects + endpoint /sections (BGAI-0012).
 - ✅ Dark mode con soporte light/dark/system en Admin Portal, toggle persistente en header, tokens CSS y componentes actualizados (BGAI-0013).
+- ✅ Upload de documentos (PDF/DOC/DOCX) desde el portal admin con validaciones, toasts, descarga desde Supabase Storage, migraciones `title`/status y endpoint multitpart listo para el pipeline RAG (BGAI-0014).
 - ✅ Gestión simplificada de documentos: rutas auto-generadas con UUID, eliminación de `provider_name` del formulario (migración 20241126).
 - 🔄 En progreso: pipeline RAG + GenAI Adapter, endpoints de chat IA.
 - 📋 Pendiente: licencia oficial BGG, ingestión masiva de documentos, assets finales, pruebas end-to-end completas.

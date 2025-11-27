@@ -420,16 +420,15 @@ BEGIN
   -- These represent documents that have been uploaded to Supabase Storage
   -- and then processed to OpenAI's vector store
   INSERT INTO public.game_documents (
-    game_id, language, source_type, file_name, file_path, file_size, file_type,
-    provider_name, provider_file_id, vector_store_id, status, processed_at, metadata
+    game_id, language, source_type, title, file_name, file_path, file_size, file_type,
+    provider_file_id, vector_store_id, status, processed_at, metadata
   ) VALUES
     (
-      gloomhaven_id, 'es', 'rulebook',
+      gloomhaven_id, 'es', 'rulebook', 'Gloomhaven ES Rulebook',
       'gloomhaven_rulebook_es.pdf',
       'documents/gloomhaven/es/rulebook.pdf',
       2547891, -- ~2.5MB
       'application/pdf',
-      'openai',
       'file-abc123def456', -- Example OpenAI file ID
       'vs_xyz789', -- Example OpenAI vector store ID
       'ready',
@@ -437,12 +436,11 @@ BEGIN
       '{"pages": 52, "version": "1.0", "source": "Official Rulebook"}'
     ),
     (
-      gloomhaven_id, 'es', 'faq',
+      gloomhaven_id, 'es', 'faq', 'Gloomhaven ES FAQ',
       'gloomhaven_faq_es.pdf',
       'documents/gloomhaven/es/faq.pdf',
       487234,
       'application/pdf',
-      'openai',
       'file-faq123abc456',
       'vs_xyz789', -- Same vector store as rulebook
       'ready',
@@ -452,16 +450,15 @@ BEGIN
 
   -- Sample documents for Gloomhaven (English)
   INSERT INTO public.game_documents (
-    game_id, language, source_type, file_name, file_path, file_size, file_type,
-    provider_name, provider_file_id, vector_store_id, status, processed_at, metadata
+    game_id, language, source_type, title, file_name, file_path, file_size, file_type,
+    provider_file_id, vector_store_id, status, processed_at, metadata
   ) VALUES
     (
-      gloomhaven_id, 'en', 'rulebook',
+      gloomhaven_id, 'en', 'rulebook', 'Gloomhaven EN Rulebook',
       'gloomhaven_rulebook_en.pdf',
       'documents/gloomhaven/en/rulebook.pdf',
       2634512,
       'application/pdf',
-      'openai',
       'file-en123xyz789',
       'vs_en456abc',
       'ready',
@@ -471,16 +468,15 @@ BEGIN
 
   -- Sample documents for Wingspan (English) - using Gemini
   INSERT INTO public.game_documents (
-    game_id, language, source_type, file_name, file_path, file_size, file_type,
-    provider_name, provider_file_id, vector_store_id, status, processed_at, metadata
+    game_id, language, source_type, title, file_name, file_path, file_size, file_type,
+    provider_file_id, vector_store_id, status, processed_at, metadata
   ) VALUES
     (
-      wingspan_id, 'en', 'rulebook',
+      wingspan_id, 'en', 'rulebook', 'Wingspan EN Rulebook',
       'wingspan_rulebook_en.pdf',
       'documents/wingspan/en/rulebook.pdf',
       3124567,
       'application/pdf',
-      'gemini',
       'gemini-file-abc123xyz', -- Example Gemini file ID
       NULL, -- Gemini doesn't use separate vector store IDs
       'ready',
@@ -488,12 +484,11 @@ BEGIN
       '{"pages": 18, "version": "2.0", "source": "Official Rulebook"}'
     ),
     (
-      wingspan_id, 'en', 'expansion',
+      wingspan_id, 'en', 'expansion', 'Wingspan European Expansion',
       'wingspan_european_expansion.pdf',
       'documents/wingspan/en/european_expansion.pdf',
       1847293,
       'application/pdf',
-      'gemini',
       'gemini-file-euro456def',
       NULL,
       'ready',
@@ -501,18 +496,18 @@ BEGIN
       '{"pages": 12, "expansion": "European Expansion", "version": "1.0"}'
     );
 
-  -- Sample document pending processing (Terraforming Mars)
+  -- Sample document awaiting processing (Terraforming Mars)
   INSERT INTO public.game_documents (
-    game_id, language, source_type, file_name, file_path, file_size, file_type,
+    game_id, language, source_type, title, file_name, file_path, file_size, file_type,
     status, metadata
   ) VALUES
     (
-      terraforming_id, 'es', 'rulebook',
+      terraforming_id, 'es', 'rulebook', 'Terraforming Mars ES Rulebook',
       'terraforming_mars_rulebook_es.pdf',
       'documents/terraforming/es/rulebook.pdf',
       4123456,
       'application/pdf',
-      'pending',
+      'uploaded',
       '{"pages": 28, "version": "1.0", "note": "Awaiting upload to AI provider"}'
     );
 
@@ -536,7 +531,7 @@ BEGIN
 
   SELECT id INTO terraforming_pending_id
     FROM public.game_documents
-    WHERE game_id = terraforming_id AND language = 'es' AND status = 'pending'
+    WHERE game_id = terraforming_id AND language = 'es' AND status = 'uploaded'
     ORDER BY created_at DESC
     LIMIT 1;
 

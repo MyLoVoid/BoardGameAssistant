@@ -4,7 +4,13 @@ export type UserRole = 'admin' | 'developer' | 'basic' | 'premium' | 'tester';
 export type GameStatus = 'active' | 'beta' | 'hidden';
 export type Language = 'es' | 'en';
 export type DocumentStatus = 'uploaded' | 'ready' | 'error';
-export type DocumentSourceType = 'rulebook' | 'faq' | 'expansion' | 'quickstart' | 'reference' | 'other';
+export type DocumentSourceType =
+  | 'rulebook'
+  | 'faq'
+  | 'expansion'
+  | 'quickstart'
+  | 'reference'
+  | 'other';
 // User
 export interface User {
   id: string;
@@ -79,19 +85,22 @@ export interface FAQ {
 export interface GameDocument {
   id: string;
   game_id: string;
+  title: string;
   language: Language;
   source_type: DocumentSourceType;
   file_name: string;
   file_path?: string;
-  file_size_bytes?: number;
+  file_size?: number;
+  file_type?: string;
   provider_file_id?: string;
   vector_store_id?: string;
   status: DocumentStatus;
-  error_message?: string;
   metadata?: Record<string, any>;
-  uploaded_by?: string;
+  error_message?: string;
   created_at: string;
   updated_at: string;
+  processed_at?: string;
+  uploaded_at?: string;
 }
 
 // API Request/Response types
@@ -155,11 +164,11 @@ export interface UpdateFAQRequest {
   visible?: boolean;
 }
 
-export interface CreateDocumentRequest {
+export interface UploadDocumentRequest {
+  title: string;
   language: Language;
   source_type: DocumentSourceType;
-  file_name: string;
-  metadata?: Record<string, any>;
+  file: File;
 }
 
 export interface ProcessKnowledgeRequest {

@@ -11,12 +11,14 @@ import type {
   ImportFromBGGRequest,
   CreateFAQRequest,
   UpdateFAQRequest,
-  CreateDocumentRequest,
+  UploadDocumentRequest,
   ProcessKnowledgeRequest,
   ProcessKnowledgeResponse,
   APIError,
   GameStatus,
   Language,
+  DocumentStatus,
+  DocumentSourceType,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -78,12 +80,35 @@ type ApiFAQ = {
   updated_at?: string | null;
 };
 
+type ApiGameDocument = {
+  id: string;
+  game_id: string;
+  title: string;
+  language: Language;
+  source_type: DocumentSourceType;
+  file_name: string;
+  file_path?: string | null;
+  file_size?: number | null;
+  file_type?: string | null;
+  provider_file_id?: string | null;
+  vector_store_id?: string | null;
+  status: DocumentStatus;
+  metadata?: Record<string, any> | null;
+  error_message?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  processed_at?: string | null;
+  uploaded_at?: string | null;
+};
+
 type GameFAQsApiResponse = {
   faqs: ApiFAQ[];
   game_id: string;
   language: Language;
   total: number;
 };
+
+export type ApiClientError = Error & { status?: number };
 
 class APIClient {
   private client: AxiosInstance;
@@ -127,6 +152,29 @@ class APIClient {
     };
   }
 
+  private mapGameDocument(doc: ApiGameDocument): GameDocument {
+    return {
+      id: doc.id,
+      game_id: doc.game_id,
+      title: doc.title,
+      language: doc.language,
+      source_type: doc.source_type,
+      file_name: doc.file_name,
+      file_path: doc.file_path ?? undefined,
+      file_size: doc.file_size ?? undefined,
+      file_type: doc.file_type ?? undefined,
+      provider_file_id: doc.provider_file_id ?? undefined,
+      vector_store_id: doc.vector_store_id ?? undefined,
+      status: doc.status,
+      metadata: doc.metadata ?? undefined,
+      error_message: doc.error_message ?? undefined,
+      created_at: doc.created_at ?? '',
+      updated_at: doc.updated_at ?? '',
+      processed_at: doc.processed_at ?? undefined,
+      uploaded_at: doc.uploaded_at ?? undefined,
+    };
+  }
+
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
@@ -162,21 +210,28 @@ class APIClient {
     );
   }
 
-  private formatError(error: AxiosError<APIError>): Error {
+  private formatError(error: AxiosError<APIError>): ApiClientError {
+    const statusCode = error.response?.status;
     // If server returned a structured API error, prefer that detail
     if (error.response?.data?.detail) {
-      return new Error(error.response.data.detail);
+      const err = new Error(error.response.data.detail) as ApiClientError;
+      if (statusCode) err.status = statusCode;
+      return err;
     }
 
     // Network errors (no response) are common during local dev - provide actionable hint
     if (!error.response) {
       const code = (error as any).code ?? 'UNKNOWN';
-      return new Error(
+      const err = new Error(
         `Network Error: could not reach API at ${API_BASE_URL} (${code}).`
-      );
+      ) as ApiClientError;
+      if (statusCode) err.status = statusCode;
+      return err;
     }
 
-    return new Error(error.message || 'An unexpected error occurred');
+    const err = new Error(error.message || 'An unexpected error occurred') as ApiClientError;
+    if (statusCode) err.status = statusCode;
+    return err;
   }
 
   // ============================================
@@ -323,19 +378,30 @@ class APIClient {
 
   async getGameDocuments(gameId: string, language?: string): Promise<GameDocument[]> {
     const params = language ? { lang: language } : {};
-    const response = await this.client.get<GameDocument[]>(
+    const response = await this.client.get<ApiGameDocument[]>(
       `/admin/games/${gameId}/documents`,
       { params }
     );
-    return response.data;
+    return response.data.map((doc) => this.mapGameDocument(doc));
   }
 
-  async createDocument(gameId: string, data: CreateDocumentRequest): Promise<GameDocument> {
-    const response = await this.client.post<GameDocument>(
+  async createDocument(gameId: string, data: UploadDocumentRequest): Promise<GameDocument> {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('language', data.language);
+    formData.append('source_type', data.source_type);
+    formData.append('file', data.file);
+
+    const response = await this.client.post<ApiGameDocument>(
       `/admin/games/${gameId}/documents`,
-      data
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
-    return response.data;
+    return this.mapGameDocument(response.data);
   }
 
   async deleteDocument(gameId: string, documentId: string): Promise<void> {

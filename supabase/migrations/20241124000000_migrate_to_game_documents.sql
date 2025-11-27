@@ -44,7 +44,7 @@ ALTER TABLE public.game_documents
   ADD COLUMN provider_name TEXT, -- 'openai', 'gemini', 'claude', or null
   ADD COLUMN provider_file_id TEXT, -- File ID in the provider's system
   ADD COLUMN vector_store_id TEXT, -- Vector store ID (if applicable, e.g., OpenAI)
-  ADD COLUMN status document_status NOT NULL DEFAULT 'pending',
+  ADD COLUMN status document_status NOT NULL DEFAULT 'uploaded',
   ADD COLUMN error_message TEXT,
   ADD COLUMN processed_at TIMESTAMPTZ,
   ADD COLUMN uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
@@ -116,7 +116,7 @@ COMMENT ON COLUMN public.game_documents.file_path IS 'Path in Supabase Storage';
 COMMENT ON COLUMN public.game_documents.provider_name IS 'AI provider: openai, gemini, claude, or null if not yet uploaded';
 COMMENT ON COLUMN public.game_documents.provider_file_id IS 'File ID in the provider system (e.g., OpenAI file-xxx)';
 COMMENT ON COLUMN public.game_documents.vector_store_id IS 'Vector store ID in the provider system (e.g., OpenAI vs_xxx)';
-COMMENT ON COLUMN public.game_documents.status IS 'Processing status: pending, uploading, processing, ready, error';
+COMMENT ON COLUMN public.game_documents.status IS 'Processing status: uploaded, ready, or error';
 COMMENT ON COLUMN public.game_documents.metadata IS 'Additional metadata: page numbers, sections, source info, etc.';
 
 -- =====================================================

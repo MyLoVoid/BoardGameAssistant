@@ -1,39 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
-import { Plus, Trash2, AlertCircle, Loader2, X, Play } from 'lucide-react';
-import type { GameDocument, Language, DocumentSourceType, CreateDocumentRequest } from '@/lib/types';
+import { Plus, Trash2, AlertCircle, Loader2, Play, Download } from 'lucide-react';
+import type { GameDocument } from '@/lib/types';
 import { formatFileSize, formatDate } from '@/lib/utils';
+import { AddDocumentModal } from '@/components/games/add-document-modal';
+import { notifyError, notifyInfo } from '@/lib/notifications';
+import { supabase } from '@/lib/supabase';
 
 interface DocumentsTabProps {
   gameId: string;
+  onRefreshRequested?: () => void;
 }
 
-export function DocumentsTab({ gameId }: DocumentsTabProps) {
+export function DocumentsTab({ gameId, onRefreshRequested }: DocumentsTabProps) {
   const [documents, setDocuments] = useState<GameDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
 
-  const [formData, setFormData] = useState<CreateDocumentRequest>({
-    language: 'es',
-    source_type: 'rulebook',
-    file_name: '',
-  });
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -44,21 +37,11 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [gameId]);
 
-  const handleCreate = async () => {
-    setError('');
-    setSuccess('');
-    try {
-      await apiClient.createDocument(gameId, formData);
-      resetForm();
-      setIsCreating(false);
-      setSuccess('Document created successfully! Upload the file to the generated path in Supabase Storage and then process knowledge.');
-      loadDocuments();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create document');
-    }
-  };
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
 
   const handleDelete = async (documentId: string) => {
     if (!confirm('Are you sure you want to delete this document?')) return;
@@ -108,14 +91,6 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      language: 'es',
-      source_type: 'rulebook',
-      file_name: '',
-    });
-  };
-
   const toggleDocSelection = (docId: string) => {
     const newSet = new Set(selectedDocs);
     if (newSet.has(docId)) {
@@ -124,6 +99,12 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
       newSet.add(docId);
     }
     setSelectedDocs(newSet);
+  };
+
+  const handleUploadComplete = async () => {
+    setSelectedDocs(new Set());
+  await loadDocuments();
+  onRefreshRequested?.();
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -136,6 +117,32 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
         return 'destructive';
       default:
         return 'secondary';
+    }
+  };
+
+  const handleDownload = async (document: GameDocument) => {
+    if (!document.file_path) {
+      notifyError('Este documento no tiene una ruta de archivo disponible.');
+      return;
+    }
+    const [bucket, ...pathParts] = document.file_path.split('/');
+    const storagePath = pathParts.join('/');
+    if (!bucket || !storagePath) {
+      notifyError('La ruta del documento es inválida.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(storagePath, 60);
+      if (error || !data?.signedUrl) {
+        throw error;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener');
+    } catch (downloadError) {
+      console.error('Failed to download document', downloadError);
+      notifyError('No se pudo descargar el documento.');
     }
   };
 
@@ -179,173 +186,158 @@ export function DocumentsTab({ gameId }: DocumentsTabProps) {
               )}
             </Button>
           )}
-          {!isCreating && (
-            <Button onClick={() => setIsCreating(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Document
-            </Button>
-          )}
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Document
+          </Button>
         </div>
       </div>
-
-      {isCreating && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Add Document Reference</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setIsCreating(false);
-                resetForm();
-                setError('');
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-primary/10 text-primary px-4 py-3 rounded-md text-sm">
-              <p className="font-medium mb-1">Note:</p>
-              <p>
-                This creates a document reference with an auto-generated storage path.
-                After creation, upload the file to the generated path in Supabase Storage,
-                then use "Process Knowledge" to index it with the AI provider.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Language</label>
-                <select
-                  value={formData.language}
-                  onChange={(e) =>
-                    setFormData({ ...formData, language: e.target.value as Language })
-                  }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-                >
-                  <option value="es">Spanish (ES)</option>
-                  <option value="en">English (EN)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Source Type</label>
-                <select
-                  value={formData.source_type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      source_type: e.target.value as DocumentSourceType,
-                    })
-                  }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-                >
-                  <option value="rulebook">Rulebook</option>
-                  <option value="faq">FAQ</option>
-                  <option value="expansion">Expansion</option>
-                  <option value="quickstart">Quickstart</option>
-                  <option value="reference">Reference</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">File Name</label>
-              <Input
-                value={formData.file_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, file_name: e.target.value })
-                }
-                placeholder="e.g., gloomhaven_rulebook_es.pdf"
-                className="mt-1"
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsCreating(false);
-                  resetForm();
-                  setError('');
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleCreate}>Create Document</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {documents.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              No documents yet. Add your first document reference!
+              No documents yet. Upload your first document to get started!
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {documents.map((doc) => (
-            <Card key={doc.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedDocs.has(doc.id)}
-                    onChange={() => toggleDocSelection(doc.id)}
-                    className="mt-1 h-4 w-4"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">{doc.language.toUpperCase()}</Badge>
-                      <Badge variant="secondary">{doc.source_type}</Badge>
-                      <Badge variant={getStatusBadgeVariant(doc.status)}>
-                        {doc.status}
-                      </Badge>
-                    </div>
-                    <h3 className="font-semibold text-lg mb-1">{doc.file_name}</h3>
-                    {doc.file_path && (
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Storage Path: {doc.file_path}
-                      </p>
-                    )}
-                    {doc.file_size_bytes && (
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Size: {formatFileSize(doc.file_size_bytes)}
-                      </p>
-                    )}
-                    {doc.provider_file_id && (
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Provider File ID: {doc.provider_file_id}
-                      </p>
-                    )}
-                    {doc.error_message && (
-                      <p className="text-sm text-destructive mt-2">
-                        Error: {doc.error_message}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Created: {formatDate(doc.created_at)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(doc.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Seleccionar
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Documento
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Idioma
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Fuente
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Estado
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Procesar
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {documents.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedDocs.has(doc.id)}
+                          onChange={() => toggleDocSelection(doc.id)}
+                          className="h-4 w-4"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="space-y-1">
+                          <p className="font-medium text-foreground">
+                            {doc.title || doc.file_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Archivo: {doc.file_name}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {doc.file_size && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatFileSize(doc.file_size)}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              Creado: {formatDate(doc.created_at)}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="mt-2"
+                            onClick={() => handleDownload(doc)}
+                            disabled={!doc.file_path}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Descargar
+                          </Button>
+                          {!doc.file_path && (
+                            <p className="text-xs text-destructive">
+                              Ruta de almacenamiento no disponible.
+                            </p>
+                          )}
+                          {doc.error_message && (
+                            <p className="text-xs text-destructive">{doc.error_message}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Badge variant="outline" className="uppercase">
+                          {doc.language}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-4 capitalize">
+                        <Badge variant="secondary">{doc.source_type}</Badge>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Badge variant={getStatusBadgeVariant(doc.status)}>{doc.status}</Badge>
+                      </td>
+                      <td className="px-4 py-4">
+                        {doc.status === 'ready' ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+                            Procesado
+                          </Badge>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            title="Funcionalidad disponible próximamente"
+                            onClick={() =>
+                              notifyInfo('Funcionalidad disponible próximamente.')
+                            }
+                          >
+                            Procesar
+                          </Button>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={() => handleDelete(doc.id)}
+                            aria-label="Eliminar documento"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      <AddDocumentModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        gameId={gameId}
+        onUploaded={handleUploadComplete}
+      />
     </div>
   );
 }

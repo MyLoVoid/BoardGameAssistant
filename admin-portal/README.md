@@ -15,9 +15,10 @@ A Next.js-based web portal for managing games, FAQs, and knowledge documents for
   - Admin list uses the backend `/games` response (GamesListResponse) and the API client normalizes Supabase's `name_base` field so titles always show up
 - **FAQ Management**: Create, edit, and delete FAQs in multiple languages (ES/EN)
 - **Document Management**:
-  - Add document references for game knowledge
-  - Process documents for RAG (Retrieval Augmented Generation)
-  - Support for multiple AI providers (OpenAI, Gemini, Claude)
+  - Subir archivos PDF/DOC/DOCX (<10 MB) por juego con validaciones frontend/backend
+  - Descargar archivos desde Supabase Storage mediante URLs firmados
+  - Ver estado (`uploaded`, `ready`, `error`) y disparar el placeholder “Procesar” hasta que llegue el pipeline
+  - Procesar documentos para RAG (Retrieval Augmented Generation) cuando la funcionalidad esté disponible
 - **Multi-language Support**: Spanish (ES) and English (EN)
 - **Responsive Design**: Desktop-first design optimized for admin workflows
 
@@ -140,26 +141,30 @@ FAQ fields:
 
 ### Managing Documents
 
-1. Open a game detail page
-2. Go to **Documents** tab
-3. Click **Add Document** to create a document reference
+1. Open a game detail page.
+2. Go to the **Documents** tab.
+3. Click **Add Document** to open the upload modal.
+4. Provide the required metadata and pick a PDF/DOC/DOCX (máx. 10 MB). The UI valida tipo/tamaño antes de enviar.
+5. Al subir con éxito, la tabla se refresca automáticamente y el modal se cierra.
 
 Document fields:
-- **Language**: ES or EN
-- **Source Type**: rulebook, faq, expansion, quickstart, reference, other
-- **File Name**: Name of the document file
-- **File Path**: Path in Supabase Storage (optional)
-- **AI Provider**: openai, gemini, or claude
+- **Title**: nombre que verán otros administradores (obligatorio).
+- **Language**: ES o EN.
+- **Source Type**: rulebook, faq, expansion, quickstart, reference u other.
+- **File**: PDF, DOC o DOCX de hasta 10 MB (se sube directamente a Supabase Storage).
+
+Cada fila incluye un botón **Descargar** que genera un URL firmado contra Supabase Storage y abre el archivo en una pestaña nueva (habilitado solo si existe `file_path`).
 
 #### Processing Knowledge
 
-After adding documents and uploading files to Supabase Storage:
+Mientras el pipeline RAG definitivo llega, la columna **Procesar** incluye:
+- Un badge verde “Procesado” cuando el documento tiene `status = ready`.
+- Un botón **Procesar** con tooltip “Funcionalidad disponible próximamente” que muestra un toast informativo para los estados restantes.
 
-1. Select the documents you want to process (checkbox)
-2. Click **Process Knowledge**
-3. The backend will upload documents to the AI provider and create vector stores
-
-This enables RAG (Retrieval Augmented Generation) for AI-powered game assistance.
+Una vez el procesamiento esté disponible:
+1. Selecciona los documentos con las casillas de la primera columna.
+2. Pulsa **Process Knowledge** para lanzar la tarea en el backend.
+3. El backend actualizará `provider_file_id`, `vector_store_id` y el `status` según avance el pipeline.
 
 ## Project Structure
 
@@ -249,7 +254,7 @@ npm run build
 npm run start
 
 # Run linting
-npm run lint
+npm run lint # Ejecuta el linter de Next.js (ESLint)
 ```
 
 ## Dark Mode
@@ -317,7 +322,7 @@ These tokens are defined in `app/globals.css` and automatically adjust based on 
 
 Potential improvements for future versions:
 
-- **File Upload UI**: Direct file upload to Supabase Storage
+- **Bulk Provider Upload**: Automatizar la subida a proveedores (OpenAI/Gemini/Claude) cuando se dispare “Process Knowledge”
 - **Dashboard Stats**: Real-time analytics and usage statistics
 - **User Management**: Admin interface for managing users and roles
 - **Bulk Operations**: Import multiple games, batch document processing

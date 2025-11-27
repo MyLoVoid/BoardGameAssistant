@@ -7,13 +7,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 
 from app.core.auth import AuthenticatedUser, require_role
 from app.models.schemas import (
     BGGImportRequest,
     BGGImportResponse,
-    DocumentCreateRequest,
     FAQCreateRequest,
     FAQUpdateRequest,
     Game,
@@ -28,7 +27,6 @@ from app.models.schemas import (
 from app.services.admin_games import (
     AdminPortalError,
     create_game,
-    create_game_document,
     create_game_faq,
     delete_game_document,
     delete_game_faq,
@@ -38,6 +36,7 @@ from app.services.admin_games import (
     sync_game_from_bgg,
     update_game,
     update_game_faq,
+    upload_game_document,
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -183,13 +182,27 @@ async def delete_game_faq_endpoint(
 )
 async def create_game_document_endpoint(
     game_id: str,
-    request: DocumentCreateRequest,
     current_user: CurrentAdmin,
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    language: str = Form(...),
+    source_type: str = Form(...),
 ) -> GameDocument:
     try:
-        return await create_game_document(game_id, request.model_dump())
+        file_bytes = await file.read()
+        return await upload_game_document(
+            game_id,
+            title=title,
+            language=language,
+            source_type=source_type,
+            file_name=file.filename,
+            file_bytes=file_bytes,
+            content_type=file.content_type,
+        )
     except AdminPortalError as exc:
         raise _handle_admin_error(exc) from exc
+    finally:
+        await file.close()
 
 
 @router.get(
