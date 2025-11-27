@@ -16,7 +16,7 @@
 -- =====================================================
 
 -- Document processing status
-CREATE TYPE document_status AS ENUM ('pending', 'uploading', 'processing', 'ready', 'error');
+CREATE TYPE document_status AS ENUM ('uploaded', 'ready', 'error');
 
 -- Extend source_type to include 'expansion'
 ALTER TYPE source_type ADD VALUE IF NOT EXISTS 'expansion';

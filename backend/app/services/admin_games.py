@@ -372,7 +372,7 @@ async def _list_documents_for_processing(
     if document_ids:
         query = query.in_("id", list(document_ids))
     else:
-        query = query.in_("status", ["pending", "uploading", "processing"])
+        query = query.in_("status", ["uploaded", "ready", "error"])
 
     if language:
         query = query.eq("language", language)

@@ -79,7 +79,7 @@ Each game has its own knowledge base:
 - `game_documents` - **Document references WITH processing metadata** (Nov 2024 update):
   - Auto-generated `file_path`: `game_documents/{game_id}/{document_uuid}`
   - Provider metadata: `provider_file_id`, `vector_store_id`
-  - Processing status: `pending`, `uploading`, `processing`, `ready`, `error`
+  - Processing status: `uploaded`, `ready`, `error`
   - Language-specific: documents tagged with `language` field
   - Metadata JSON: processing info, notes, triggered_by, etc.
 - `usage_events` - Analytics tracking (environment, event_type, feature_key)

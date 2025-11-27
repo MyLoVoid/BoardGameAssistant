@@ -21,7 +21,7 @@
 
 ## Data Model Highlights
 - Tables to reflect: `users`, `app_sections`, `games`, `game_faqs`, `feature_flags`, `chat_sessions`, `chat_messages`, `game_documents` (formerly `game_docs_vectors`), `usage_events`.
-- **Key change**: Deprecate `game_docs_vectors` with embedded `chunk_text`/`embedding` columns. Replace with `game_documents` storing references to files uploaded to GenAI providers (OpenAI Files API, Gemini File API, Claude). Fields: `provider_name`, `provider_file_id`, `vector_store_id`, `status` (`pending`, `uploading`, `processing`, `ready`, `error`), `file_path` (Supabase Storage), `language`, `source_type`.
+- **Key change**: Deprecate `game_docs_vectors` with embedded `chunk_text`/`embedding` columns. Replace with `game_documents` storing references to files uploaded to GenAI providers (OpenAI Files API, Gemini File API, Claude). Fields: `provider_name`, `provider_file_id`, `vector_store_id`, `status` (`uploaded`, `ready`, `error`), `file_path` (Supabase Storage), `language`, `source_type`.
 - Include language columns (`language`) where content is localized; default to Spanish with English fallback logic on the backend.
 - Feature flags must capture `scope_type`, `scope_id`, `feature_key`, optional `role`, `environment`, and an `enabled` flag plus optional metadata JSON.
 

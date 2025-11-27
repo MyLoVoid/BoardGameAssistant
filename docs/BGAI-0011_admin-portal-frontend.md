@@ -314,7 +314,7 @@ const schema = z.object({
      - File name
      - Language badge
      - Source type (rulebook, faq, expansion, etc.)
-     - Status badge (pending, uploading, processing, ready, error)
+     - Status badge (uploaded, ready, error)
      - Provider (OpenAI, Gemini, Claude)
      - Delete action
    - Create document modal:
@@ -379,7 +379,7 @@ export type UserRole = 'admin' | 'developer' | 'basic' | 'premium' | 'tester';
 export type GameStatus = 'active' | 'beta' | 'hidden';
 export type Language = 'es' | 'en';
 export type SourceType = 'rulebook' | 'faq' | 'expansion' | 'bgg' | 'house_rules' | 'other';
-export type DocumentStatus = 'pending' | 'uploading' | 'processing' | 'ready' | 'error';
+export type DocumentStatus = 'uploaded' | 'ready' | 'error';
 export type ProviderName = 'openai' | 'gemini' | 'claude';
 ```
 

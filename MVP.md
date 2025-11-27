@@ -313,7 +313,7 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
    * file_type         → mime type (`application/pdf`, `text/markdown`, etc.)
    * provider_file_id  → ID del archivo en el proveedor (ej: OpenAI File ID), asignado durante procesamiento
    * vector_store_id   → ID del vector store en el proveedor (si aplica), asignado durante procesamiento
-   * status            → `pending`, `uploading`, `processing`, `ready`, `error`
+   * status            → `uploaded`, `ready`, `error`
    * error_message     → mensaje de error si `status = error`
    * processed_at      → timestamp de procesamiento exitoso
    * metadata          → JSON con información adicional (página, sección del manual, etc.)

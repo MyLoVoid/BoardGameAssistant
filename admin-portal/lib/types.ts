@@ -3,7 +3,7 @@
 export type UserRole = 'admin' | 'developer' | 'basic' | 'premium' | 'tester';
 export type GameStatus = 'active' | 'beta' | 'hidden';
 export type Language = 'es' | 'en';
-export type DocumentStatus = 'pending' | 'uploading' | 'processing' | 'ready' | 'error';
+export type DocumentStatus = 'uploaded' | 'ready' | 'error';
 export type DocumentSourceType = 'rulebook' | 'faq' | 'expansion' | 'quickstart' | 'reference' | 'other';
 // User
 export interface User {
