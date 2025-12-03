@@ -465,6 +465,7 @@ Para el MVP:
 - No hace falta automatizar actualizaciones periódicas todavía.
 - Gracias a **BGAI-0012** el portal admin ya cuenta con creación manual de juegos, selector dinámico de secciones (`/sections`) y modalidades de importación que funcionan aun cuando la licencia de BGG no esté aprobada.
 - **Pendiente**: Obtener licencia/aprobación oficial de BoardGameGeek antes de uso en producción.
+- **Credenciales**: `BGG_API_URL` y `BGG_API_TOKEN` viven en el `.env` del backend; el servicio agrega `/thing` si hace falta y firma todas las llamadas con el token entregado por BGG.
 
 ---
 

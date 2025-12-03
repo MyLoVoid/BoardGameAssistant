@@ -5,12 +5,7 @@
             "name": "Python: pytest - Current File",
             "type": "debugpy",
             "request": "launch",
-            "module": "pytest",
-            "args": [
-                "${file}",
-                "-v",
-                "-s"
-            ],
+            "program": "${file}",
             "cwd": "${workspaceFolder}/backend",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/backend"

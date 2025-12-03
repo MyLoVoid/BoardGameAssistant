@@ -142,6 +142,22 @@ https://www.boardgamegeek.com/xmlapi2/thing
 - `backend/app/services/bgg.py` - Cliente XML de BGG
 - `backend/app/api/routes/admin.py` - Endpoint `/admin/games/import-bgg`
 
+**Vars de entorno (backend `.env`)**:
+- `BGG_API_URL`: base de la API autorizada (por defecto `https://www.boardgamegeek.com/xmlapi2`). La app añade `/thing` automáticamente si mantienes solo la raíz.
+- `BGG_API_TOKEN`: token firmado por BGG para autenticar peticiones; nunca lo compartas fuera del archivo `.env` o de los stores seguros del deploy.
+
+**Propagación a entornos remotos**
+1. **Supabase Edge/Functions / DB Studio**:
+   ```bash
+   supabase secrets set BGG_API_URL=https://www.boardgamegeek.com/xmlapi2 BGG_API_TOKEN=<token>
+   ```
+   Verifica con `supabase secrets list` antes de desplegar `supabase functions deploy`.
+2. **Render / Railway / Fly.io**: agrega ambos valores en la sección *Environment* del servicio `backend`. Render, por ejemplo:
+   - Dashboard → Service → Environment → Add Secret
+   - Key `BGG_API_URL`, Value `https://…`
+   - Key `BGG_API_TOKEN`, Value `<token>`
+3. **CI/CD**: en GitHub Actions usa `Settings → Secrets → Actions` y define `BGG_API_URL` / `BGG_API_TOKEN`; los workflows deben exportarlas como vars antes de levantar el backend.
+
 **Documentación**: Ver sección "8. BGG como fuente de datos" en `MVP.md` y `docs/BGAI-0010_admin-portal-backend.md`
 
 ---

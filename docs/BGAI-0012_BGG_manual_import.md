@@ -202,6 +202,17 @@ interface AppSection {
 - ⚠️ NOT approved for production use
 - ✅ Code ready for dev/testing
 
+### BGG Credentials & Environment Variables
+
+Now that BGG granted us a sandbox token, configure the backend `.env` with:
+
+| Variable | Description |
+| --- | --- |
+| `BGG_API_URL` | Base URL of the authorized XML endpoint. The backend automatically appends `/thing` if the base omits it. |
+| `BGG_API_TOKEN` | Bearer token issued by BGG. Required for every request; keep it out of source control. |
+
+Both values are read via `backend/app/config.py` and injected into the shared httpx client in `backend/app/services/bgg.py`. Update deployment secrets (Supabase functions, Render, etc.) before enabling the import flow in those environments.
+
 **Documented in**:
 - `MVP.md` - Section 8
 - `README.md` - BGG Integration section

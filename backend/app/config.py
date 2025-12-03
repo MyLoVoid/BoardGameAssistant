@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     rag_top_k: int = 5
     rag_similarity_threshold: float = 0.7
 
+    # BGG Integration
+    bgg_api_url: str = "https://www.boardgamegeek.com/xmlapi2"
+    bgg_api_token: str = ""
+
     # Rate Limiting
     rate_limit_enabled: bool = True
     rate_limit_requests: int = 100

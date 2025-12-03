@@ -8,13 +8,13 @@ required by the Admin Portal when onboarding new games.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from urllib.parse import urljoin
 from xml.etree import ElementTree as ET
 
 import httpx
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-BGG_API_URL = "https://www.boardgamegeek.com/xmlapi2/thing"
-
+from app.config import settings
 
 _BGG_CLIENT: httpx.AsyncClient | None = None
 
@@ -29,6 +29,8 @@ def _get_bgg_client() -> httpx.AsyncClient:
             "User-Agent": "BGAI-Admin/1.0 (+https://example.com; dev@your-org.example)",
             "Accept": "application/xml",
         }
+        if settings.bgg_api_token:
+            default_headers["Authorization"] = f"Bearer {settings.bgg_api_token}"
 
         _BGG_CLIENT = httpx.AsyncClient(
             timeout=httpx.Timeout(15.0, connect=5.0),
@@ -104,6 +106,12 @@ def _get_value_attr(element: ET.Element | None) -> str | None:
     return element.attrib.get("value")
 
 
+def _build_bgg_endpoint() -> str:
+    """Return the full XML API v2 endpoint ending in /thing."""
+    base = settings.bgg_api_url.rstrip("/")
+    return urljoin(f"{base}/", "thing")
+
+
 async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
     """
     Fetch base metadata for a game from BoardGameGeek.
@@ -130,14 +138,16 @@ async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
         ):
             with attempt:
                 response = await client.get(
-                    BGG_API_URL, params={"id": bgg_id, "stats": 1}, timeout=timeout
+                    _build_bgg_endpoint(),
+                    params={"id": bgg_id, "stats": 1},
+                    timeout=timeout,
                 )
 
                 # If BGG rejects the request due to missing/invalid headers or auth,
                 # surface a clearer error message for developers.
                 if response.status_code == 401:
                     raise BGGServiceError(
-                        "BGG API returned 401 Unauthorized. Ensure the client sends a valid User-Agent header and that BGG is not rate-limiting/blocking your requests."
+                        "BGG API returned 401 Unauthorized. Ensure the configured BGG_API_URL/BGG_API_TOKEN env vars are correct, the client sends a valid User-Agent header, and BGG is not rate-limiting/blocking your requests."
                     )
 
                 response.raise_for_status()
