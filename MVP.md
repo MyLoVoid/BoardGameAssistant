@@ -1,7 +1,7 @@
 # MVP – Board Game Assistant Intelligence (BGAI)
 
-> Versión: 2025-12-03
-> Estado: **MVP en desarrollo** (Portal admin + Gemini File Search completado BGAI-0010–BGAI-0015)
+> Versión: 2025-12-04
+> Estado: **MVP en desarrollo** (Portal admin + RAG + Chat IA completado BGAI-0010–BGAI-0016)
 
 ## 0. Resumen ejecutivo del MVP
 
@@ -362,6 +362,12 @@ Pipeline RAG (actualizado):
 4. El proveedor devuelve la respuesta con referencias/citaciones de los documentos relevantes.
 5. Se recibe la respuesta, se guarda en `chat_messages` y se devuelve al cliente con metadatos de citación.
 
+#### Herramientas de depuración Gemini (nuevo)
+
+- `backend/app/services/gemini_provider.py` ahora resuelve metadatos del juego desde cualquier identificador de store (display name `game-<uuid>`, `fileSearchStores/...` o la versión normalizada `file_search_stores/...`) gracias a `get_game_info_from_store_identifier()`.
+- El CLI `_debug_cli` acepta display names, normaliza IDs y mantiene un loop de preguntas para `_debug_chat_flow`, lo que facilita validar respuestas de Gemini sin relanzar el script.
+- Los errores de Supabase o IDs inválidos se imprimen de inmediato en la terminal para acelerar el diagnóstico de stores huérfanos o configuraciones incompletas.
+
 ### 6.2. Endpoint principal del GenAI Adapter
 
 - **Endpoint:** `POST /genai/query` (opcional, puede variar en el desarrollo)
@@ -511,7 +517,7 @@ Para el MVP:
 | Pipeline RAG (procesamiento docs)       | 🔄 En progreso | ~60%     | BGAI-0015            |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
 | Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011, BGAI-0012, BGAI-0013 |
-| **TOTAL MVP**                           | 🔄 En progreso | ~75%    | 2025-12-03           |
+| **TOTAL MVP**                           | 🔄 En progreso | ~85%    | 2025-12-04           |
 
 **Leyenda:**
 
@@ -862,14 +868,15 @@ Para el MVP:
 
 1. **Backend API REST - Pipeline RAG + GenAI Adapter**
    * ✅ ~~Servicio de subida de documentos a Gemini File Search~~ (BGAI-0015 completado)
+   * ✅ Gemini File Search integration completo (BGAI-0016):
+     - ✅ Endpoint `POST /genai/query` con query execution contra Gemini File Search
+     - ✅ Uso de File Search Store IDs para ejecutar queries RAG con documentos
+     - ✅ Registro en `chat_sessions`, `chat_messages`, `usage_events`
+     - ✅ Rate limiting basado en metadata de feature flags
    * ⏳ Adaptadores adicionales por proveedor:
-     - ✅ Gemini: File API + File Search Stores (BGAI-0015)
-     - OpenAI: Files API + Vector Stores + Assistants API
-     - Claude: Context injection + Prompt Caching
-   * ⏳ Endpoint `POST /genai/query` completo con delegación a proveedores.
-   * ⏳ Usar File Search Store IDs ya almacenados para ejecutar queries RAG.
-   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`.
-   * ⏳ Rate limiting basado en metadata de feature flags.
+     - ✅ Gemini: File API + File Search Stores (BGAI-0015 + BGAI-0016)
+     - OpenAI: Files API + Vector Stores + Assistants API (future)
+     - Claude: Context injection + Prompt Caching (future)
 
 2. **Backend API REST - Utilidades y Jobs**
    * ⏳ Webhooks / jobs para sincronizar juegos (BGG + ingestión de chunks)
@@ -881,7 +888,10 @@ Para el MVP:
    * ✅ ~~Integrar Supabase JS para login real~~ (BGAI-0005)
    * ✅ ~~Conectar `/games` + `/games/{id}` y FAQs reales~~ (BGAI-0007)
    * ✅ ~~Añadir selector de idioma y UI bilingüe~~ (BGAI-0008)
-   * ⏳ Preparar hooks/UI para `POST /genai/query` (chat IA)
+   * ✅ Chat IA integrado con backend (BGAI-0016):
+     - ✅ Hooks y servicios para `POST /genai/query`
+     - ✅ UI del chat: pantalla, componentes (MessageBubble, ChatInput, TypingIndicator)
+     - ✅ Historiales reales, session persistence, error handling, usage limits display
    * ⏳ Actualizar assets definitivos antes de publicar builds
 
 4. **Pipeline de procesamiento de documentos**
@@ -987,17 +997,64 @@ Para el MVP:
      - Servicio: `backend/app/services/gemini_provider.py` (316 líneas)
      - Environment: Requiere `GOOGLE_API_KEY` en `.env`
 
+10. **BGAI-0016 — Chat IA con RAG - Endpoint `/genai/query` + UI Móvil (Dic 2024)**
+   * **Backend: Endpoint `POST /genai/query`** (`backend/app/api/routes/genai.py`):
+     - Validación de autenticación (JWT Bearer token)
+     - Validación de acceso al juego por rol
+     - Validación de acceso a feature chat mediante feature flags
+     - Enforcement de límites diarios extraídos de metadata de feature flags
+     - Gestión de sesiones (crear nueva o reutilizar existente)
+     - Recuperación de vector_store_id desde `game_documents` con fallback ES → EN
+     - Recuperación de historial de conversación (últimos 10 mensajes)
+     - Query a Gemini File Search con contexto multi-turn
+     - Almacenamiento de pregunta y respuesta en `chat_messages` con metadata (citations)
+     - Actualización de stats de sesión (message count, token estimates)
+     - Logging de dos eventos: `chat_question` y `chat_answer` con contexto detallado
+     - Response con session_id, answer, citations, model_info, limits
+   * **Backend: Servicios de soporte**:
+     - `chat_sessions.py`: `get_or_create_session()`, `add_message()`, `get_session_history()`, `update_session_stats()`
+     - `usage_tracking.py`: `check_daily_limit()` para enforcement de cuota, `log_usage_event()` para analytics
+     - `feature_flags.py` (extended): `check_chat_access()` con validación de scope/role/metadata
+     - `gemini_provider.py` (extended): `query_gemini()` con grounding en File Search Stores
+   * **Mobile: Tipos y API Client**:
+     - Tipos TypeScript: `ChatMessage`, `ChatSession`, `ChatQueryRequest`, `ChatQueryResponse`, `Citation`, `ModelInfo`, `UsageLimits`
+     - Cliente HTTP: `sendChatMessage()` con injection de token Bearer y manejo de errores
+   * **Mobile: Hook y Componentes**:
+     - Hook `useChatSession()`: manejo de estado (messages, sessionId, isLoading, error), `sendMessage()` y `clearChat()`
+     - Componentes de UI:
+       - `MessageBubble.tsx`: render de mensajes con role-based styling y citations
+       - `ChatInput.tsx`: text input multiline con limit 1000 chars + send button
+       - `TypingIndicator.tsx`: loading animation durante respuesta
+       - `GameChatScreen.tsx`: orquestación completa con FlatList, error banner, usage limits display
+   * **Mobile: Integración**:
+     - Botón "Open AI Chat" visible en GameDetail si usuario tiene acceso
+     - Deep linking: `bgai://game/:gameId/chat`
+     - Soporte multi-idioma completo ES/EN en UI y requests
+     - Session persistence en app instance (reutiliza session_id en misma conversación)
+   * **Database (Existing, reused)**:
+     - `chat_sessions`: campos model_provider, model_name, total_messages, total_token_estimate
+     - `chat_messages`: metadata JSON con citations y model_info
+     - `usage_events`: logging de chat_question y chat_answer con extra_info detallado
+     - `game_documents`: vector_store_id usado para semantic search
+     - `feature_flags`: scope, feature_key='chat', metadata con daily_limit por rol
+   * **Testing**:
+     - Backend: tests para happy path, session reuse, language fallback, daily limit enforcement, no knowledge base, unauthorized, feature flag disabled, multi-turn conversation
+     - Mobile: tests para send message, session persistence, error handling, clear chat, loading state
+     - Integration: E2E full flow, rate limiting validation, language switching
+   * **Documentación**:
+     - Documento técnico: `docs/BGAI-0016_ai-chat-implementation.md` (comprehensive API docs, integration flow, test scenarios)
+     - Ejemplos de request/response, descripción de 12-step pipeline, multi-language strategy
+
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
-1. **Backend API REST - Endpoint `/genai/query` para RAG**
-   * ✅ ~~Gemini File Search integration~~ (BGAI-0015 completado)
-   * ⏳ Implementar `POST /genai/query` que use los File Search Store IDs almacenados.
-   * ⏳ Query execution usando Gemini File Search (grounding con documentos ya subidos).
-   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags.
+1. ✅ **COMPLETADO: Backend API REST - Endpoint `/genai/query` para RAG** (BGAI-0016)
+   * ✅ Gemini File Search integration con query execution
+   * ✅ Uso de File Search Store IDs almacenados
+   * ✅ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting
 
-2. **App móvil - Integración del chat IA**
-   * ⏳ Hooks y servicios para `POST /genai/query`.
-   * ⏳ UI del chat conectada al backend (estado de envío, errores, historiales reales).
+2. ✅ **COMPLETADO: App móvil - Integración del chat IA** (BGAI-0016)
+   * ✅ Hooks y servicios para `POST /genai/query`
+   * ✅ UI del chat conectada al backend con manejo de errores e historiales reales
 
 3. **Backend API REST - Analítica y utilidades**
    * ⏳ Servicio dedicado para `usage_events`.
@@ -1019,7 +1076,8 @@ Para el MVP:
 
 ### 🧪 Prioridad Baja
 
-7. **Integración y testing end-to-end**
-   * ⏳ Smoke tests completos: login → lista → detalle → chat IA.
-   * ⏳ Validar límites por rol/feature flag y realizar performance testing básico.
+7. ✅ **COMPLETADO: Integración y testing end-to-end** (BGAI-0016)
+   * ✅ Smoke tests: login → lista → detalle → chat IA
+   * ✅ Validación de límites por rol/feature flag
+   * ⏳ Performance testing y optimización (future)
 

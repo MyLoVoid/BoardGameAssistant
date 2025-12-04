@@ -2,9 +2,9 @@
 
 import asyncio
 from typing import Any, cast
+from weakref import WeakKeyDictionary
 
 import httpx
-from weakref import WeakKeyDictionary
 from supabase._async.client import AsyncClient, create_client
 from supabase.lib.client_options import AsyncClientOptions
 

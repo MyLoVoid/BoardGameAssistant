@@ -439,7 +439,9 @@ class ChatQueryRequest(BaseModel):
     game_id: str = Field(..., description="Game UUID")
     question: str = Field(..., min_length=1, max_length=2000, description="User question")
     language: str = Field("es", description="Language code (es, en)", pattern="^(es|en)$")
-    session_id: str | None = Field(None, description="Existing session ID (creates new if not provided)")
+    session_id: str | None = Field(
+        None, description="Existing session ID (creates new if not provided)"
+    )
 
     model_config = ConfigDict(extra="forbid")
 

@@ -44,6 +44,13 @@
             },
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "Debug Gemini CLI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "backend.app.services.gemini_provider",
+            "justMyCode": true
         }
     ]
 }

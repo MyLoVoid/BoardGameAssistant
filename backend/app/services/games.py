@@ -44,10 +44,8 @@ async def get_games_list(
     if not accessible_game_ids:
         return []
 
-    base_columns = (
-        "id, name_base, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
-    )
-    columns_with_description = f"id, name_base, description, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
+    base_columns = "id, name_base, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
+    columns_with_description = "id, name_base, description, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
 
     def _build_query(include_description: bool):
         columns = columns_with_description if include_description else base_columns
@@ -104,7 +102,9 @@ async def get_game_by_id(game_id: str, user_id: str, user_role: str) -> Game | N
     supabase = await get_supabase_client()
 
     try:
-        response = await supabase.table("games").select("*").eq("id", game_id).maybe_single().execute()
+        response = (
+            await supabase.table("games").select("*").eq("id", game_id).maybe_single().execute()
+        )
 
         if response is None or response.data is None:
             return None

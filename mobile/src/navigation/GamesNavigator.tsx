@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import GameListScreen from '@/screens/games/GameListScreen';
 import GameDetailScreen from '@/screens/games/GameDetailScreen';
+import GameChatScreen from '@/screens/games/GameChatScreen';
 import type { GamesStackParamList } from '@/types/navigation';
 import { colors } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
@@ -28,6 +29,11 @@ const GamesNavigator = () => {
         name="GameDetail"
         component={GameDetailScreen}
         options={{ title: t('tabs.games') }}
+      />
+      <Stack.Screen
+        name="GameChat"
+        component={GameChatScreen}
+        options={{ title: t('chat.title') }}
       />
     </Stack.Navigator>
   );

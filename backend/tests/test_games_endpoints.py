@@ -78,6 +78,3 @@ def test_get_games_list_as_basic_user(client: TestClient, basic_user):
     assert body["games"], "Expected seeded games to be available"
     sample_game = body["games"][0]
     assert "description" in sample_game
-
-
-

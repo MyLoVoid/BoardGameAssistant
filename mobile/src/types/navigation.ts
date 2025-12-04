@@ -7,6 +7,7 @@ export type AuthStackParamList = {
 export type GamesStackParamList = {
   GameList: undefined;
   GameDetail: { gameId: string };
+  GameChat: { gameId: string; gameName: string };
 };
 
 export type MainTabParamList = {

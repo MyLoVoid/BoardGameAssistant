@@ -12,7 +12,8 @@ App móvil + portal admin + backend para asistir partidas de juegos de mesa con 
 
 - **Mobile (Expo / React Native / TypeScript)**: cliente principal con login Supabase, sección BGC, selector de idioma ES/EN y consumo de los endpoints reales (`/auth`, `/games`, `/games/{id}`, `/games/{id}/faqs`). Todo el copy pasa por `LanguageProvider` (`mobile/src/context/LanguageContext.tsx`).
 - **Admin Portal (Next.js 16 / React 19 / TypeScript / Tailwind)**: portal web interno con soporte dark mode para importar juegos desde BGG, editar metadatos, administrar FAQs ES/EN y gestionar documentos (subidas directas de PDF/DOC/DOCX de hasta 10 MB, descarga firmada y disparo del pipeline RAG). El cliente usa el backend real (`/games`, `/admin/*`), normaliza el `GamesListResponse` para la tabla y protege rutas vía `proxy.ts`. Solo roles `admin` y `developer`. Dark mode con toggle persistente (light/dark/system). Ver [admin-portal/README.md](admin-portal/README.md) (única fuente de documentación del portal).
-- **Backend (Python 3.13 + FastAPI + Poetry)**: expone autenticación, endpoints de juegos/FAQs, endpoints admin (`/admin/games`, `/admin/games/{id}/faqs`, `/admin/games/{id}/documents`, `/admin/games/{id}/process-knowledge`), feature flags y en progreso RAG + GenAI Adapter.
+- **Backend (Python 3.13 + FastAPI + Poetry)**: expone autenticación, endpoints de juegos/FAQs (`/games`, `/games/{id}`, `/games/{id}/faqs`), chat IA con RAG (`/genai/query`), endpoints admin (`/admin/games`, `/admin/games/{id}/faqs`, `/admin/games/{id}/documents`, `/admin/games/{id}/process-knowledge`), y feature flags con control de acceso granular.
+- Incluye el CLI de depuración en `backend/app/services/gemini_provider.py` para listar stores/documentos, borrar recursos y abrir un loop de chat contra Gemini usando display names o IDs normalizados, útil cuando se trabaja con `fileSearchStores/...` vs `file_search_stores/...`.
 - **Supabase (Postgres + Auth + Storage)**: esquema completo con usuarios, juegos (incluido el nuevo campo `description` con la sinopsis saneada proveniente de BGG), FAQs multi-idioma, feature flags, chat sessions/messages, game_documents (con rutas auto-generadas) y usage events.
 - **Docs**: cada feature mayor queda registrado en `/docs/BGAI-XXXX_*.md` (ver lista abajo) y el alcance vivo está en `MVP.md`.
 
@@ -182,7 +183,7 @@ Env vars clave:
 ### Estructura del repo
 
 ```
-├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0015)
+├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0016)
 ├─ docs/
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
@@ -198,7 +199,8 @@ Env vars clave:
 │  ├─ BGAI-0012_BGG_manual_import.md
 │  ├─ BGAI-0013_dark-mode.md
 │  ├─ BGAI-0014_upload-documents.md
-│  └─ BGAI-0015_gemini-file-search.md (ver commit message para detalles)
+│  ├─ BGAI-0015_gemini-file-search.md
+│  └─ BGAI-0016_ai-chat-implementation.md
 ├─ admin-portal/               # Portal admin Next.js (ver README propio)
 │  ├─ app/                     # Next.js App Router
 │  ├─ components/              # React components
@@ -240,10 +242,25 @@ Env vars clave:
   - 14 tests unitarios (100% passing) con FakeGeminiClient
   - Backward compatible: `provider_name=None` mantiene comportamiento existente
   - Requiere `GOOGLE_API_KEY` en environment
-- 🔄 En progreso: endpoint `/genai/query` para RAG usando File Search Store IDs, adaptadores OpenAI/Claude.
-- 📋 Pendiente: licencia oficial BGG, ingestión masiva de documentos, assets finales, pruebas end-to-end completas.
 
-**MVP: ~75% completado** (ver `MVP.md` para detalles)
+- ✅ **BGAI-0016** — Chat IA con RAG - Endpoint `/genai/query` + UI Móvil (Dic 2024):
+  - Backend: Endpoint `POST /genai/query` completo (validación auth, feature flags, rate limits, session mgmt)
+  - Recuperación de vector_store_id desde `game_documents` con fallback ES → EN
+  - Query execution contra Gemini File Search con context multi-turn
+  - Servicios: `chat_sessions.py`, `usage_tracking.py`, `feature_flags.py` (extended), `gemini_provider.py` (extended)
+  - Mobile: Tipos TypeScript completos (`ChatMessage`, `ChatSession`, `ChatQueryRequest`, `ChatQueryResponse`, etc.)
+  - Mobile: Servicio API client `sendChatMessage()` con token injection
+  - Mobile: Hook `useChatSession()` para manejo de estado (messages, sessionId, isLoading, error)
+  - Mobile: Componentes de UI (`MessageBubble`, `ChatInput`, `TypingIndicator`, `GameChatScreen`)
+  - Soporte multi-idioma ES/EN completo en UI y requests
+  - Session persistence en app instance, reutilización de session_id
+  - Analytics logging detallado: `chat_question` y `chat_answer` events
+  - Enforcement de daily limits extraídos de feature flag metadata
+  - Tests completos: backend (happy path, limits, fallback), mobile (send, clear, error handling), integration (E2E)
+- 🔄 En progreso: adaptadores OpenAI/Claude, jobs para sincronización BGG masiva, analytics dashboard.
+- 📋 Pendiente: licencia oficial BGG, ingestión masiva de documentos, assets finales, performance optimization.
+
+**MVP: ~85% completado** (ver `MVP.md` para detalles)
 
 ### Guías adicionales
 

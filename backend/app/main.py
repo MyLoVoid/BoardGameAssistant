@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import admin, auth, games, health
+from app.api.routes import admin, auth, games, genai, health
 from app.config import settings
 from app.services.supabase import close_supabase_clients
 
@@ -49,6 +49,7 @@ app.add_middleware(
 app.include_router(health.router, tags=["Health"])
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(games.router, tags=["Games"])
+app.include_router(genai.router, tags=["GenAI"])
 app.include_router(admin.router, tags=["Admin"])
 
 

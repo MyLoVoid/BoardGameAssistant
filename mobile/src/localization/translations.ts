@@ -67,7 +67,8 @@ export const en = {
   'games.detail.faqRestrictedTitle': 'FAQs unavailable',
   'games.detail.faqRestrictedDescription':
     'Your current role does not have access to FAQs for this game.',
-  'games.detail.chatAccess': 'You have access to the AI chat for this game (coming soon).',
+  'games.detail.openChat': 'Open AI Chat',
+  'games.detail.chatDescription': 'Ask questions about rules, strategies, and gameplay',
   'profile.guest': 'Guest',
   'profile.email': 'Email',
   'profile.role': 'Role',
@@ -81,6 +82,10 @@ export const en = {
   'history.emptyDescription': 'As soon as you ask questions for a game, the thread will show up here.',
   'history.placeholder': 'Upcoming AI assistant responses will be listed in this history.',
   'history.open': 'View details',
+  'chat.title': 'AI Assistant',
+  'chat.welcome': 'Hi! I can help you with rules, strategies, and questions about this game.',
+  'chat.inputPlaceholder': 'Type your question...',
+  'chat.errorTitle': 'Error',
   'chat.placeholder': 'Type your question...',
   'chat.send': 'Send',
   'chat.initialMessage': 'Hi! Which game do you need help with?',
@@ -94,7 +99,7 @@ export const en = {
   'errors.loadGameDetail': 'Failed to load game details',
 } as const;
 
-export const es: typeof en = {
+export const es = {
   'common.language.es': 'Español',
   'common.language.en': 'Inglés',
   'common.loading': 'Cargando...',
@@ -163,7 +168,8 @@ export const es: typeof en = {
   'games.detail.faqRestrictedTitle': 'FAQs no disponibles',
   'games.detail.faqRestrictedDescription':
     'Tu rol actual no tiene acceso a las FAQs de este juego.',
-  'games.detail.chatAccess': 'Tienes acceso al chat de IA para este juego (próximamente).',
+  'games.detail.openChat': 'Abrir Chat IA',
+  'games.detail.chatDescription': 'Haz preguntas sobre reglas, estrategias y gameplay',
   'profile.guest': 'Invitado',
   'profile.email': 'Correo',
   'profile.role': 'Rol',
@@ -177,6 +183,10 @@ export const es: typeof en = {
   'history.emptyDescription': 'En cuanto preguntes sobre un juego, la conversación se mostrará aquí.',
   'history.placeholder': 'Las respuestas del asistente aparecerán en este historial.',
   'history.open': 'Ver detalle',
+  'chat.title': 'Asistente IA',
+  'chat.welcome': '¡Hola! Puedo ayudarte con reglas, estrategias y preguntas sobre este juego.',
+  'chat.inputPlaceholder': 'Escribe tu pregunta...',
+  'chat.errorTitle': 'Error',
   'chat.placeholder': 'Escribe tu pregunta...',
   'chat.send': 'Enviar',
   'chat.initialMessage': 'Hola 👋 ¿Sobre qué juego necesitas ayuda?',
@@ -188,7 +198,7 @@ export const es: typeof en = {
   'errors.loadGames': 'No se pudieron cargar los juegos',
   'errors.noToken': 'Debes iniciar sesión para continuar.',
   'errors.loadGameDetail': 'No se pudieron cargar los detalles del juego',
-} as const;
+} as const satisfies Record<keyof typeof en, string>;
 
 export const translations = {
   en,

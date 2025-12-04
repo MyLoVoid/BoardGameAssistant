@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import ScreenContainer from '@/components/ScreenContainer';
@@ -124,13 +124,23 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
           />
         )}
 
-        {/* Chat Access Info */}
+        {/* Chat Access Card */}
         {hasChatAccess && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>
-              ✅ {t('games.detail.chatAccess')}
-            </Text>
-          </View>
+          <Pressable
+            style={styles.chatCard}
+            onPress={() =>
+              navigation.navigate('GameChat', {
+                gameId: game.id,
+                gameName: game.name_base,
+              })
+            }
+          >
+            <Text style={styles.chatIcon}>💬</Text>
+            <View style={styles.chatContent}>
+              <Text style={styles.chatTitle}>{t('games.detail.openChat')}</Text>
+              <Text style={styles.chatDescription}>{t('games.detail.chatDescription')}</Text>
+            </View>
+          </Pressable>
         )}
     </ScreenContainer>
   );
@@ -192,18 +202,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  infoCard: {
-    backgroundColor: colors.successMuted,
-    borderRadius: 12,
-    padding: spacing.md,
+  chatCard: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    padding: spacing.lg,
     marginTop: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.success,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  infoText: {
-    color: colors.success,
+  chatIcon: {
+    fontSize: 32,
+    marginRight: spacing.md,
+  },
+  chatContent: {
+    flex: 1,
+  },
+  chatTitle: {
+    color: colors.surface,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  chatDescription: {
+    color: colors.surface,
     fontSize: 14,
-    fontWeight: '600',
+    opacity: 0.9,
   },
 });
 
