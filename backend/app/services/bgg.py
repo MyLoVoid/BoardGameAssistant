@@ -73,6 +73,7 @@ class BGGGameData:
     rating: float | None = None
     thumbnail_url: str | None = None
     image_url: str | None = None
+    description: str | None = None
 
 
 def _parse_int(value: str | None) -> int | None:
@@ -180,6 +181,7 @@ async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
 
     thumbnail = _get_child_text(item, "thumbnail")
     image = _get_child_text(item, "image")
+    description = _get_child_text(item, "description")
 
     ratings = item.find("statistics/ratings")
     average_rating = None
@@ -195,6 +197,7 @@ async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
         rating=average_rating,
         thumbnail_url=thumbnail,
         image_url=image,
+        description=description,
     )
 
 

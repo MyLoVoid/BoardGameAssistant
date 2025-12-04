@@ -84,6 +84,7 @@ def test_sync_game_from_bgg_updates_metadata(
             rating=8.70,
             thumbnail_url="https://example.test/thumb.png",
             image_url="https://example.test/image.png",
+            description="Deep dungeon crawler",
         )
 
     monkeypatch.setattr(bgg_service, "fetch_bgg_game", fake_fetch)
