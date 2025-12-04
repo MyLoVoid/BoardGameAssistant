@@ -11,7 +11,8 @@
 - Scope: Stand up the full Supabase schema, auth profile extension, and supporting tooling for BGAI.
 - Expected outcome: Local environments can run `supabase db reset` to obtain the canonical tables, enums, RLS, and feature flag baselines required by the Expo app, FastAPI backend, and Admin Portal (Next.js).
 - Risk/Impact: Medium - schema touches every core table, so future migrations must be coordinated and backups kept before applying in prod.
-- Adds seed content for app sections, marquee games, FAQs (ES/EN), feature flags per role/environment, placeholder RAG chunks, and pre-seeded role-scoped test accounts to unblock client + portal integration flows.
+- Adds `description` column to `public.games` so the sanitized BGG synopsis is available to backend, Admin Portal, and mobile clients without recomputing on the fly.
+- Seeds app sections, a minimal Wingspan record, feature flags per role/environment, placeholder RAG chunks, and pre-seeded role-scoped test accounts to unblock client + portal integration flows, leaving FAQs empty for manual authoring.
 - Provides centralized seeding of role-scoped test accounts (`admin@bgai.test`, `developer@bgai.test`, etc.) plus config tuning for local auth, storage, realtime, analytics, and embedding extensions—no manual SQL scripts required.
 - Extends `game_docs_vectors` into `game_documents` table with provider reference fields for tracking document processing.
 
@@ -33,14 +34,15 @@
 - Evolves the RAG storage by renaming `game_docs_vectors` → `game_documents`, adding provider reference fields to track processing metadata directly in the document records.
 - **Nov 2024 Update**: Simplifies document management by removing `provider_name` from `game_documents`. The `file_path` is now auto-generated using the document UUID (pattern: `game_documents/{game_id}/{document_uuid}`). Provider selection (OpenAI/Gemini/Claude) is deferred to the knowledge processing step, eliminating redundant fields from document creation.
 - **Nov 2024 Update**: Removes `knowledge_documents` table (migration 20241127). Processing metadata now tracked directly in `game_documents` table, simplifying the architecture by eliminating redundant tracking layer.
+- **Dec 2025 Update**: Adds `description` (TEXT) to `public.games`, populated during BGG imports/seeds with HTML-sanitized copy that downstream clients can display without additional parsing.
 - Enables pg extensions (`uuid-ossp`, `pgcrypto`, `vector`) required for UUID defaults, password hashing, and pgvector similarity search.
 - Applies RLS on every table with policies tuned to MVP access patterns (e.g., public read for enabled sections/active games/visible FAQs, owner-only chat data, authenticated reads for feature flags and RAG chunks, insert-only analytics events).
 - Adds `handle_new_user` trigger hooked to `auth.users` to auto-provision `profiles` rows using metadata-provided roles, plus shared `update_updated_at_column` trigger across mutable tables to keep timestamps consistent.
 
 ### Seed Data & Feature Flags
 - Loads `app_sections` with Board Game Companion plus a placeholder for future modules to validate ordering/enabling logic.
-- Inserts representative games (Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne) tied to BGG IDs for early UI/API wiring.
-- Provides bilingual FAQs (ES/EN) for key titles so localization/fallback behaviors can be exercised immediately.
+- Seeds only the Wingspan record (BGC) with BGG metadata including the sanitized description stored in `games.description`, keeping local resets lean while still exercising the full Admin/Mobile flow.
+- Leaves `game_faqs` empty so new content is created through the Admin Portal or controlled SQL scripts; localization fallback logic remains unchanged in the backend.
 - Populates feature flags that encode per-role chat limits, FAQ availability, beta toggles, and section enablement for both `dev` and `prod` environments, keeping metadata JSON for future quotas.
 - Supplies sample `game_documents` rows (without embeddings) to validate the RAG pipeline contract while backend ingestion jobs remain in progress.
 

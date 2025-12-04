@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiClient } from '@/lib/api';
 import { X, AlertCircle, Loader2 } from 'lucide-react';
@@ -25,6 +26,7 @@ export function CreateGameModal({ isOpen, onClose, onSuccess }: CreateGameModalP
   const [rating, setRating] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [description, setDescription] = useState('');
   const [sections, setSections] = useState<AppSection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +43,7 @@ export function CreateGameModal({ isOpen, onClose, onSuccess }: CreateGameModalP
       setRating('');
       setThumbnailUrl('');
       setImageUrl('');
+      setDescription('');
       setStatus('active');
       setError('');
     }
@@ -89,6 +92,9 @@ export function CreateGameModal({ isOpen, onClose, onSuccess }: CreateGameModalP
       if (rating.trim()) {
         data.rating = parseFloat(rating);
       }
+      if (description.trim()) {
+        data.description = description.trim();
+      }
       if (thumbnailUrl.trim()) {
         data.thumbnail_url = thumbnailUrl.trim();
       }
@@ -107,6 +113,7 @@ export function CreateGameModal({ isOpen, onClose, onSuccess }: CreateGameModalP
       setRating('');
       setThumbnailUrl('');
       setImageUrl('');
+      setDescription('');
       setError('');
       onSuccess();
       onClose();
@@ -209,6 +216,20 @@ export function CreateGameModal({ isOpen, onClose, onSuccess }: CreateGameModalP
               <h3 className="text-sm font-medium mb-3">Optional Information</h3>
 
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <label htmlFor="description" className="text-sm font-medium">
+                    Description
+                  </label>
+                  <Textarea
+                    id="description"
+                    placeholder="Short summary or marketing blurb"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    disabled={loading}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <label htmlFor="bgg_id" className="text-sm font-medium">
                     BGG ID

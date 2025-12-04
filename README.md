@@ -13,7 +13,7 @@ App móvil + portal admin + backend para asistir partidas de juegos de mesa con 
 - **Mobile (Expo / React Native / TypeScript)**: cliente principal con login Supabase, sección BGC, selector de idioma ES/EN y consumo de los endpoints reales (`/auth`, `/games`, `/games/{id}`, `/games/{id}/faqs`). Todo el copy pasa por `LanguageProvider` (`mobile/src/context/LanguageContext.tsx`).
 - **Admin Portal (Next.js 16 / React 19 / TypeScript / Tailwind)**: portal web interno con soporte dark mode para importar juegos desde BGG, editar metadatos, administrar FAQs ES/EN y gestionar documentos (subidas directas de PDF/DOC/DOCX de hasta 10 MB, descarga firmada y disparo del pipeline RAG). El cliente usa el backend real (`/games`, `/admin/*`), normaliza el `GamesListResponse` para la tabla y protege rutas vía `proxy.ts`. Solo roles `admin` y `developer`. Dark mode con toggle persistente (light/dark/system). Ver [admin-portal/README.md](admin-portal/README.md) (única fuente de documentación del portal).
 - **Backend (Python 3.13 + FastAPI + Poetry)**: expone autenticación, endpoints de juegos/FAQs, endpoints admin (`/admin/games`, `/admin/games/{id}/faqs`, `/admin/games/{id}/documents`, `/admin/games/{id}/process-knowledge`), feature flags y en progreso RAG + GenAI Adapter.
-- **Supabase (Postgres + Auth + Storage)**: esquema completo con usuarios, juegos, FAQs multi-idioma, feature flags, chat sessions/messages, game_documents (con rutas auto-generadas) y usage events.
+- **Supabase (Postgres + Auth + Storage)**: esquema completo con usuarios, juegos (incluido el nuevo campo `description` con la sinopsis saneada proveniente de BGG), FAQs multi-idioma, feature flags, chat sessions/messages, game_documents (con rutas auto-generadas) y usage events.
 - **Docs**: cada feature mayor queda registrado en `/docs/BGAI-XXXX_*.md` (ver lista abajo) y el alcance vivo está en `MVP.md`.
 
 ### Requisitos locales
@@ -69,12 +69,12 @@ Para que la aplicación funcione correctamente, Supabase necesita datos iniciale
 - Board Game Companion - Sección principal del MVP (requerida para "Import from BGG")
 
 **3. Juegos de Ejemplo** (`games`)
-- Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne
-- Cada juego incluye BGG ID, rango de jugadores, tiempo de juego y rating
+- Solo **Wingspan** para mantener el estado inicial minimalista durante los resets
+- El registro incluye BGG ID, rango de jugadores, tiempo de juego, rating e incluso la descripción limpia almacenada en `games.description`
 
 **4. FAQs Multilenguaje** (`game_faqs`)
-- FAQs en español e inglés para cada juego
-- Sistema de fallback ES → EN funcionando
+- No se insertan FAQs por defecto (la tabla queda vacía para que las altas se hagan desde el Admin Portal o importaciones controladas)
+- El backend mantiene el mismo sistema de fallback ES → EN; solo necesitas poblarla manualmente
 
 **5. Feature Flags** (`feature_flags`)
 - Control de acceso por rol (`basic`, `premium`, `tester`, `developer`, `admin`)

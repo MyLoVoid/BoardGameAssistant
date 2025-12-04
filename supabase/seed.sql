@@ -235,11 +235,12 @@ DECLARE
 BEGIN
   SELECT id INTO bgc_section_id FROM public.app_sections WHERE key = 'BGC';
 
-  -- Insert test games
+  -- Insert test games (only Wingspan retained for streamlined demo state)
   INSERT INTO public.games (
     section_id,
     bgg_id,
     name_base,
+    description,
     min_players,
     max_players,
     playing_time,
@@ -250,32 +251,9 @@ BEGIN
   ) VALUES
     (
       bgc_section_id,
-      174430,
-      'Gloomhaven',
-      1,
-      4,
-      120,
-      8.70,
-      'active',
-      'https://boardgamechamps.com/wp-content/uploads/2025/02/Gloomhaven-box-500-sp-300x300.png',
-      'https://boardgamechamps.com/wp-content/uploads/2025/02/Gloomhaven-box-500-sp-300x300.png'
-    ),
-    (
-      bgc_section_id,
-      167791,
-      'Terraforming Mars',
-      1,
-      5,
-      120,
-      8.38,
-      'active',
-      'https://boardgamechamps.com/wp-content/uploads/2025/02/Terraforming-Mars-box-500-sp-300x300.png',
-      'https://boardgamechamps.com/wp-content/uploads/2025/02/Terraforming-Mars-box-500-sp-300x300.png'
-    ),
-    (
-      bgc_section_id,
       266192,
       'Wingspan',
+      'Card-driven engine builder about attracting birds to your wildlife preserves.',
       1,
       5,
       70,
@@ -283,30 +261,6 @@ BEGIN
       'active',
       'https://boardgamechamps.com/wp-content/uploads/2025/02/Wingspan-box-500-sp-300x300.png',
       'https://boardgamechamps.com/wp-content/uploads/2025/02/Wingspan-box-500-sp-300x300.png'
-    ),
-    (
-      bgc_section_id,
-      312484,
-      'Lost Ruins of Arnak',
-      1,
-      4,
-      120,
-      8.15,
-      'active',
-      'https://cdn11.bigcommerce.com/s-285hkc2e8r/images/stencil/1280x1280/products/13163/15120/image__40577.1655083076.png?c=2',
-      'https://cdn11.bigcommerce.com/s-285hkc2e8r/images/stencil/1280x1280/products/13163/15120/image__40577.1655083076.png?c=2'
-    ),
-    (
-      bgc_section_id,
-      822,
-      'Carcassonne',
-      2,
-      5,
-      45,
-      7.41,
-      'active',
-      'https://m.media-amazon.com/images/I/81Eo1BkSTGL._AC_SX300_SY300_QL70_ML2_.jpg',
-      'https://m.media-amazon.com/images/I/81Eo1BkSTGL._AC_SX300_SY300_QL70_ML2_.jpg'
     );
 END $$;
 
@@ -314,38 +268,7 @@ END $$;
 -- GAME FAQs
 -- =====================================================
 
-DO $$
-DECLARE
-  gloomhaven_id UUID;
-  terraforming_id UUID;
-  wingspan_id UUID;
-BEGIN
-  SELECT id INTO gloomhaven_id FROM public.games WHERE bgg_id = 174430;
-  SELECT id INTO terraforming_id FROM public.games WHERE bgg_id = 167791;
-  SELECT id INTO wingspan_id FROM public.games WHERE bgg_id = 266192;
-
-  -- Gloomhaven FAQs (Spanish)
-  INSERT INTO public.game_faqs (game_id, language, question, answer, display_order, visible) VALUES
-    (gloomhaven_id, 'es', '¿Cómo se gana experiencia?', 'Los personajes ganan experiencia al completar objetivos de batalla, realizar acciones específicas marcadas con símbolos de XP, y al usar ciertas habilidades. La experiencia acumulada permite subir de nivel y desbloquear nuevas habilidades.', 1, true),
-    (gloomhaven_id, 'es', '¿Qué pasa si un personaje pierde toda su vida?', 'Si un personaje llega a 0 HP o menos, queda exhausto y debe retirarse del escenario. El escenario puede continuar con los personajes restantes, pero si todos quedan exhaustos, el escenario se pierde.', 2, true),
-    (gloomhaven_id, 'es', '¿Puedo cambiar mis cartas entre escenarios?', 'Sí, entre escenarios puedes cambiar libremente las cartas de tu mano activa, tu equipamiento y tus objetivos personales. Solo durante un escenario activo debes mantener las cartas elegidas.', 3, true);
-
-  -- Gloomhaven FAQs (English)
-  INSERT INTO public.game_faqs (game_id, language, question, answer, display_order, visible) VALUES
-    (gloomhaven_id, 'en', 'How do I gain experience?', 'Characters gain experience by completing battle goals, performing specific actions marked with XP symbols, and using certain abilities. Accumulated experience allows you to level up and unlock new abilities.', 1, true),
-    (gloomhaven_id, 'en', 'What happens if a character loses all health?', 'If a character reaches 0 HP or less, they become exhausted and must retire from the scenario. The scenario can continue with remaining characters, but if all become exhausted, the scenario is lost.', 2, true),
-    (gloomhaven_id, 'en', 'Can I change my cards between scenarios?', 'Yes, between scenarios you can freely change your active hand cards, equipment, and personal quests. Only during an active scenario must you keep your chosen cards.', 3, true);
-
-  -- Terraforming Mars FAQs (Spanish)
-  INSERT INTO public.game_faqs (game_id, language, question, answer, display_order, visible) VALUES
-    (terraforming_id, 'es', '¿Cómo funcionan las acciones estándar?', 'Las acciones estándar están disponibles para todos los jugadores en cualquier momento durante su turno. Incluyen: vender cartas por créditos, usar proyectos azules, reclamar hitos, financiar premios, y convertir plantas en bosques o calor en temperatura.', 1, true),
-    (terraforming_id, 'es', '¿Cuándo termina el juego?', 'El juego termina al final de la generación en la que se completan los tres parámetros globales: oxígeno al 14%, temperatura a +8°C, y 9 océanos colocados. Luego se cuenta la puntuación final.', 2, true);
-
-  -- Wingspan FAQs (Spanish)
-  INSERT INTO public.game_faqs (game_id, language, question, answer, display_order, visible) VALUES
-    (wingspan_id, 'es', '¿Cuándo se activan los poderes marrones?', 'Los poderes marrones (cuando se activa) se activan una vez por ronda cuando realizas la acción correspondiente al hábitat donde está el ave. Se activan de derecha a izquierda en ese hábitat.', 1, true),
-    (wingspan_id, 'es', '¿Puedo guardar comida entre turnos?', 'Sí, no hay límite de recursos (comida, huevos) que puedes tener almacenados. Los recursos se acumulan entre turnos y rondas.', 2, true);
-END $$;
+-- No seeded FAQs to keep the database minimal after reset.
 
 -- =====================================================
 -- FEATURE FLAGS

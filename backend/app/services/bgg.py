@@ -7,6 +7,8 @@ required by the Admin Portal when onboarding new games.
 
 from __future__ import annotations
 
+import html
+import re
 from dataclasses import dataclass
 from urllib.parse import urljoin
 from xml.etree import ElementTree as ET
@@ -17,6 +19,9 @@ from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt,
 from app.config import settings
 
 _BGG_CLIENT: httpx.AsyncClient | None = None
+_BREAK_TAG_RE = re.compile(r"<\s*br\s*/?\s*>", re.IGNORECASE)
+_TAG_RE = re.compile(r"<[^>]+>")
+_WHITESPACE_RE = re.compile(r"\s+")
 
 
 def _get_bgg_client() -> httpx.AsyncClient:
@@ -107,6 +112,16 @@ def _get_value_attr(element: ET.Element | None) -> str | None:
     return element.attrib.get("value")
 
 
+def _sanitize_description(value: str | None) -> str | None:
+    if not value:
+        return None
+    text = _BREAK_TAG_RE.sub(" \n ", value)
+    text = html.unescape(text)
+    text = _TAG_RE.sub(" ", text)
+    text = _WHITESPACE_RE.sub(" ", text)
+    return text.strip() or None
+
+
 def _build_bgg_endpoint() -> str:
     """Return the full XML API v2 endpoint ending in /thing."""
     base = settings.bgg_api_url.rstrip("/")
@@ -181,7 +196,7 @@ async def fetch_bgg_game(bgg_id: int, *, timeout: float = 15.0) -> BGGGameData:
 
     thumbnail = _get_child_text(item, "thumbnail")
     image = _get_child_text(item, "image")
-    description = _get_child_text(item, "description")
+    description = _sanitize_description(_get_child_text(item, "description"))
 
     ratings = item.find("statistics/ratings")
     average_rating = None

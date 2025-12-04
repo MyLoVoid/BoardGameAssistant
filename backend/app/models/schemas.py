@@ -138,6 +138,7 @@ class Game(BaseModel):
     id: str = Field(..., description="Game UUID")
     section_id: str = Field(..., description="Section UUID (BGC)")
     name_base: str = Field(..., description="Base name of the game")
+    description: str | None = Field(None, description="Game description or summary")
     bgg_id: int | None = Field(None, description="BoardGameGeek ID")
     min_players: int | None = Field(None, description="Minimum number of players")
     max_players: int | None = Field(None, description="Maximum number of players")
@@ -158,6 +159,7 @@ class GameListItem(BaseModel):
 
     id: str = Field(..., description="Game UUID")
     name_base: str = Field(..., description="Base name of the game")
+    description: str | None = Field(None, description="Game description or summary")
     bgg_id: int | None = Field(None, description="BoardGameGeek ID")
     thumbnail_url: str | None = Field(None, description="Thumbnail image URL")
     image_url: str | None = Field(None, description="Full image URL")
@@ -258,6 +260,7 @@ class GameCreateRequest(BaseModel):
 
     section_id: str = Field(..., description="Section UUID this game belongs to")
     name_base: str = Field(..., description="Base name for the game")
+    description: str | None = Field(None, description="Game description or summary")
     bgg_id: int | None = Field(None, description="BoardGameGeek ID")
     status: str = Field("active", description="Initial status")
     min_players: int | None = Field(None, description="Minimum players")
@@ -275,6 +278,7 @@ class GameUpdateRequest(BaseModel):
 
     section_id: str | None = Field(None, description="New section UUID")
     name_base: str | None = Field(None, description="Game display name")
+    description: str | None = Field(None, description="Game description or summary")
     bgg_id: int | None = Field(None, description="BoardGameGeek ID")
     status: str | None = Field(None, description="Updated status")
     min_players: int | None = Field(None, description="Minimum players")
@@ -387,3 +391,100 @@ class KnowledgeProcessResponse(BaseModel):
     processed_document_ids: list[str] = Field(..., description="Document IDs affected")
     success_count: int = Field(..., description="Number of successfully processed documents")
     error_count: int = Field(default=0, description="Number of documents that failed processing")
+
+
+# ============================================
+# GenAI Chat Models
+# ============================================
+
+
+class ChatCitation(BaseModel):
+    """Citation from a document referenced in the AI response"""
+
+    document_id: str | None = Field(None, description="Document UUID from game_documents")
+    document_title: str | None = Field(None, description="Document title")
+    excerpt: str | None = Field(None, description="Relevant excerpt from the document")
+    page_number: int | None = Field(None, description="Page number reference")
+    relevance_score: float | None = Field(None, description="Relevance score (0-1)")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatModelInfo(BaseModel):
+    """Information about the AI model used"""
+
+    provider: str = Field(..., description="AI provider (openai, gemini, claude)")
+    model_name: str = Field(..., description="Model name/version")
+    total_tokens: int | None = Field(None, description="Total tokens used (if available)")
+    prompt_tokens: int | None = Field(None, description="Prompt tokens used")
+    completion_tokens: int | None = Field(None, description="Completion tokens used")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatUsageLimits(BaseModel):
+    """Usage limits for the current user"""
+
+    daily_limit: int | None = Field(None, description="Daily question limit (if any)")
+    daily_used: int = Field(0, description="Questions used today")
+    remaining: int | None = Field(None, description="Remaining questions today")
+    reset_at: datetime | None = Field(None, description="When limits reset")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatQueryRequest(BaseModel):
+    """Request body for POST /genai/query"""
+
+    game_id: str = Field(..., description="Game UUID")
+    question: str = Field(..., min_length=1, max_length=2000, description="User question")
+    language: str = Field("es", description="Language code (es, en)", pattern="^(es|en)$")
+    session_id: str | None = Field(None, description="Existing session ID (creates new if not provided)")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ChatQueryResponse(BaseModel):
+    """Response for POST /genai/query"""
+
+    session_id: str = Field(..., description="Chat session UUID")
+    answer: str = Field(..., description="AI-generated answer")
+    citations: list[ChatCitation] = Field(default_factory=list, description="Document citations")
+    model_info: ChatModelInfo = Field(..., description="Model information")
+    limits: ChatUsageLimits | None = Field(None, description="Usage limits for the user")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatSession(BaseModel):
+    """Chat session record"""
+
+    id: str = Field(..., description="Session UUID")
+    user_id: str = Field(..., description="User UUID")
+    game_id: str = Field(..., description="Game UUID")
+    language: str = Field(..., description="Language code")
+    model_provider: str = Field(..., description="AI provider")
+    model_name: str = Field(..., description="Model name")
+    status: str = Field(..., description="Session status (active, closed, archived)")
+    total_messages: int = Field(0, description="Total messages in session")
+    total_token_estimate: int = Field(0, description="Estimated total tokens used")
+    started_at: datetime = Field(..., description="Session start timestamp")
+    last_activity_at: datetime = Field(..., description="Last activity timestamp")
+    closed_at: datetime | None = Field(None, description="Session close timestamp")
+    created_at: datetime | None = Field(None, description="Creation timestamp")
+    updated_at: datetime | None = Field(None, description="Update timestamp")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatMessage(BaseModel):
+    """Chat message record"""
+
+    id: str = Field(..., description="Message UUID")
+    session_id: str = Field(..., description="Session UUID")
+    sender: str = Field(..., description="Message sender (user, assistant, system)")
+    content: str = Field(..., description="Message content")
+    metadata: dict[str, Any] | None = Field(None, description="Message metadata (citations, etc.)")
+    created_at: datetime = Field(..., description="Creation timestamp")
+
+    model_config = ConfigDict(from_attributes=True)

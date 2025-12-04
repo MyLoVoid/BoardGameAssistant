@@ -27,6 +27,7 @@ type ApiGameListItem = {
   id: string;
   name?: string | null;
   name_base?: string | null;
+  description?: string | null;
   thumbnail_url?: string | null;
   image_url?: string | null;
   bgg_id?: number | null;
@@ -42,6 +43,7 @@ type ApiGame = {
   id: string;
   section_id: string;
   name_base: string;
+  description?: string | null;
   bgg_id?: number | null;
   min_players?: number | null;
   max_players?: number | null;
@@ -119,7 +121,7 @@ class APIClient {
       section_id: game.section_id,
       bgg_id: game.bgg_id ?? undefined,
       name: game.name_base,
-      description: undefined,
+      description: game.description ?? undefined,
       thumbnail_url: game.thumbnail_url ?? undefined,
       image_url: game.image_url ?? undefined,
       min_players: game.min_players ?? undefined,
@@ -143,6 +145,7 @@ class APIClient {
       image_url: game.image_url ?? undefined,
       bgg_id: game.bgg_id ?? undefined,
       name: game.name ?? game.name_base ?? 'Untitled game',
+      description: game.description ?? undefined,
       min_players: game.min_players ?? undefined,
       max_players: game.max_players ?? undefined,
       playing_time: game.playing_time ?? undefined,
@@ -260,6 +263,10 @@ class APIClient {
       status: data.status || 'active',
     };
 
+    if (data.description !== undefined) {
+      payload.description = data.description;
+    }
+
     if (data.bgg_id !== undefined) {
       payload.bgg_id = data.bgg_id;
     }
@@ -291,6 +298,9 @@ class APIClient {
 
     if (data.name !== undefined) {
       payload.name_base = data.name;
+    }
+    if (data.description !== undefined) {
+      payload.description = data.description;
     }
     if (data.status) {
       payload.status = data.status;

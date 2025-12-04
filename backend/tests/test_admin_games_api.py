@@ -96,6 +96,8 @@ def test_sync_game_from_bgg_updates_metadata(
         f"/admin/games/{gloomhaven_id}/sync-bgg", headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
+    body = response.json()
+    assert body["description"] == "Deep dungeon crawler"
 
 
 def test_sync_game_requires_bgg_id(client: TestClient, admin_user, game_without_bgg, monkeypatch):

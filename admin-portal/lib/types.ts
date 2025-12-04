@@ -57,6 +57,7 @@ export interface Game {
 export interface GameListItem {
   id: string;
   name: string;
+  description?: string;
   thumbnail_url?: string;
   image_url?: string;
   bgg_id?: number;
@@ -121,6 +122,7 @@ export interface AuthResponse {
 export interface CreateGameRequest {
   section_id: string;
   name: string;
+  description?: string;
   status?: GameStatus;
   bgg_id?: number;
   min_players?: number;

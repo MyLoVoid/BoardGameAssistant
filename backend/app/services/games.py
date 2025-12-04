@@ -12,7 +12,11 @@ from app.services.feature_flags import (
     check_faq_access,
     get_user_accessible_games,
 )
-from app.services.supabase import SupabaseRecord, get_supabase_client
+from app.services.supabase import (
+    SupabaseRecord,
+    get_supabase_client,
+    is_missing_games_description_column_error,
+)
 
 
 async def get_games_list(
@@ -40,35 +44,43 @@ async def get_games_list(
     if not accessible_game_ids:
         return []
 
-    # Build query
-    query = supabase.table("games").select(
+    base_columns = (
         "id, name_base, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
     )
+    columns_with_description = f"id, name_base, description, bgg_id, thumbnail_url, image_url, min_players, max_players, playing_time, rating, status"
 
-    # Filter by accessible game IDs
-    query = query.in_("id", accessible_game_ids)
-
-    # Apply status filter if provided
-    if status_filter:
-        query = query.eq("status", status_filter)
-    else:
-        # Default: show only active games for basic/premium users
-        # Tester, admin, developer can see beta games too
+    def _build_query(include_description: bool):
+        columns = columns_with_description if include_description else base_columns
+        query = supabase.table("games").select(columns)
+        query = query.in_("id", accessible_game_ids)
+        if status_filter:
+            return query.eq("status", status_filter).order("name_base")
         if user_role in ["tester", "admin", "developer"]:
             query = query.in_("status", ["active", "beta"])
         else:
             query = query.eq("status", "active")
+        return query.order("name_base")
 
-    # Order by name
-    query = query.order("name_base")
+    query = _build_query(include_description=True)
 
     try:
         response = await query.execute()
-        data = cast(list[SupabaseRecord], response.data)
-        return [GameListItem(**game) for game in data]
     except Exception as exc:
-        print(f"Error fetching games list: {exc}")
-        return []
+        if is_missing_games_description_column_error(exc):
+            print(
+                "[games] games.description column missing in Supabase. Run the latest migrations to expose descriptions."
+            )
+            try:
+                response = await _build_query(include_description=False).execute()
+            except Exception as fallback_exc:
+                print(f"Error fetching games list without description: {fallback_exc}")
+                return []
+        else:
+            print(f"Error fetching games list: {exc}")
+            return []
+
+    data = cast(list[SupabaseRecord], response.data)
+    return [GameListItem(**game) for game in data]
 
 
 async def get_game_by_id(game_id: str, user_id: str, user_role: str) -> Game | None:

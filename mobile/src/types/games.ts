@@ -19,6 +19,7 @@ export type Language = 'es' | 'en';
 export interface GameListItem {
   id: string;
   name_base: string;
+  description: string | null;
   thumbnail_url: string | null;
   min_players: number | null;
   max_players: number | null;
@@ -34,6 +35,7 @@ export interface Game {
   id: string;
   section_id: string;
   name_base: string;
+  description: string | null;
   bgg_id: number | null;
   min_players: number | null;
   max_players: number | null;

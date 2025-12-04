@@ -66,9 +66,9 @@
 
 3. **Detalle de juego (subsección por juego)**
 
-   - **Home del juego**:
-     - Información general del juego (nombre, nº de jugadores, tiempo, rating, portada, etc.).
-     - Datos sincronizados desde **BoardGameGeek (BGG)** y cacheados en la BD propia.
+    - **Home del juego**:
+       - Información general del juego (nombre, sinopsis limpia, nº de jugadores, tiempo, rating, portada, etc.).
+       - Datos sincronizados desde **BoardGameGeek (BGG)** y cacheados en la BD propia (el texto largo vive en `games.description`, totalmente saneado para evitar entidades HTML).
    - **FAQs**:
      - Lista de preguntas y respuestas por juego.
      - Multi-idioma ES/EN (al menos un idioma seguro).
@@ -247,6 +247,7 @@ Tablas principales (conceptuales; los nombres pueden variar, pero la idea es est
    * id
    * section_id      → referencia a `app_sections` (MVP: todos en BGC)
    * name_base       → nombre base (por ejemplo, el de BGG)
+   * description     → sinopsis almacenada directamente desde BGG (texto limpio listo para frontend)
    * bgg_id
    * min_players
    * max_players

@@ -79,6 +79,15 @@ async def close_supabase_clients() -> None:
 SupabaseRecord = dict[str, Any]
 
 
+def is_missing_games_description_column_error(exc: Exception) -> bool:
+    """Detect if a Supabase/PostgREST error is due to the games.description column missing."""
+
+    message = str(exc).lower()
+    if "games" not in message or "description" not in message:
+        return False
+    return "column" in message or "unknown" in message
+
+
 async def get_user_by_id(user_id: str) -> SupabaseRecord | None:
     """Get user profile by user ID."""
     supabase = await get_supabase_client()

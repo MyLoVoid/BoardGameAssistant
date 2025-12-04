@@ -11,7 +11,7 @@ import re
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable, Sequence, cast
+from typing import Any, Iterable, Literal, Sequence, cast
 
 from fastapi import status
 
@@ -31,7 +31,11 @@ from app.services.storage import (
     delete_file_from_bucket,
     upload_file_to_bucket,
 )
-from app.services.supabase import SupabaseRecord, get_supabase_admin_client
+from app.services.supabase import (
+    SupabaseRecord,
+    get_supabase_admin_client,
+    is_missing_games_description_column_error,
+)
 
 _GAME_DOCUMENTS_BUCKET = "game_documents"
 _MAX_DOCUMENT_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
@@ -163,6 +167,41 @@ def _sanitize_storage_filename(filename: str) -> str:
     return sanitized.lower()
 
 
+def _log_missing_description_warning() -> None:
+    print(
+        "[admin_games] games.description column missing in Supabase. Run the latest migrations to persist descriptions."
+    )
+
+
+async def _execute_game_write(
+    supabase,
+    *,
+    payload: dict[str, Any],
+    operation: Literal["insert", "update"],
+    filters: dict[str, Any] | None = None,
+):
+    async def _run(data: dict[str, Any]):
+        query = supabase.table("games")
+        if operation == "insert":
+            return await query.insert(data).execute()
+        query = query.update(data)
+        if filters:
+            for column, value in filters.items():
+                query = query.eq(column, value)
+        return await query.execute()
+
+    try:
+        return await _run(payload)
+    except Exception as exc:
+        if "description" in payload and is_missing_games_description_column_error(exc):
+            _log_missing_description_warning()
+            stripped = {k: v for k, v in payload.items() if k != "description"}
+            if not stripped:
+                return None
+            return await _run(stripped)
+        raise
+
+
 def _prepare_file_payload(
     file_name: str | None,
     file_bytes: bytes,
@@ -203,6 +242,7 @@ def _build_bgg_payload(bgg_data: bgg_service.BGGGameData, synced_at: datetime) -
 
     return {
         "name_base": bgg_data.name,
+        "description": bgg_data.description,
         "min_players": bgg_data.min_players,
         "max_players": bgg_data.max_players,
         "playing_time": bgg_data.playing_time,
@@ -222,9 +262,16 @@ async def create_game(payload: GameCreateRequest) -> Game:
     insert_data["last_synced_from_bgg_at"] = None
 
     try:
-        response = await supabase.table("games").insert(insert_data).execute()
+        response = await _execute_game_write(
+            supabase,
+            payload=insert_data,
+            operation="insert",
+        )
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to create game: {exc}") from exc
+
+    if response is None:
+        raise AdminPortalError("Supabase returned no response while creating the game")
 
     record = _extract_single(cast(list[SupabaseRecord] | None, response.data))
     if not record:
@@ -243,7 +290,12 @@ async def update_game(game_id: str, payload: GameUpdateRequest) -> Game:
     supabase = await get_supabase_admin_client()
 
     try:
-        await supabase.table("games").update(updates).eq("id", game_id).execute()
+        await _execute_game_write(
+            supabase,
+            payload=updates,
+            operation="update",
+            filters={"id": game_id},
+        )
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to update game {game_id}: {exc}") from exc
 
@@ -284,11 +336,22 @@ async def import_game_from_bgg(request: BGGImportRequest) -> tuple[Game, str]:
 
     try:
         if existing_record:
-            await supabase.table("games").update(payload).eq("id", existing_record["id"]).execute()
+            await _execute_game_write(
+                supabase,
+                payload=payload,
+                operation="update",
+                filters={"id": existing_record["id"]},
+            )
             action = "updated"
             record = await _ensure_game_exists(existing_record["id"])
         else:
-            response = await supabase.table("games").insert(payload).execute()
+            response = await _execute_game_write(
+                supabase,
+                payload=payload,
+                operation="insert",
+            )
+            if response is None:
+                raise AdminPortalError("BGG import failed: Supabase returned no data")
             record = _extract_single(cast(list[SupabaseRecord] | None, response.data))
             if not record:
                 raise AdminPortalError("BGG import failed: Supabase returned no data")
@@ -327,7 +390,12 @@ async def sync_game_from_bgg(game_id: str) -> Game:
     payload = _build_bgg_payload(bgg_data, _now())
 
     try:
-        await supabase.table("games").update(payload).eq("id", game_id).execute()
+        await _execute_game_write(
+            supabase,
+            payload=payload,
+            operation="update",
+            filters={"id": game_id},
+        )
     except Exception as exc:  # pragma: no cover - network/service errors
         raise AdminPortalError(f"Failed to sync game {game_id} from BGG: {exc}") from exc
 

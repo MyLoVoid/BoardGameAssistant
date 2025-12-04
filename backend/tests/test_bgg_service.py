@@ -34,7 +34,7 @@ SAMPLE_XML = """
     <playingtime value="55"/>
     <thumbnail>http://example.com/thumb.jpg</thumbnail>
     <image>http://example.com/image.jpg</image>
-    <description>Sample &amp; detailed overview.</description>
+    <description><![CDATA[Sample&nbsp;detail &amp; overview.&mdash;First line<br/>Second line.]]></description>
     <statistics>
       <ratings>
         <average value="8.45"/>
@@ -67,7 +67,7 @@ def test_fetch_bgg_game_parses_basic_fields(monkeypatch: pytest.MonkeyPatch):
     assert data.rating == pytest.approx(8.45)
     assert data.thumbnail_url == "http://example.com/thumb.jpg"
     assert data.image_url == "http://example.com/image.jpg"
-    assert data.description == "Sample & detailed overview."
+    assert data.description == "Sample detail & overview.—First line Second line."
 
 
 def test_fetch_bgg_game_raises_when_not_found(monkeypatch: pytest.MonkeyPatch):
