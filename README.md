@@ -51,6 +51,7 @@ npm run dev  # http://localhost:3000
 cd mobile
 npm install
 npx expo start --clear --android   # o --ios / --web
+# cd mobile && npx expo start
 ```
 
 #### 🔧 Configuración Inicial de Supabase (Primera Vez)
