@@ -25,6 +25,7 @@ from app.models.schemas import (
     KnowledgeProcessRequest,
 )
 from app.services import bgg as bgg_service
+from app.services import gemini_provider
 from app.services.storage import (
     StorageServiceError,
     delete_file_from_bucket,
@@ -419,7 +420,10 @@ async def upload_game_document(
     ) = _prepare_file_payload(file_name, file_bytes, content_type)
 
     document_id = str(uuid.uuid4())
-    file_path = f"{_GAME_DOCUMENTS_BUCKET}/{game_id}/{document_id}_{storage_name}"
+    # Storage path without bucket prefix (bucket is passed separately)
+    storage_path = f"{game_id}/{document_id}_{storage_name}"
+    # Full path with bucket for database reference
+    file_path = f"{_GAME_DOCUMENTS_BUCKET}/{storage_path}"
 
     existing = await (
         supabase.table("game_documents")
@@ -439,7 +443,7 @@ async def upload_game_document(
     try:
         await upload_file_to_bucket(
             _GAME_DOCUMENTS_BUCKET,
-            file_path,
+            storage_path,  # Path WITHOUT bucket prefix
             data=file_bytes,
             content_type=canonical_mime,
         )
@@ -554,20 +558,58 @@ async def process_game_knowledge(
     processed_ids: list[str] = []
     success_count = 0
     error_count = 0
-    final_status = "ready" if request.mark_as_ready else "processing"
-    processed_at = _now() if request.mark_as_ready else None
 
     for document in documents:
-        updated_file_id = request.provider_file_id or document.provider_file_id
-        updated_vector_store = request.vector_store_id or document.vector_store_id
-
-        doc_metadata = document.metadata.copy() if document.metadata else {}
-        if request.notes:
-            doc_metadata["notes"] = request.notes
-        if triggered_by:
-            doc_metadata["triggered_by"] = triggered_by
-
         try:
+            # Provider dispatch logic
+            if request.provider_name == "gemini":
+                # Call Gemini upload
+                result = await gemini_provider.upload_document_to_gemini(
+                    game_id=game_id,
+                    file_path=document.file_path,
+                    display_name=document.title or document.file_name,
+                    mime_type=document.file_type,
+                )
+
+                # Extract provider IDs
+                updated_file_id = result.file_uri
+                updated_vector_store = result.file_search_store_id
+                final_status = "ready"
+                processed_at = _now()
+                error_message = None
+
+            elif request.provider_name == "openai":
+                # TODO: OpenAI integration
+                raise AdminPortalError(
+                    "OpenAI provider not yet implemented",
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                )
+
+            elif request.provider_name is None:
+                # Preserve existing behavior (backward compatible)
+                updated_file_id = request.provider_file_id or document.provider_file_id
+                updated_vector_store = request.vector_store_id or document.vector_store_id
+                final_status = "ready" if request.mark_as_ready else "processing"
+                processed_at = _now() if request.mark_as_ready else None
+                error_message = None
+
+            else:
+                raise AdminPortalError(
+                    f"Unknown provider: {request.provider_name}. Supported: gemini, openai",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Build metadata
+            doc_metadata = document.metadata.copy() if document.metadata else {}
+            if request.notes:
+                doc_metadata["notes"] = request.notes
+            if triggered_by:
+                doc_metadata["triggered_by"] = triggered_by
+            if request.provider_name:
+                doc_metadata["processed_with_provider"] = request.provider_name
+                doc_metadata["processed_at_timestamp"] = _now().isoformat()
+
+            # Update database
             await (
                 supabase.table("game_documents")
                 .update(
@@ -576,6 +618,7 @@ async def process_game_knowledge(
                         "provider_file_id": updated_file_id,
                         "vector_store_id": updated_vector_store,
                         "processed_at": processed_at.isoformat() if processed_at else None,
+                        "error_message": error_message,
                         "metadata": doc_metadata,
                     }
                 )
@@ -585,6 +628,29 @@ async def process_game_knowledge(
 
             processed_ids.append(document.id)
             success_count += 1
+
+        except gemini_provider.GeminiProviderError as exc:
+            # Gemini-specific error: update document with error status
+            error_count += 1
+            await (
+                supabase.table("game_documents")
+                .update(
+                    {
+                        "status": "error",
+                        "error_message": str(exc),
+                        "metadata": {
+                            **(document.metadata or {}),
+                            "error_timestamp": _now().isoformat(),
+                            "triggered_by": triggered_by,
+                        },
+                    }
+                )
+                .eq("id", document.id)
+                .execute()
+            )
+            # Continue processing other documents instead of failing entire batch
+            continue
+
         except AdminPortalError:
             error_count += 1
             raise

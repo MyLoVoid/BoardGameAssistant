@@ -182,7 +182,7 @@ Env vars clave:
 ### Estructura del repo
 
 ```
-├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0014)
+├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0015)
 ├─ docs/
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
@@ -197,7 +197,8 @@ Env vars clave:
 │  ├─ BGAI-0011_admin-portal-frontend.md
 │  ├─ BGAI-0012_BGG_manual_import.md
 │  ├─ BGAI-0013_dark-mode.md
-│  └─ BGAI-0014_upload-documents.md
+│  ├─ BGAI-0014_upload-documents.md
+│  └─ BGAI-0015_gemini-file-search.md (ver commit message para detalles)
 ├─ admin-portal/               # Portal admin Next.js (ver README propio)
 │  ├─ app/                     # Next.js App Router
 │  ├─ components/              # React components
@@ -229,10 +230,20 @@ Env vars clave:
 - ✅ Dark mode con soporte light/dark/system en Admin Portal, toggle persistente en header, tokens CSS y componentes actualizados (BGAI-0013).
 - ✅ Upload de documentos (PDF/DOC/DOCX) desde el portal admin con validaciones, toasts, descarga desde Supabase Storage, migraciones `title`/status y endpoint multitpart listo para el pipeline RAG (BGAI-0014).
 - ✅ Gestión simplificada de documentos: rutas auto-generadas con UUID, eliminación de `provider_name` del formulario (migración 20241126).
-- 🔄 En progreso: pipeline RAG + GenAI Adapter, endpoints de chat IA.
+- ✅ **BGAI-0015** — Integración completa Gemini File Search (Dic 2024):
+  - Servicio completo `gemini_provider.py` con File Search Store management (uno por juego, multilenguaje)
+  - Upload de documentos desde Supabase Storage a Gemini con retry logic y error handling
+  - Provider dispatch en `process_game_knowledge()` con persistencia de `provider_file_id` y `vector_store_id`
+  - Admin Portal: eliminado prompt de proveedor, botón "Procesar" individual por documento
+  - Bug fix crítico: separación storage_path/file_path para prevenir duplicación de bucket
+  - API signature fixes: uso correcto de google-genai 1.53.0, config dict para mime_type/display_name
+  - 14 tests unitarios (100% passing) con FakeGeminiClient
+  - Backward compatible: `provider_name=None` mantiene comportamiento existente
+  - Requiere `GOOGLE_API_KEY` en environment
+- 🔄 En progreso: endpoint `/genai/query` para RAG usando File Search Store IDs, adaptadores OpenAI/Claude.
 - 📋 Pendiente: licencia oficial BGG, ingestión masiva de documentos, assets finales, pruebas end-to-end completas.
 
-**MVP: ~70% completado** (ver `MVP.md` para detalles)
+**MVP: ~75% completado** (ver `MVP.md` para detalles)
 
 ### Guías adicionales
 

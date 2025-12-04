@@ -224,7 +224,7 @@ backend/
 
 **Required Settings:**
 - Supabase: url, anon_key, service_role_key
-- AI Providers: openai_api_key, gemini_api_key, anthropic_api_key
+- AI Providers: openai_api_key, google_api_key, anthropic_api_key
 - App: environment (dev/prod), cors_origins, log_level
 
 **Configuration Source:**

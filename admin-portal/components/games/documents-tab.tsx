@@ -25,6 +25,7 @@ export function DocumentsTab({ gameId, onRefreshRequested }: DocumentsTabProps) 
   const [showAddModal, setShowAddModal] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+  const [processingDocId, setProcessingDocId] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -62,7 +63,7 @@ export function DocumentsTab({ gameId, onRefreshRequested }: DocumentsTabProps) 
       return;
     }
 
-    if (!confirm(`Process knowledge for ${selectedDocs.size} document(s)?`)) return;
+    if (!confirm(`Process ${selectedDocs.size} document(s) with Gemini?`)) return;
 
     setProcessing(true);
     setError('');
@@ -70,24 +71,49 @@ export function DocumentsTab({ gameId, onRefreshRequested }: DocumentsTabProps) 
     try {
       const result = await apiClient.processKnowledge(gameId, {
         document_ids: Array.from(selectedDocs),
+        provider_name: 'gemini',
       });
 
-      const { success: successCount, fail: failCount } = result.results.reduce(
-        (acc, r) => {
-          if (r.status === 'success') acc.success += 1;
-          else if (r.status === 'error') acc.fail += 1;
-          return acc;
-        },
-        { success: 0, fail: 0 }
-      );
+      const successCount = result.success_count ?? 0;
+      const failCount = result.error_count ?? 0;
 
-      setSuccess(`Knowledge processing complete! Success: ${successCount}, Failed: ${failCount}`);
+      setSuccess(
+        `Knowledge processing complete! Success: ${successCount}, Failed: ${failCount}`
+      );
       setSelectedDocs(new Set());
       loadDocuments();
     } catch (err: any) {
       setError(err.message || 'Failed to process knowledge');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleProcessSingleDocument = async (docId: string) => {
+    if (!confirm('Process this document with Gemini?')) return;
+
+    setProcessingDocId(docId);
+    setError('');
+    setSuccess('');
+    try {
+      const result = await apiClient.processKnowledge(gameId, {
+        document_ids: [docId],
+        provider_name: 'gemini',
+      });
+
+      const successCount = result.success_count ?? 0;
+      const failCount = result.error_count ?? 0;
+
+      if (successCount > 0) {
+        setSuccess('Document processed successfully!');
+      } else {
+        setError('Failed to process document');
+      }
+      loadDocuments();
+    } catch (err: any) {
+      setError(err.message || 'Failed to process document');
+    } finally {
+      setProcessingDocId(null);
     }
   };
 
@@ -301,12 +327,17 @@ export function DocumentsTab({ gameId, onRefreshRequested }: DocumentsTabProps) 
                           <Button
                             variant="secondary"
                             size="sm"
-                            title="Funcionalidad disponible próximamente"
-                            onClick={() =>
-                              notifyInfo('Funcionalidad disponible próximamente.')
-                            }
+                            onClick={() => handleProcessSingleDocument(doc.id)}
+                            disabled={processingDocId === doc.id}
                           >
-                            Procesar
+                            {processingDocId === doc.id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Procesando...
+                              </>
+                            ) : (
+                              'Procesar'
+                            )}
                           </Button>
                         )}
                       </td>

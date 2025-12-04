@@ -174,16 +174,16 @@ export interface UploadDocumentRequest {
 export interface ProcessKnowledgeRequest {
   document_ids: string[];
   force_reprocess?: boolean;
+  provider_name?: string; // 'gemini' | 'openai'
+  language?: string;
+  notes?: string;
 }
 
 export interface ProcessKnowledgeResponse {
-  processed: number;
-  failed: number;
-  results: Array<{
-    document_id: string;
-    status: 'success' | 'error';
-    message?: string;
-  }>;
+  game_id: string;
+  processed_document_ids: string[];
+  success_count: number;
+  error_count: number;
 }
 
 // API Error

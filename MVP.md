@@ -1,7 +1,7 @@
 # MVP – Board Game Assistant Intelligence (BGAI)
 
-> Versión: 2025-11-27  
-> Estado: **MVP en desarrollo** (Portal admin backend/frontend completado BGAI-0010–BGAI-0013)
+> Versión: 2025-12-03
+> Estado: **MVP en desarrollo** (Portal admin + Gemini File Search completado BGAI-0010–BGAI-0015)
 
 ## 0. Resumen ejecutivo del MVP
 
@@ -102,7 +102,6 @@
    - Gestión de **FAQs** por juego e idioma.
    - Subida y gestión de **documentos de conocimiento** (reglamentos, ayudas, expansiones, etc.).
    - Botón de **“Procesar conocimiento”** que dispara en el backend la ingestión RAG para ese juego.
-   - 
 ---
 
 ## 3. Usuarios, roles y diferencias iniciales
@@ -507,11 +506,11 @@ Para el MVP:
 | App Móvil - Games UI                    | ✅ Completado | 100%     | BGAI-0007            |
 | App Móvil - Localización (ES/EN)        | ✅ Completado | 100%     | BGAI-0008            |
 | App Móvil - Historial (pre-chat IA)     | ✅ Completado | 100%     | BGAI-0009            |
-| Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~20%    | -                    |
-| Pipeline RAG (procesamiento docs)       | 📋 Pendiente  | 0%       | -                    |
+| Backend - RAG + GenAI Adapter           | 🔄 En progreso | ~50%    | BGAI-0015            |
+| Pipeline RAG (procesamiento docs)       | 🔄 En progreso | ~60%     | BGAI-0015            |
 | Integración BGG (jobs/utilidades)       | 📋 Pendiente  | 0%       | -                    |
 | Portal de Administración de Juegos      | ✅ Completado | 100%     | BGAI-0010, BGAI-0011, BGAI-0012, BGAI-0013 |
-| **TOTAL MVP**                           | 🔄 En progreso | ~72%    | 2025-11-25           |
+| **TOTAL MVP**                           | 🔄 En progreso | ~75%    | 2025-12-03           |
 
 **Leyenda:**
 
@@ -846,24 +845,28 @@ Para el MVP:
 
 ### 🔄 En progreso
 
-#### **Backend API REST - RAG + GenAI Adapter (20%)**
-- Definida interfaz de servicio para búsqueda con proveedores externos.
-- **Estrategia actualizada**: Delegar vectorización a OpenAI File Search, Gemini File API, Claude.
+#### **Backend API REST - RAG + GenAI Adapter (50%)**
+- ✅ **Gemini Provider completado** (BGAI-0015):
+  - File Search Store management (uno por juego, multilenguaje)
+  - Document upload con retry logic y error handling
+  - Integración con `process_game_knowledge()`
+  - Type safety completo, 14 tests passing
+- **Estrategia actualizada**: Delegar vectorización a proveedores (OpenAI, Gemini, Claude).
 - Pendiente:
-  - Implementar adaptadores para cada proveedor (OpenAI, Gemini, Claude).
-  - Servicio de subida de documentos a proveedores.
+  - Implementar adaptadores para OpenAI (Files API + Vector Stores) y Claude (Context Injection).
   - Endpoint `POST /genai/query` completo con delegación a proveedores.
+  - Usar File Search Store IDs almacenados para queries RAG.
 
 ### 📋 Pendiente
 
 1. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Servicio de subida de documentos a proveedores (OpenAI Files API, Gemini File API).
-   * ⏳ Adaptadores específicos por proveedor:
+   * ✅ ~~Servicio de subida de documentos a Gemini File Search~~ (BGAI-0015 completado)
+   * ⏳ Adaptadores adicionales por proveedor:
+     - ✅ Gemini: File API + File Search Stores (BGAI-0015)
      - OpenAI: Files API + Vector Stores + Assistants API
-     - Gemini: File API + Grounding
      - Claude: Context injection + Prompt Caching
-   * ⏳ Servicio de orquestación para delegar búsqueda semántica a proveedores.
-   * ⏳ Endpoint `POST /genai/query` completo con delegación.
+   * ⏳ Endpoint `POST /genai/query` completo con delegación a proveedores.
+   * ⏳ Usar File Search Store IDs ya almacenados para ejecutar queries RAG.
    * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events`.
    * ⏳ Rate limiting basado en metadata de feature flags.
 
@@ -934,6 +937,7 @@ Para el MVP:
    * Frontend: Actualizados types, formularios y visualización en Admin Portal.
    * Backend: Actualizados schemas y lógica de creación de documentos con generación automática de rutas.
    * Documentación actualizada: README, MVP y BGAI-0001.
+
 8. **Nov 2024 — Eliminación de tabla knowledge_documents**
    * Removida tabla `knowledge_documents` (migración 20241127).
    * Metadata de procesamiento RAG ahora se almacena directamente en `game_documents`.
@@ -943,12 +947,52 @@ Para el MVP:
    * Seed data actualizado para eliminar inserts a tabla eliminada.
    * Documentación actualizada: README, MVP, BGAI-0001.
 
+9. **BGAI-0015 — Integración completa de Gemini File Search para RAG (Dic 2024)**
+   * **Servicio Gemini Provider** (`app/services/gemini_provider.py`):
+     - Cliente singleton con API key validation
+     - Gestión de File Search Stores (uno por juego, multilenguaje)
+     - Descarga de documentos desde Supabase Storage usando endpoint directo `/storage/v1/object/`
+     - Upload a Gemini con retry logic (3 intentos, exponential backoff)
+     - Manejo de errores con excepciones custom (`GeminiProviderError`, `GeminiFileUploadError`, `GeminiFileSearchStoreError`)
+     - Type safety completo con validación explícita de None values
+   * **Integración en `process_game_knowledge()`**:
+     - Provider dispatch: `if request.provider_name == "gemini"` llama al servicio Gemini
+     - Actualiza `game_documents` con `provider_file_id` (operation name) y `vector_store_id` (store ID)
+     - Marca documentos como `ready` después de procesamiento exitoso
+     - Manejo de errores: marca documentos como `error` y continúa con batch
+     - Metadata de procesamiento: `processed_with_provider`, `notes`, `triggered_by`
+   * **Corrección de bug crítico** en `upload_document()`:
+     - Separación de `storage_path` (sin bucket) y `file_path` (con bucket)
+     - Previene duplicación de nombre de bucket en URLs de Supabase Storage
+   * **Admin Portal UX mejorado**:
+     - Eliminado prompt de selección de provider (hardcoded a 'gemini' para MVP)
+     - Botón "Procesar" individual por documento con loading state
+     - Confirmación simplificada antes de procesamiento
+     - Auto-refresh de lista después de completar
+   * **API Signature fixes**:
+     - Correcto uso de `from google import genai` (google-genai 1.53.0)
+     - Parámetros via `config` dict: `{mime_type, display_name}`
+     - Endpoint directo para descarga (no signed URLs)
+   * **Testing completo**:
+     - 14 tests unitarios con FakeGeminiClient (100% passing)
+     - Cobertura: store creation, upload, error handling, deletion
+     - Tests usan file:// storage para evitar llamadas API
+   * **Data Flow completo**:
+     - Admin Portal → Backend → Gemini Provider → File Search Store
+     - Persistencia en DB: `provider_file_id`, `vector_store_id`, `status='ready'`
+     - Backward compatible: provider_name=None mantiene comportamiento existente
+   * **Documentación**:
+     - Tests: `backend/tests/services/test_gemini_provider.py` (375 líneas)
+     - Servicio: `backend/app/services/gemini_provider.py` (316 líneas)
+     - Environment: Requiere `GOOGLE_API_KEY` en `.env`
+
 ### 🎯 Prioridad Alta (Siguientes tareas)
 
-1. **Backend API REST - Pipeline RAG + GenAI Adapter**
-   * ⏳ Finalizar los detalles e implementar la estrategia File Search
-   * ⏳ Implementar `POST /genai/query`.
-   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags
+1. **Backend API REST - Endpoint `/genai/query` para RAG**
+   * ✅ ~~Gemini File Search integration~~ (BGAI-0015 completado)
+   * ⏳ Implementar `POST /genai/query` que use los File Search Store IDs almacenados.
+   * ⏳ Query execution usando Gemini File Search (grounding con documentos ya subidos).
+   * ⏳ Registro en `chat_sessions`, `chat_messages`, `usage_events` y rate limiting por feature flags.
 
 2. **App móvil - Integración del chat IA**
    * ⏳ Hooks y servicios para `POST /genai/query`.
