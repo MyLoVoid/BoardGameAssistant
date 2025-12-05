@@ -56,7 +56,7 @@ npx expo start --clear --android   # o --ios / --web
 
 #### 🔧 Configuración Inicial de Supabase (Primera Vez)
 
-Para que la aplicación funcione correctamente, Supabase necesita datos iniciales (seed data). El comando `supabase db reset` crea automáticamente:
+Para que la aplicación funcione correctamente, Supabase necesita datos iniciales (seed data). El comando `supabase db reset` aplica el baseline `supabase/migrations/20251205000000_baseline.sql` y crea automáticamente:
 
 ##### ✅ Datos Creados Automáticamente
 
@@ -98,7 +98,7 @@ supabase db reset
 ```
 
 Este comando:
-- ✅ Aplica todas las migraciones (`supabase/migrations/*.sql`)
+- ✅ Aplica el baseline (`supabase/migrations/20251205000000_baseline.sql`)
 - ✅ Ejecuta el seed completo (`supabase/seed.sql`)
 - ✅ Crea esquema, tablas, índices, RLS policies y triggers
 - ✅ Inserta todos los datos de prueba listados arriba

@@ -221,8 +221,7 @@ END $$;
 -- =====================================================
 
 INSERT INTO public.app_sections (key, name, description, display_order, enabled) VALUES
-  ('BGC', 'Board Game Companion', 'Your intelligent assistant for board games', 1, true),
-  ('FUTURE_SECTION', 'Future Feature', 'Placeholder for future sections', 2, false);
+  ('BGC', 'Board Game Companion', 'Your intelligent assistant for board games', 1, true);
 
 -- =====================================================
 -- GAMES
@@ -315,32 +314,3 @@ BEGIN
     ('section', bgc_section_id, 'enabled', NULL, 'prod', true, '{"description": "Board Game Companion section enabled"}');
 
 END $$;
-
--- =====================================================
--- ANALYTICS EVENTS (Sample)
--- =====================================================
-
--- Note: In production, events would be created by actual user interactions
--- These are just examples of the structure
-
--- INSERT INTO public.usage_events (user_id, game_id, feature_key, event_type, environment, extra_info)
--- VALUES (
---   'user-uuid-here',
---   'game-uuid-here',
---   'chat',
---   'chat_question',
---   'dev',
---   '{"question_length": 45, "language": "es"}'
--- );
-
--- =====================================================
--- VERIFICATION QUERIES
--- =====================================================
-
--- Uncomment these to verify seed data after running:
-
--- SELECT COUNT(*) as total_games FROM public.games;
--- SELECT COUNT(*) as total_faqs FROM public.game_faqs;
--- SELECT COUNT(*) as total_flags FROM public.feature_flags;
--- SELECT key, name, enabled FROM public.app_sections;
--- SELECT name_base, status FROM public.games;

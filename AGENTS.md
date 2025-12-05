@@ -62,7 +62,7 @@
 Env vars: root `.env` for Supabase/backend, `mobile/.env` for Expo (use `10.0.2.2` on Android emulator), `admin-portal/.env.local` for portal API targets.
 
 ## Supabase Seed & Data Guardrails (README §Configuración Inicial)
-`supabase db reset` applies all migrations and seeds, creating:
+- `supabase db reset` aplica el baseline único (`supabase/migrations/20251205000000_baseline.sql`) y el seed para recrear todo desde cero (auth, schemas, RLS, datos de prueba).
 1. **Users** (`admin@bgai.test`, `developer@bgai.test`, `tester@bgai.test`, `premium@bgai.test`, `basic@bgai.test`).
 2. **BGC section** in `app_sections` (key `BGC`). Required for Admin Portal import flows; if reset is skipped, create via SQL or `backend/scripts/create_bgc_section.py`.
 3. **Sample games** (Gloomhaven, Terraforming Mars, Wingspan, Lost Ruins of Arnak, Carcassonne) populated with BGG fields.
@@ -90,8 +90,8 @@ Never edit Supabase schema blindly—cross-check `docs/BGAI-0001_supabase.md` be
 
 ## Commit & PR Guidelines
 - Commit subjects: imperative, lower-case, scoped when possible (`add auth router`). Reference issue IDs in the footer (`Refs #42`).
-- PRs must link Supabase migration IDs, attach UI screenshots when relevant, and list test commands/logs. Document new env vars/secrets and outline rollback or flag plans.
+- PRs deben referenciar el baseline/migración relevante (actual: `20251205000000_baseline.sql`), adjuntar screenshots de UI cuando aplique y listar comandos/logs de pruebas. Documenta nuevas env vars/secrets y outline de rollback/flags.
 - Never commit secrets. Keep feature flags declarative (YAML in `backend/feature_flags/ENV.yaml`) and reviewed alongside migrations.
 - Backend-only BGG sync jobs; mobile/admin consume cached data.
-- When editing `supabase/migrations`, `supabase/seed.sql`, `supabase/create_test_users.sql`, or `supabase/config.toml`, align with `docs/BGAI-0001_supabase.md` for enums, RLS, and CLI ports.
+- When editing `supabase/migrations` (baseline), `supabase/seed.sql`, `supabase/create_test_users.sql`, or `supabase/config.toml`, align with `docs/BGAI-0001_supabase.md` for enums, RLS, and CLI ports.
 - Preserve localization: `LanguageProvider` sits at the mobile root. Any new screen/hook must use `useLanguage` for strings and language-aware requests.

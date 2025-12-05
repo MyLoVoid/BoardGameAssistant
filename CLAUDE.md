@@ -57,7 +57,7 @@ Each game has its own knowledge base:
   - **Claude**: Context injection + Prompt Caching (no native vector store)
 
 - **Key Changes (Nov 2024):**
-  - ❌ `knowledge_documents` table removed (migration 20241127)
+  - ❌ `knowledge_documents` table removed (consolidated in baseline 20251205000000)
   - ✅ Processing metadata now stored directly in `game_documents` table
   - ✅ `file_path` auto-generated using pattern: `game_documents/{game_id}/{document_uuid}`
   - ✅ `provider_name` removed from document creation - selected during processing only
@@ -85,7 +85,7 @@ Each game has its own knowledge base:
 - `usage_events` - Analytics tracking (environment, event_type, feature_key)
 
 **Removed Tables:**
-- ~~`knowledge_documents`~~ - Removed in migration 20241127 (metadata merged into `game_documents`)
+- ~~`knowledge_documents`~~ - Removed (baseline 20251205000000) with metadata merged into `game_documents`
 
 ### Backend API Structure
 Custom backend acts as facade between mobile app and:

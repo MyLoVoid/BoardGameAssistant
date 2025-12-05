@@ -529,7 +529,7 @@ Para el MVP:
 
 #### **Base de datos Supabase (100%)**
 
-1. **Esquema completo implementado** (`supabase/migrations/20241122000000_initial_schema.sql`)
+1. **Esquema completo implementado** (baseline consolidado `supabase/migrations/20251205000000_baseline.sql`)
    * ✅ 9 tablas principales creadas:
      * `profiles` - Perfiles de usuario con roles
      * `app_sections` - Secciones modulares

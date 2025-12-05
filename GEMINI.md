@@ -21,7 +21,7 @@ This is a **Code Project** in active development. The goal is to build a modular
 
 ## Building and Running
 
-This project is divided into four main components: a React Native mobile app, a Next.js admin portal, a Python backend, and a Supabase instance. For a fresh start, resetting the database is recommended to apply all migrations and seed test data.
+This project is divided into four main components: a React Native mobile app, a Next.js admin portal, a Python backend, and a Supabase instance. For a fresh start, resetting the database is recommended to apply the consolidated baseline migration and seed test data.
 
 ### 1. Supabase
 The local development environment is managed by the Supabase CLI. Requires Docker Desktop.
@@ -47,7 +47,7 @@ The mobile app is built with React Native and Expo.
 3.  Start the development server: `npx expo start --clear`
 
 ## Data Model Summary
-The conceptual data model is defined in `MVP.md` and implemented via Supabase migrations. Core tables include:
+The conceptual data model is defined in `MVP.md` and implemented via the consolidated Supabase baseline (`supabase/migrations/20251205000000_baseline.sql`). Core tables include:
 *   `profiles`, `app_sections`
 *   `games`, `game_faqs`
 *   `feature_flags`

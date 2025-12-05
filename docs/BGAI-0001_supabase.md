@@ -17,25 +17,20 @@
 - Extends `game_docs_vectors` into `game_documents` table with provider reference fields for tracking document processing.
 
 ## Modified Files (Paths)
-- `supabase/migrations/20241122000000_initial_schema.sql` - Module: `supabase/migrations` - add full initial database schema, enums, triggers, and RLS policies.
+- `supabase/migrations/20251205000000_baseline.sql` - Module: `supabase/migrations` - baseline consolidado con esquema completo, enums finales, RLS y triggers (incluye eliminación de `knowledge_documents`, `description` en `games`, `source_type` extendido, bucket `game_documents` y políticas asociadas).
 - `supabase/seed.sql` - Module: `supabase/seeds` - seed BGC section, flagship games, bilingual FAQs, feature flags, sample RAG documents, and all role-scoped test users (admin/developer/tester/premium/basic).
 - `supabase/create_test_users.sql` - Module: `supabase/tooling` - helper script to create admin/developer/tester/premium/basic accounts with hashed passwords for local testing.
 - `supabase/config.toml` - Module: `supabase/config` - set project id, port map, auth, storage, analytics, and edge runtime defaults for the dev CLI stack.
-- `supabase/migrations/20241124000000_migrate_to_game_documents.sql` - Module: `supabase/migrations` - rename `game_docs_vectors` and add provider metadata columns for delegated RAG.
-- `supabase/migrations/20241125000000_add_knowledge_documents.sql` - Module: `supabase/migrations` - [DEPRECATED] create `knowledge_documents` table (later removed in migration 20241127).
-- `supabase/migrations/20241126000000_remove_provider_name_from_game_documents.sql` - Module: `supabase/migrations` - remove `provider_name` column from `game_documents` table; provider selection now happens only during knowledge processing.
-- `supabase/migrations/20241127000000_drop_knowledge_documents.sql` - Module: `supabase/migrations` - remove `knowledge_documents` table; processing metadata now tracked directly in `game_documents`.
 
 ## Detailed Changes
 
 ### Schema & Security
 - Creates typed enums (`user_role`, `game_status`, `language_code`, `scope_type`, `session_status`, `ai_provider`, `message_sender`, `source_type`, `event_type`, `environment_type`) so business logic can rely on constrained values.
 - Defines core tables: `profiles`, `app_sections`, `games`, `game_faqs`, `feature_flags`, `chat_sessions`, `chat_messages`, `game_docs_vectors`, and `usage_events`, each with audit columns and targeted indexes (section/status filters, language slices, vector HNSW, etc.).
-- Evolves the RAG storage by renaming `game_docs_vectors` → `game_documents`, adding provider reference fields to track processing metadata directly in the document records.
-- **Nov 2024 Update**: Simplifies document management by removing `provider_name` from `game_documents`. The `file_path` is now auto-generated using the document UUID (pattern: `game_documents/{game_id}/{document_uuid}`). Provider selection (OpenAI/Gemini/Claude) is deferred to the knowledge processing step, eliminating redundant fields from document creation.
-- **Nov 2024 Update**: Removes `knowledge_documents` table (migration 20241127). Processing metadata now tracked directly in `game_documents` table, simplifying the architecture by eliminating redundant tracking layer.
-- **Dec 2025 Update**: Adds `description` (TEXT) to `public.games`, populated during BGG imports/seeds with HTML-sanitized copy that downstream clients can display without additional parsing.
-- Enables pg extensions (`uuid-ossp`, `pgcrypto`, `vector`) required for UUID defaults, password hashing, and pgvector similarity search.
+- Evolves el storage RAG consolidando `game_docs_vectors` → `game_documents`, con tracking de procesamiento directo en el registro (provider file/vector IDs, status, metadata) y sin `provider_name`.
+- `knowledge_documents` eliminado; el tracking vive en `game_documents`.
+- `description` (TEXT) en `public.games`, poblado durante importaciones/seed con copy saneado de BGG.
+- Extensiones: `pgcrypto` para hashing/UUID (`gen_random_uuid`); no se requiere `uuid-ossp` ni `vector` en el baseline actual.
 - Applies RLS on every table with policies tuned to MVP access patterns (e.g., public read for enabled sections/active games/visible FAQs, owner-only chat data, authenticated reads for feature flags and RAG chunks, insert-only analytics events).
 - Adds `handle_new_user` trigger hooked to `auth.users` to auto-provision `profiles` rows using metadata-provided roles, plus shared `update_updated_at_column` trigger across mutable tables to keep timestamps consistent.
 
@@ -60,7 +55,7 @@
 - Keeps storage/file limits conservative (50MiB) and enables experimental S3 knobs for future OrioleDB/backups without activating them by default.
 
 ## Follow-ups / Testing
-- Before promoting to prod, capture snapshots of the managed Supabase database and replay this migration in staging to confirm enum compatibility and vector index behavior.
+- Before promoting to prod, captura snapshot de la base gestionada y reaplica el baseline en staging para confirmar compatibilidad de enums y políticas RLS.
 - Build automated ingestion to populate `embedding` vectors and align chunk dimensions with the chosen model (currently sized for `text-embedding-ada-002`).
 - Wire backend feature-flag resolver and analytics emitters against the new schema; add integration tests covering RLS access paths for each role.
 - **Admin Portal Setup**: After `supabase db reset`, sign in with the seeded credentials (e.g., `admin@bgai.test` / `Admin123!`) to access the Next.js admin interface at http://localhost:3000. See BGAI-0011 for full Admin Portal documentation.
