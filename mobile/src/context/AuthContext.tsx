@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import type { AuthState } from '@/types/auth';
 import * as authService from '@/services/auth';
+import { supabase } from '@/services/supabase';
 
 const STORAGE_KEY = 'bgai-auth-session';
 
@@ -41,6 +42,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     bootstrapAsync();
   }, [bootstrapAsync]);
+
+  // Keep state in sync with Supabase auto-refresh (e.g., token refresh events)
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event) => {
+        if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+          try {
+            const validated = await authService.validateSession();
+            if (!validated) {
+              setState({ status: 'signedOut' });
+              await SecureStore.deleteItemAsync(STORAGE_KEY);
+              return;
+            }
+
+            setState({ status: 'signedIn', user: validated.user, accessToken: validated.token });
+            await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(validated));
+          } catch (error) {
+            console.warn('Failed to sync auth state', error);
+            setState({ status: 'signedOut' });
+            await SecureStore.deleteItemAsync(STORAGE_KEY);
+          }
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setState({ status: 'signedOut' });
+          await SecureStore.deleteItemAsync(STORAGE_KEY);
+        }
+      },
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const session = await authService.signIn(email, password);

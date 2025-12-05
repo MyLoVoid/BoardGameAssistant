@@ -28,9 +28,9 @@ import { useLanguage } from '@/context/LanguageContext';
 type Props = NativeStackScreenProps<GamesStackParamList, 'GameChat'>;
 
 const GameChatScreen = ({ route, navigation }: Props) => {
-  const { gameId, gameName } = route.params;
+  const { gameId, gameName, sessionId: existingSessionId } = route.params;
   const { t } = useLanguage();
-  const { messages, isLoading, error, sendMessage } = useChatSession(gameId);
+  const { messages, isLoading, error, sendMessage } = useChatSession(gameId, existingSessionId);
   const flatListRef = useRef<FlatList>(null);
 
   // Set screen title to game name

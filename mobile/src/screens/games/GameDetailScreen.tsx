@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect } from 'react';
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import ScreenContainer from '@/components/ScreenContainer';
@@ -24,6 +24,12 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
       title: game?.name_base ?? t('tabs.games'),
     });
   }, [game?.name_base, navigation, t]);
+
+  const handleOpenBgg = useCallback(() => {
+    if (!game?.bgg_id) return;
+    const url = `https://boardgamegeek.com/boardgame/${game.bgg_id}`;
+    Linking.openURL(url).catch(() => {});
+  }, [game?.bgg_id]);
 
   if (isLoading) {
     return (
@@ -51,6 +57,29 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
 
   return (
     <ScreenContainer scroll>
+        {/* Hero Section */}
+        <View style={styles.hero}>
+          {game.image_url || game.thumbnail_url ? (
+            <Image
+              source={{ uri: game.image_url ?? game.thumbnail_url ?? undefined }}
+              style={styles.cover}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.cover, styles.coverPlaceholder]}>
+              <Text style={styles.coverInitial}>{game.name_base.charAt(0)}</Text>
+            </View>
+          )}
+          <View style={styles.heroText}>
+            <Text style={styles.title}>{game.name_base}</Text>
+            {game.description ? (
+              <Text style={styles.description}>{game.description}</Text>
+            ) : (
+              <Text style={styles.descriptionMuted}>{t('games.detail.descriptionEmpty')}</Text>
+            )}
+          </View>
+        </View>
+
         {/* Game Info Card */}
         <View style={styles.card}>
           <Text style={styles.label}>{t('games.detail.generalInfo')}</Text>
@@ -80,10 +109,10 @@ const GameDetailScreen = ({ route, navigation }: Props) => {
           )}
 
           {game.bgg_id !== null && (
-            <>
+            <Pressable onPress={handleOpenBgg}>
               <Text style={styles.label}>{t('games.detail.bggId')}</Text>
-              <Text style={styles.value}>#{game.bgg_id}</Text>
-            </>
+              <Text style={styles.link}>#{game.bgg_id} · {t('games.detail.bggLink')}</Text>
+            </Pressable>
           )}
 
           <Text style={styles.label}>{t('games.detail.statusLabel')}</Text>
@@ -151,6 +180,49 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  hero: {
+    marginTop: spacing.md,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cover: {
+    width: '100%',
+    height: 180,
+    backgroundColor: colors.surface,
+  },
+  coverPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coverInitial: {
+    color: colors.textMuted,
+    fontWeight: '700',
+    fontSize: 28,
+  },
+  heroText: {
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  description: {
+    color: colors.text,
+    lineHeight: 20,
+  },
+  descriptionMuted: {
+    color: colors.textMuted,
+  },
+  link: {
+    color: colors.primary,
+    fontWeight: '600',
+    marginTop: spacing.xs,
   },
   loadingText: {
     color: colors.textMuted,

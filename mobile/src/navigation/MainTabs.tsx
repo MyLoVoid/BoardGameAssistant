@@ -44,7 +44,15 @@ const MainTabs = () => {
       <Tab.Screen
         name="Games"
         component={GamesNavigator}
-        options={{ title: t('tabs.games'), tabBarLabel: t('tabs.games') }}
+        options={{
+          title: t('tabs.games'),
+          tabBarLabel: t('tabs.games'),
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('Games', { screen: 'GameList' });
+          },
+        })}
       />
       <Tab.Screen
         name="Chat"
