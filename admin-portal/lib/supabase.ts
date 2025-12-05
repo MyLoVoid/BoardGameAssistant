@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type AuthError } from '@supabase/supabase-js';
 import { clearAuthCookies } from './auth-cookies';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -7,6 +7,15 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
+
+const isAuthSessionMissingError = (error: unknown): error is AuthError => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name: string }).name === 'AuthSessionMissingError'
+  );
+};
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -19,15 +28,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Helper to get current session
 export async function getSession() {
   const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
+  if (error) {
+    if (isAuthSessionMissingError(error)) {
+      return null;
+    }
+    throw error;
+  }
   return data.session;
 }
 
 // Helper to get current user
 export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  return data.user;
+  if (error) {
+    if (isAuthSessionMissingError(error)) {
+      return null;
+    }
+    throw error;
+  }
+  return data.user ?? null;
 }
 
 // Helper to get user with role from database

@@ -302,6 +302,12 @@ CREATE POLICY "Users can view own profile" ON public.profiles
 CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
+-- Service role can read all profiles (needed for backend JWT validation)
+CREATE POLICY "Service role can read all profiles" ON public.profiles
+  FOR SELECT
+  TO service_role
+  USING (true);
+
 -- App sections policies
 CREATE POLICY "Anyone can view enabled sections" ON public.app_sections
   FOR SELECT USING (enabled = true);
