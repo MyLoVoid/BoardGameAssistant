@@ -186,6 +186,7 @@ Env vars clave:
 ```
 ├─ MVP.md                      # Alcance y estado del MVP (actualizado a BGAI-0016)
 ├─ docs/
+│  ├─ DEPLOYMENT.md            # Guía de migración y deployment a Supabase Cloud
 │  ├─ BGAI-0001_supabase.md    # Esquema Supabase + seeds
 │  ├─ BGAI-0002_backend-bootstrap.md
 │  ├─ BGAI-0003_authentication.md
