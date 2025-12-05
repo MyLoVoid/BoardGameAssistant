@@ -74,8 +74,8 @@ export function useChatHistory(): UseChatHistoryState {
         .select(
           'id, game_id, language, last_activity_at, total_messages, games(name_base), chat_messages(content,sender, created_at)',
         )
-        .eq('status', 'active')
-        .eq('language', language)
+        // Show all non-deleted sessions regardless of language
+        .in('status', ['active', 'closed', 'archived'])
         .order('last_activity_at', { ascending: false })
         .order('created_at', { foreignTable: 'chat_messages', ascending: false })
         .limit(1, { foreignTable: 'chat_messages' });
