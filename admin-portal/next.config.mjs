@@ -2,22 +2,19 @@
 const nextConfig = {
   images: {
     remotePatterns: [
+      // BoardGameGeek images
       {
         protocol: 'https',
         hostname: 'cf.geekdo-images.com',
         pathname: '/**',
       },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
+      // Supabase Storage (Cloud)
       {
         protocol: 'https',
-        hostname: 'example.test',
-        pathname: '/**',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
       },
+      // Other game-related image sources
       {
         protocol: 'https',
         hostname: 'm.media-amazon.com',
@@ -35,6 +32,9 @@ const nextConfig = {
       },
     ],
   },
+
+  // Optimize for production deployment
+  output: 'standalone',
 };
 
 export default nextConfig;
