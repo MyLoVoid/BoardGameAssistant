@@ -164,6 +164,37 @@ https://www.boardgamegeek.com/xmlapi2/thing
 
 ---
 
+### 🚀 Deployment a Supabase Cloud
+
+**Proyecto en la nube:**
+- **URL**: `https://cszvpobhylbzsfrbanbl.supabase.co`
+- **Project Ref**: `cszvpobhylbzsfrbanbl`
+
+**Guía completa de deployment:**
+Ver **[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)** para instrucciones detalladas sobre:
+- Configuración de Supabase Cloud
+- Aplicación de migraciones (`supabase db push`)
+- Deployment del backend (Railway/Render/Fly.io)
+- Deployment del Admin Portal (Vercel)
+- Builds de producción para mobile (Expo EAS)
+- Estrategia de seed data (dev vs prod)
+- Variables de entorno para cada componente
+- Troubleshooting y rollback
+
+**Quick start (Cloud):**
+```bash
+# 1. Linkear proyecto local con cloud
+supabase link --project-ref cszvpobhylbzsfrbanbl
+
+# 2. Aplicar migraciones a cloud
+supabase db push
+
+# 3. Configurar variables de entorno
+# Ver docs/DEPLOYMENT.md sección 2
+```
+
+---
+
 Env vars clave:
 - `.env` (raíz) contiene Supabase local + backend.
 - `mobile/.env` define `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_BACKEND_URL`. En simulador Android usar `10.0.2.2`; en dispositivo físico usar IP LAN.
