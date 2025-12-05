@@ -209,6 +209,7 @@ Env vars clave:
 | `cd backend && poetry run uvicorn app.main:app --reload` | API local. |
 | `cd admin-portal && npm run dev` | Portal admin Next.js (http://localhost:3000). |
 | `cd mobile && npx expo start` | Expo bundler. |
+| `cd mobile && eas build --platform android --profile preview` | Build de APK para testing (ver `mobile/BUILD_INSTRUCTIONS.md`). |
 | `cd mobile && npm run lint` | ESLint (auto-config Expo) — corrige antes de subir. |
 | `cd admin-portal && npm run lint` | Ejecuta el linter de Next.js (ESLint). |
 

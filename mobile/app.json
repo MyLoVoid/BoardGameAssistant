@@ -23,15 +23,24 @@
         "backgroundColor": "#050a18"
       },
       "package": "com.bgai.app",
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "bgai-local-shell"
+        "projectId": "68b1224a-c36e-464b-ae78-1c5142fef6e4"
       }
-    }
+    },
+    "owner": "mylovoid",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
