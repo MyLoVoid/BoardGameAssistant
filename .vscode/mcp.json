@@ -1,8 +1,45 @@
 {
 	"servers": {
-		"github-server": {
-			"url": "https://api.githubcopilot.com/mcp",
-			"type": "http"
+		"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/",
+			"headers": {
+				"Authorization": "Bearer ${env:GITHUB_TOKEN_MyLoVoid}"
+			}
+		},
+		"notion": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-remote",
+				"https://mcp.notion.com/mcp"
+			],
+			"env": {
+				"NOTION_TOKEN": "${env:NOTION_TOKEN}"
+			}
+		},
+		"supabase": {
+			"url": "http://127.0.0.1:54321/mcp"
+		},
+		"chrome-devtools": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"chrome-devtools-mcp@latest"
+			]
+		},
+		"context7": {
+			"type": "http",
+			"url": "https://mcp.context7.com/mcp",
+			"headers": {
+				"CONTEXT7_API_KEY": "${env:CONTEXT7_API_KEY}"
+			}
+		},
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"@playwright/mcp@latest"
+			]
 		},
 		// "Azure MCP Server": {
 		// 	"command": "npx",
@@ -27,21 +64,6 @@
 		// 	"command": "uvx",
 		// 	"args": [
 		// 		"mcp-server-git"
-		// 	]
-		// },
-		"notionMCP": {
-			"command": "npx",
-			"args": [
-				"-y",
-				"mcp-remote",
-				"https://mcp.notion.com/mcp"
-			]
-		},
-		// "playwright": {
-		// 	"command": "npx",
-		// 	"args": [
-		// 		"-y",
-		// 		"@executeautomation/playwright-mcp-server"
 		// 	]
 		// },
 		// "awesome-copilot": {

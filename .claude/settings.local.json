@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx supabase status)",
+      "Bash(cat:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl:*)",
+      "Bash(python -m venv:*)",
+      "Bash(dir C:UserscaramirezsDocuments_PYTHONBoardGameAssistant)",
+      "Bash(dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
