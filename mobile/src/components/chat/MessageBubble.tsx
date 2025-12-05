@@ -16,6 +16,18 @@ interface Props {
 const MessageBubble = ({ message }: Props) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+  const formattedCitations = (message.citations ?? [])
+    .map((citation) => {
+      const baseLabel =
+        citation.document_name || citation.document_title || citation.excerpt?.replace(/\n/g, ' ').trim();
+      if (!baseLabel) {
+        return null;
+      }
+      const pageLabel = citation.page ? ` (p. ${citation.page})` : '';
+      return `${baseLabel}${pageLabel}`;
+    })
+    .filter((value): value is string => Boolean(value));
+  const uniqueCitations = Array.from(new Set(formattedCitations));
 
   return (
     <View style={[styles.container, isUser && styles.userContainer]}>
@@ -33,13 +45,12 @@ const MessageBubble = ({ message }: Props) => {
         )}
 
         {/* Citations if available */}
-        {message.citations && message.citations.length > 0 && (
+        {uniqueCitations.length > 0 && (
           <View style={styles.citationsContainer}>
             <Text style={styles.citationsTitle}>Sources:</Text>
-            {message.citations.map((citation, index) => (
+            {uniqueCitations.map((label, index) => (
               <Text key={index} style={styles.citation}>
-                {citation.document_name}
-                {citation.page ? ` (p. ${citation.page})` : ''}
+                {label}
               </Text>
             ))}
           </View>

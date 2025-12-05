@@ -80,7 +80,7 @@ export function useChatSession(gameId: string): UseChatSessionState {
           role: 'assistant',
           content: response.answer,
           timestamp: new Date().toISOString(),
-          citations: response.citations,
+          ...(response.citations?.length ? { citations: response.citations } : {}),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);

@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import {
   Alert,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -55,6 +56,22 @@ const GameChatScreen = ({ route, navigation }: Props) => {
     }
   }, [messages.length]);
 
+  // Scroll to bottom when keyboard appears
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   const handleSendMessage = async (question: string) => {
     await sendMessage(question);
   };
@@ -62,7 +79,7 @@ const GameChatScreen = ({ route, navigation }: Props) => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {messages.length === 0 && !isLoading ? (
@@ -80,6 +97,8 @@ const GameChatScreen = ({ route, navigation }: Props) => {
           renderItem={({ item }) => <MessageBubble message={item} />}
           contentContainerStyle={styles.messageList}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           ListFooterComponent={isLoading ? <TypingIndicator /> : null}
         />
       )}
