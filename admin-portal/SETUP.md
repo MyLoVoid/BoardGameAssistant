@@ -134,7 +134,7 @@ The portal connects to `http://127.0.0.1:8000`:
 
 ## Environment Variables
 
-`.env.local` (already configured):
+`.env` (already configured):
 ```env
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -187,7 +187,7 @@ After setup:
 ## Production Deployment
 
 For production (future):
-1. Update `.env.local` with production Supabase URL
+1. Update `.env` with production Supabase URL
 2. Set `NEXT_PUBLIC_API_URL` to production backend
 3. Build: `npm run build`
 4. Deploy to Vercel/Netlify or self-host

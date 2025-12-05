@@ -38,8 +38,8 @@ class Settings(BaseSettings):
     supabase_project_id: str | None = None
     supabase_jwt_secret: str = "super-secret-jwt-token-with-at-least-32-characters-long"
 
-    # Database
-    database_url: str
+    # Database (optional - not used with Supabase SDK)
+    database_url: str | None = None
 
     # AI Providers
     openai_api_key: str = ""

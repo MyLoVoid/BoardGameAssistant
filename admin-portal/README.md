@@ -53,7 +53,7 @@ npm install
 
 ### 2. Configure Environment Variables
 
-The `.env.local` file should already be configured with:
+The `.env` file should already be configured with:
 
 ```env
 # Supabase Configuration
@@ -205,7 +205,7 @@ admin-portal/
 │   ├── types.ts                 # TypeScript type definitions
 │   └── utils.ts                 # Utility functions
 ├── proxy.ts                     # Next.js 16 proxy guard (auth protection)
-├── .env.local                   # Environment variables
+├── .env                   # Environment variables
 ├── next.config.js               # Next.js configuration
 ├── tailwind.config.ts           # Tailwind CSS configuration
 ├── tsconfig.json                # TypeScript configuration
@@ -290,7 +290,7 @@ These tokens are defined in `app/globals.css` and automatically adjust based on 
 
 - Ensure your user has `admin` or `developer` role in the `public.users` table
 - Check that Supabase is running (`npx supabase status`)
-- Verify environment variables in `.env.local`
+- Verify environment variables in `.env`
 
 ### Backend API Errors
 
