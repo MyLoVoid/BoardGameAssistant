@@ -714,6 +714,7 @@ async def _debug_print_store_documents() -> None:
             continue
 
         try:
+            game_info = await get_game_info_from_store_identifier(store_identifier=store_name)
             documents = await list_documents_in_file_search_store(file_search_store_id=store_name)
         except GeminiProviderError as exc:
             print(f"  [GeminiProviderError] {exc}")
@@ -723,12 +724,84 @@ async def _debug_print_store_documents() -> None:
             print(f"Store: {display_name} has no documents.")
             continue
 
-        print(f"Store: {display_name}")
-        for doc in documents:
+        print(f"===================== GAME: {game_info.get('name_base')} =====================")
+        print(f"> ID: {game_info.get('vector_store_id')}")
+        print(f"> Store: {display_name}")
+        print(f"> No. documents in Store: {len(documents)}")
+        for i, doc in enumerate(documents, 1):
             doc_name = doc.get("display_name") or "<no-name>"
             print(
-                f"  - {doc_name} - {doc.get('name')} | mime={doc.get('mime_type')} | size={doc.get('size_bytes')}"
+                f"   {i}. {doc_name} | mime={doc.get('mime_type')} | size={doc.get('size_bytes')}\n"
+                f"      {doc.get('name')}"
             )
+        print("==============================================================")
+
+
+async def _debug_purge_all_file_search_stores() -> None:
+    """Delete every Gemini File Search store after explicit confirmation."""
+    stores = _debug_list_file_search_stores()
+    if not stores:
+        print("No file search stores available.")
+        return
+
+    confirmation = (
+        input("Type 'purge' to delete ALL Gemini File Search stores (this cannot be undone): ")
+        .strip()
+        .lower()
+    )
+    if confirmation != "purge":
+        print("Purge cancelled.")
+        return
+
+    deleted = 0
+    for store in stores:
+        store_name = getattr(store, "name", None)
+        display_name = getattr(store, "display_name", "<no-display>")
+        if not store_name:
+            print(f"Skipping store '{display_name}' because it has no resource name")
+            continue
+
+        deleted_store = await _delete_store_with_documents(
+            store_name=store_name,
+            display_name=display_name,
+        )
+        if deleted_store:
+            deleted += 1
+
+    print(f"Purge complete. Deleted {deleted} store(s).")
+
+
+async def _delete_store_with_documents(*, store_name: str, display_name: str) -> bool:
+    """Remove every document inside a store before deleting the store itself."""
+    try:
+        documents = await list_documents_in_file_search_store(file_search_store_id=store_name)
+    except GeminiProviderError as exc:
+        print(f"[GeminiProviderError] Failed to list documents for '{display_name}': {exc}")
+        return False
+
+    for document in documents:
+        document_name = document.get("name")
+        if not document_name:
+            print(
+                f"Skipping unnamed document in store '{display_name}' (resource missing, cannot delete)."
+            )
+            continue
+        try:
+            await delete_document_from_gemini(document_name=document_name)
+            print(f"  Deleted document: {document.get('display_name') or document_name}")
+        except GeminiProviderError as exc:
+            print(
+                f"[GeminiProviderError] Failed to delete document '{document_name}' in '{display_name}': {exc}"
+            )
+            return False
+
+    try:
+        await delete_file_search_store(file_search_store_id=store_name)
+        print(f"Deleted store: {display_name} ({store_name})")
+        return True
+    except GeminiProviderError as exc:
+        print(f"[GeminiProviderError] Failed to delete '{display_name}': {exc}")
+        return False
 
 
 def _resolve_store_name_from_input(store_input: str) -> str:
@@ -815,13 +888,13 @@ async def _debug_chat_flow() -> None:
 async def _debug_cli() -> None:
     """Interactive CLI for manual Gemini testing."""
     print("Listing Gemini File Search stores and their documents...\n")
-    await _debug_print_store_documents()
 
     menu = (
         "Select an option:\n"
         "1) List File Search Stores and Documents\n"
         "2) Delete document\n"
         "3) Chat with Gemini (need a file search store ID)\n"
+        "4) Purge ALL File Search Stores\n"
         "q/quit to exit"
     )
 
@@ -837,6 +910,8 @@ async def _debug_cli() -> None:
             await _debug_delete_document_flow()
         elif choice == "3":
             await _debug_chat_flow()
+        elif choice == "4":
+            await _debug_purge_all_file_search_stores()
         else:
             print("Invalid option. Please try again.")
 
