@@ -14,7 +14,9 @@ export type MessageRole = 'user' | 'assistant' | 'system';
  * Citation reference from RAG response
  */
 export interface Citation {
-  document_name: string;
+  document_name?: string;
+  document_title?: string;
+  excerpt?: string;
   page?: number;
 }
 

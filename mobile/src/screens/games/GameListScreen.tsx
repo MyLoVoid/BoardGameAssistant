@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -83,21 +84,38 @@ const GameListScreen = ({ navigation }: Props) => {
             style={styles.card}
             onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
           >
-            <Text style={styles.name}>{item.name_base}</Text>
-            {item.min_players !== null && item.max_players !== null && (
-              <Text style={styles.meta}>
-                {t('games.list.playersRange', {
-                  min: item.min_players,
-                  max: item.max_players,
-                })}
-                {item.playing_time !== null &&
-                  t('games.list.duration', { minutes: item.playing_time })}
-              </Text>
-            )}
-            {item.rating !== null && (
-              <Text style={styles.rating}>BGG {item.rating.toFixed(1)}</Text>
-            )}
-            {item.status === 'beta' && <Text style={styles.beta}>{t('games.list.betaBadge')}</Text>}
+            <View style={styles.cardHeader}>
+              {item.thumbnail_url ? (
+                <Image
+                  source={{ uri: item.thumbnail_url }}
+                  style={styles.thumbnail}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+                  <Text style={styles.thumbnailInitial}>{item.name_base.charAt(0)}</Text>
+                </View>
+              )}
+              <View style={styles.cardContent}>
+                <Text style={styles.name}>{item.name_base}</Text>
+                {item.min_players !== null && item.max_players !== null && (
+                  <Text style={styles.meta}>
+                    {t('games.list.playersRange', {
+                      min: item.min_players,
+                      max: item.max_players,
+                    })}
+                    {item.playing_time !== null &&
+                      t('games.list.duration', { minutes: item.playing_time })}
+                  </Text>
+                )}
+                {item.rating !== null && (
+                  <Text style={styles.rating}>BGG {item.rating.toFixed(1)}</Text>
+                )}
+                {item.status === 'beta' && (
+                  <Text style={styles.beta}>{t('games.list.betaBadge')}</Text>
+                )}
+              </View>
+            </View>
           </Pressable>
         )}
         ListEmptyComponent={
@@ -143,10 +161,35 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.card,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  thumbnail: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+  },
+  thumbnailPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  thumbnailInitial: {
+    color: colors.textMuted,
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  cardContent: {
+    flex: 1,
   },
   name: {
     color: colors.text,

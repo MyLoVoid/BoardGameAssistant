@@ -38,6 +38,11 @@ const ChatInput = ({ onSend, disabled, placeholder }: Props) => {
         editable={!disabled}
         onSubmitEditing={handleSend}
         blurOnSubmit={false}
+        textAlignVertical="top"
+        autoCorrect
+        autoCapitalize="sentences"
+        returnKeyType="default"
+        underlineColorAndroid="transparent"
       />
       <Pressable
         style={[styles.sendButton, (!text.trim() || disabled) && styles.sendButtonDisabled]}
@@ -71,9 +76,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm + 4,
+    paddingBottom: spacing.sm + 4,
     color: colors.text,
     fontSize: 15,
+    lineHeight: 20,
     marginRight: spacing.sm,
   },
   sendButton: {
