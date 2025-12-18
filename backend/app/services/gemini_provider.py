@@ -73,6 +73,41 @@ def _build_store_display_name(game_id: str) -> str:
     return f"game-{game_id}"
 
 
+async def _unwrap_redirect_url(url: str, timeout: float = 5.0) -> str:
+    """
+    Unwrap a Google redirect URL to get the original destination.
+
+    Google uses redirect URLs (grounding-api-redirect) to track attribution metrics.
+    This function follows the redirect chain to get the final destination URL.
+
+    Args:
+        url: The redirect URL to unwrap
+        timeout: Request timeout in seconds (default: 5.0)
+
+    Returns:
+        The final destination URL after following redirects.
+        Returns the original URL if unwrapping fails or if it's not a redirect URL.
+
+    Examples:
+        >>> await _unwrap_redirect_url("https://vertexaisearch.cloud.google.com/grounding-api-redirect/...")
+        "https://boardgamegeek.com/thread/..."
+    """
+    # Only try to unwrap Google redirect URLs
+    if "grounding-api-redirect" not in url:
+        return url
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            # Use HEAD request to avoid downloading content
+            response = await client.head(url)
+            # Return the final URL after following redirects
+            return str(response.url)
+    except Exception:
+        # If unwrapping fails, return the original URL
+        # Don't raise - this is a best-effort operation
+        return url
+
+
 def _normalize_store_identifier(store_identifier: str) -> str:
     """Convert camelCase Gemini store IDs to snake_case used in Supabase records."""
     if store_identifier.startswith("fileSearchStores/"):
@@ -431,7 +466,7 @@ async def query_gemini(
     question: str,
     vector_store_id: str,
     session_history: list[dict] | None = None,
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-3-flash-preview",
 ) -> dict:
     """
     Query Gemini with file search grounding for a specific game.
@@ -471,8 +506,8 @@ You have access to ONLY:
 
 Tool protocol:
 - ALWAYS use `file_search` to answer.
-- DO NOT browse the internet or use any web tool, even if the knowledge base is missing information.
 - Never invent rules. If the answer cannot be supported by `file_search` results, say you do not know.
+- It is not necessary to cite the sources used, the orchestrator will handle citations.
 
 [OBJECTIVES]
 1) Teach the game (when asked):
@@ -550,8 +585,8 @@ Disallowed sources:
 
 Tool protocol:
 - ALWAYS use `web_search`.
-- DO NOT use the internal knowledge base or `file_search`.
 - Never invent rules. If the answer cannot be supported by trustworthy sources, say you do not know.
+- It is not necessary to cite the sources used, the orchestrator will handle citations.
 
 [OBJECTIVES]
 1) Teach the game (when asked):
@@ -815,11 +850,12 @@ Return the final answer in this structure (adapt only if the user asked for a di
                 grounding_chunks = getattr(grounding_metadata_gs, "grounding_chunks", None) or []
                 for chunk in grounding_chunks:
                     retrieved_context = getattr(chunk, "web", None)
-                    text: str = getattr(retrieved_context, "url", "")
-                    text = text.replace("\n", "| ").strip()
+                    uri: str = getattr(retrieved_context, "uri", "")
+                    # Unwrap Google redirect URLs to get original destination
+                    original_uri = await _unwrap_redirect_url(uri) if uri else ""
                     citation = {
                         "document_title": getattr(retrieved_context, "title", None),
-                        "excerpt": text,
+                        "excerpt": original_uri,
                         "source": "google_search",
                     }
                     citations_gs.append(citation)
@@ -850,10 +886,16 @@ Return the final answer in this structure (adapt only if the user asked for a di
             "model_info": {
                 "provider": "gemini",
                 "model_name": model_name,
-                "total_tokens": getattr(usage_metadata_gs, "total_token_count", None) if usage_metadata_gs else None,
-                "prompt_tokens": getattr(usage_metadata_gs, "prompt_token_count", None) if usage_metadata_gs else None,
-                "completion_tokens": getattr(usage_metadata_gs, "candidates_token_count", None) if usage_metadata_gs else None,
-                "errors": {"file_search": file_search_error}
+                "total_tokens": getattr(usage_metadata_gs, "total_token_count", None)
+                if usage_metadata_gs
+                else None,
+                "prompt_tokens": getattr(usage_metadata_gs, "prompt_token_count", None)
+                if usage_metadata_gs
+                else None,
+                "completion_tokens": getattr(usage_metadata_gs, "candidates_token_count", None)
+                if usage_metadata_gs
+                else None,
+                "errors": {"file_search": file_search_error},
             },
         }
 
@@ -864,10 +906,16 @@ Return the final answer in this structure (adapt only if the user asked for a di
             "model_info": {
                 "provider": "gemini",
                 "model_name": model_name,
-                "total_tokens": getattr(usage_metadata_fs, "total_token_count", None) if usage_metadata_fs else None,
-                "prompt_tokens": getattr(usage_metadata_fs, "prompt_token_count", None) if usage_metadata_fs else None,
-                "completion_tokens": getattr(usage_metadata_fs, "candidates_token_count", None) if usage_metadata_fs else None,
-                "errors": {"google_search": google_search_error}
+                "total_tokens": getattr(usage_metadata_fs, "total_token_count", None)
+                if usage_metadata_fs
+                else None,
+                "prompt_tokens": getattr(usage_metadata_fs, "prompt_token_count", None)
+                if usage_metadata_fs
+                else None,
+                "completion_tokens": getattr(usage_metadata_fs, "candidates_token_count", None)
+                if usage_metadata_fs
+                else None,
+                "errors": {"google_search": google_search_error},
             },
         }
 
@@ -878,7 +926,6 @@ Return the final answer in this structure (adapt only if the user asked for a di
         answer_text_gs = ""
 
     try:
-
         # Both sources provided answers - use Gemini to synthesize them
         input_prompt = f"""You are a specialist rules assistant for a specific board game (base game plus optional expansions/editions).
 Board Game: {game_info.get("name_base")}
